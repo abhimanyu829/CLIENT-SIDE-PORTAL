@@ -48,6 +48,14 @@ tsc_errors.txt
 tsc_errors_final.txt
 tsc_final2.txt
 
+# Separate AI dev tooling (not part of the app)
+claude-code-system/
+.openclaude/
+
+# Scratch docs (not app code)
+lovable_stepwise_control_prompt.md
+upgraded_efficient_architecture.md
+
 # Vercel / deployment
 .vercel/
 
