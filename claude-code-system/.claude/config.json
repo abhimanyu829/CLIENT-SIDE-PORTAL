@@ -1,0 +1,25 @@
+{
+  "project": "saas-ai-marketplace",
+  "version": "2.0",
+  "model": "claude-sonnet-4-5",
+  "defaultAgent": "coder",
+  "autoReadMemory": true,
+  "alwaysReadOnStart": [
+    "CLAUDE.md",
+    "ROADMAP.md",
+    ".claude/memory/patterns.md"
+  ],
+  "hooks": {
+    "preGenerate": ".claude/hooks/pre-gen.md",
+    "postGenerate": ".claude/hooks/post-gen.md",
+    "onValidate": ".claude/hooks/validation.md"
+  },
+  "skillRouting": {
+    "debug": ".claude/skills/coding/debug.md",
+    "optimize": ".claude/skills/coding/optimize.md",
+    "generate": ".claude/skills/coding/generate-code.md",
+    "ideate": ".claude/skills/product/ideation.md",
+    "validate": ".claude/skills/product/validation.md",
+    "write": ".claude/skills/content/writing.md"
+  }
+}

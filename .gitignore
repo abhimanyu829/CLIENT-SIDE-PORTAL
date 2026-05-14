@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js build output
+.next/
+out/
+
+# Production build
+build/
+dist/
+
+# Environment variables (NEVER commit these)
+.env
+.env.local
+.env.*.local
+
+# Prisma generated client
+prisma/generated/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# TypeScript build info
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Test output
+coverage/
+.nyc_output/
+
+# Temp / scratch files
+tsc_errors.txt
+tsc_errors_final.txt
+tsc_final2.txt
+
+# Vercel / deployment
+.vercel/
+
+# Turborepo
+.turbo/
