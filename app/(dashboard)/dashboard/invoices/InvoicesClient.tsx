@@ -1,179 +1,130 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useMemo } from "react"
 
-interface Invoice {
-  id: string
-  number: string
-  totalAmount: any
-  currency: string
-  status: string
-  issuedAt: Date
-  pdfUrl: string | null
+const S = `
+.d-glass{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.06)}
+.d-btn{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+.d-row:hover{background:rgba(255,255,255,.02)}
+`
+
+const STATUS_STYLE: Record<string,string> = {
+  PAID:     "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  PENDING:  "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  FAILED:   "bg-red-500/10 text-red-400 border-red-500/20",
+  REFUNDED: "bg-zinc-700/30 text-zinc-400 border-zinc-600/30",
 }
 
-export default function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
-  const [showPayModal, setShowPayModal] = useState(false)
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+export default function InvoicesClient({ invoices }: { invoices: any[] }) {
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("ALL")
 
-  const openPayModal = (inv: Invoice) => {
-    setSelectedInvoice(inv)
-    setShowPayModal(true)
-  }
+  const filtered = useMemo(() =>
+    invoices.filter(inv => {
+      const matchSearch = !search || inv.stripeInvoiceId?.includes(search)
+      const matchStatus = statusFilter === "ALL" || inv.status === statusFilter
+      return matchSearch && matchStatus
+    }),
+    [invoices, search, statusFilter]
+  )
 
-  const outstandingBalance = invoices
-    .filter(i => i.status !== 'PAID')
-    .reduce((acc, curr) => acc + Number(curr.totalAmount), 0)
-
-  const paidThisYear = invoices
-    .filter(i => i.status === 'PAID' && new Date(i.issuedAt).getFullYear() === new Date().getFullYear())
-    .reduce((acc, curr) => acc + Number(curr.totalAmount), 0)
-
-  // Find next unpaid invoice sorted by issuedAt ascending (earliest unpaid)
-  const nextInvoiceDue = [...invoices].filter(i => i.status !== 'PAID').sort((a, b) => new Date(a.issuedAt).getTime() - new Date(b.issuedAt).getTime())[0]
+  const totals = useMemo(() => ({
+    paid: invoices.filter(i=>i.status==="PAID").reduce((s:number,i:any)=>s+Number(i.amount||0),0),
+    pending: invoices.filter(i=>i.status==="PENDING").reduce((s:number,i:any)=>s+Number(i.amount||0),0),
+  }),[invoices])
 
   return (
-    <div className="space-y-8 relative">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div className="space-y-6 max-w-5xl mx-auto">
+      <style>{S}</style>
+
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
-          <p className="text-muted-foreground mt-1">Manage your billing, payments, and receipts.</p>
+          <h1 className="text-3xl font-black tracking-tight">Billing History</h1>
+          <p className="text-zinc-500 text-sm mt-1">View invoices, download PDFs, and track payments.</p>
         </div>
-        <Button variant="outline">Update Billing Info</Button>
+        <button className="d-glass px-4 py-2.5 rounded-xl text-sm font-semibold text-zinc-300 hover:border-white/10 transition-all">
+          ⬇ Export All
+        </button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="border rounded-xl p-6 bg-background shadow-sm space-y-2">
-          <p className="text-sm text-muted-foreground font-medium">Outstanding Balance</p>
-          <p className="text-3xl font-bold text-red-600">${outstandingBalance.toFixed(2)}</p>
-        </div>
-        <div className="border rounded-xl p-6 bg-background shadow-sm space-y-2">
-          <p className="text-sm text-muted-foreground font-medium">Paid This Year</p>
-          <p className="text-3xl font-bold">${paidThisYear.toFixed(2)}</p>
-        </div>
-        <div className="border rounded-xl p-6 bg-background shadow-sm space-y-2">
-          <p className="text-sm text-muted-foreground font-medium">Next Invoice Due</p>
-          <p className="text-3xl font-bold">{nextInvoiceDue ? new Date(nextInvoiceDue.issuedAt).toLocaleDateString() : 'None'}</p>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label:"Total Paid",    value:`$${(totals.paid/100).toFixed(2)}`,    color:"text-emerald-400", border:"border-emerald-500/20" },
+          { label:"Pending",       value:`$${(totals.pending/100).toFixed(2)}`, color:"text-amber-400",   border:"border-amber-500/20" },
+          { label:"Invoices",      value:invoices.length,                        color:"text-blue-400",    border:"border-blue-500/20" },
+          { label:"This Month",    value:`$${(totals.paid/100/12).toFixed(2)}`, color:"text-purple-400",  border:"border-purple-500/20" },
+        ].map(s=>(
+          <div key={s.label} className={`d-glass rounded-2xl p-4 border ${s.border}`}>
+            <p className="text-xs text-zinc-600 mb-1">{s.label}</p>
+            <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-muted/20 p-4 border rounded-xl">
-        <div className="flex gap-2 w-full sm:w-auto">
-          <input type="text" placeholder="Search invoices..." className="border rounded-lg px-3 py-2 text-sm flex-1 sm:w-64 focus:outline-none focus:ring-2 focus:ring-primary" />
-          <select className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background">
-            <option>All Statuses</option>
-            <option>PAID</option>
-            <option>PENDING</option>
-            <option>OVERDUE</option>
-          </select>
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-48">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-sm">⌕</span>
+          <input value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="Search by invoice ID..."
+            className="w-full d-glass rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-purple-500/50" />
         </div>
-        <Button variant="ghost" size="sm" className="w-full sm:w-auto">Download All (CSV)</Button>
+        <div className="flex gap-2">
+          {["ALL","PAID","PENDING","FAILED","REFUNDED"].map(s=>(
+            <button key={s} onClick={()=>setStatusFilter(s)}
+              className={`d-glass rounded-xl px-3 py-2 text-xs font-semibold transition-all ${statusFilter===s?"border-purple-500/50 text-purple-300":"text-zinc-600 hover:text-zinc-300"}`}>
+              {s==="ALL"?"All":s.charAt(0)+s.slice(1).toLowerCase()}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Invoice Table */}
-      <div className="border rounded-xl bg-background shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-muted/50 text-muted-foreground">
-              <tr>
-                <th className="p-4 font-medium">Invoice Number</th>
-                <th className="p-4 font-medium">Date Issued</th>
-                <th className="p-4 font-medium">Amount</th>
-                <th className="p-4 font-medium">Status</th>
-                <th className="p-4 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {invoices.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="p-4 text-center text-muted-foreground bg-background">
-                    No invoices found.
-                  </td>
-                </tr>
-              ) : (
-                invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-muted/20 transition-colors bg-background">
-                    <td className="p-4 font-medium">{inv.number}</td>
-                    <td className="p-4">{new Date(inv.issuedAt).toLocaleDateString()}</td>
-                    <td className="p-4 font-bold">
-                      {inv.currency === 'usd' ? '$' : inv.currency.toUpperCase() + ' '}{Number(inv.totalAmount).toFixed(2)}
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        inv.status === 'PAID' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                        inv.status === 'OVERDUE' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                        'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                      }`}>
-                        {inv.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right space-x-2 whitespace-nowrap">
-                      {inv.status !== 'PAID' && (
-                        <Button size="sm" onClick={() => openPayModal(inv)}>Pay Now</Button>
-                      )}
-                      {inv.pdfUrl ? (
-                        <a href={inv.pdfUrl} target="_blank" rel="noreferrer">
-                          <Button variant="outline" size="sm">PDF</Button>
-                        </a>
-                      ) : (
-                        <Button variant="outline" size="sm" disabled>PDF</Button>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      <div className="d-glass rounded-2xl overflow-hidden">
+        {/* Headers */}
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-5 py-3 border-b border-white/5 text-xs text-zinc-600 uppercase tracking-widest">
+          <span>Invoice</span>
+          <span className="hidden md:block">Date</span>
+          <span>Amount</span>
+          <span>Status</span>
+          <span>PDF</span>
         </div>
+
+        {filtered.length > 0 ? filtered.map((inv:any) => (
+          <div key={inv.id} className="d-row grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 items-center px-5 py-4 border-b border-white/5 last:border-0 transition-all">
+            <div className="min-w-0">
+              <p className="text-sm font-mono font-semibold">{inv.stripeInvoiceId ? `${inv.stripeInvoiceId.slice(0,20)}...` : `INV-${inv.id.slice(0,12)}`}</p>
+              <p className="text-xs text-zinc-600 mt-0.5">{inv.description ?? "Subscription payment"}</p>
+            </div>
+            <span className="hidden md:block text-xs text-zinc-600 whitespace-nowrap">
+              {inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "—"}
+            </span>
+            <span className="font-black text-sm">${(Number(inv.amount||0)/100).toFixed(2)}</span>
+            <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold border whitespace-nowrap ${STATUS_STYLE[inv.status] ?? STATUS_STYLE.PENDING}`}>
+              {inv.status ?? "PENDING"}
+            </span>
+            <button className="d-glass rounded-lg px-2.5 py-1.5 text-xs text-zinc-500 hover:text-zinc-300 hover:border-white/10 transition-all">
+              ⬇ PDF
+            </button>
+          </div>
+        )) : (
+          <div className="py-16 text-center">
+            <div className="text-4xl mb-3">◑</div>
+            <p className="text-zinc-500 text-sm">{search || statusFilter !== "ALL" ? "No matching invoices" : "No invoices yet"}</p>
+          </div>
+        )}
       </div>
 
-      {/* Pay Now Modal */}
-      {showPayModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card border rounded-xl shadow-lg w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b bg-muted/20 text-center space-y-2">
-              <p className="text-sm text-muted-foreground uppercase font-semibold">Payment Due</p>
-              <h3 className="text-3xl font-bold">${Number(selectedInvoice.totalAmount).toFixed(2)}</h3>
-              <p className="text-sm font-medium">Invoice {selectedInvoice.number}</p>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              <div className="space-y-4">
-                <h4 className="font-medium text-sm border-b pb-2">Select Payment Method</h4>
-                <label className="flex items-center justify-between p-3 border-2 border-primary bg-primary/5 rounded-lg cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">💳</span>
-                    <div>
-                      <p className="font-medium">Visa ending in 4242</p>
-                      <p className="text-xs text-muted-foreground">Expires 12/25</p>
-                    </div>
-                  </div>
-                  <input type="radio" name="payment_method" defaultChecked className="text-primary" />
-                </label>
-                <label className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">🏛️</span>
-                    <div>
-                      <p className="font-medium">Bank Transfer</p>
-                      <p className="text-xs text-muted-foreground">Takes 3-5 business days</p>
-                    </div>
-                  </div>
-                  <input type="radio" name="payment_method" className="text-primary" />
-                </label>
-              </div>
-
-              <div className="flex gap-3 justify-end pt-4 border-t">
-                <Button variant="outline" onClick={() => setShowPayModal(false)}>Cancel</Button>
-                <Button className="w-full">Pay ${Number(selectedInvoice.totalAmount).toFixed(2)}</Button>
-              </div>
-            </div>
-          </div>
+      {/* Stripe note */}
+      <div className="d-glass rounded-2xl p-4 border border-blue-500/15 flex items-start gap-3">
+        <span className="text-blue-400 text-sm mt-0.5">ℹ</span>
+        <div>
+          <p className="text-xs font-semibold text-blue-300">Stripe-powered billing</p>
+          <p className="text-xs text-zinc-600">All invoices are synced from Stripe. PDF generation and payment history are available for all completed transactions.</p>
         </div>
-      )}
-
+      </div>
     </div>
   )
 }

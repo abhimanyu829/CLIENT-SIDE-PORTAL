@@ -1,106 +1,44 @@
-import {
-  Zap,
-  ShieldCheck,
-  BarChart3,
-  Bot,
-  Globe,
-  CreditCard,
-  Headphones,
-  Code2,
-} from "lucide-react"
+const S = `
+.fg-glass{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:1.25rem;padding:1.5rem;transition:all .3s ease}
+.fg-glass:hover{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1);transform:translateY(-3px)}
+.fg-icon{width:2.5rem;height:2.5rem;border-radius:.875rem;display:flex;align-items:center;justify-content:center;font-size:1.25rem;margin-bottom:1rem}
+.fg-gradient{background:linear-gradient(135deg,#fff,#a78bfa 60%,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+`
 
-const features = [
-  {
-    icon: Bot,
-    title: "AI Agent Marketplace",
-    description:
-      "Deploy pre-built AI agents for sales, support, content, and data analysis. Each agent is production-ready with configurable parameters and usage analytics.",
-    color: "text-violet-500",
-    bg: "bg-violet-500/10",
-  },
-  {
-    icon: Zap,
-    title: "One-Click Deployment",
-    description:
-      "Go from demo to production in seconds. No infrastructure management, no DevOps — just configure and ship.",
-    color: "text-yellow-500",
-    bg: "bg-yellow-500/10",
-  },
-  {
-    icon: BarChart3,
-    title: "Real-Time Analytics",
-    description:
-      "Live KPI dashboards, revenue charts, subscription cohorts, and user behaviour tracking — all in one place.",
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Enterprise Security",
-    description:
-      "AES-256 encryption at rest, TLS 1.3 in transit, RBAC access control, 2FA, and full audit trails for every action.",
-    color: "text-green-500",
-    bg: "bg-green-500/10",
-  },
-  {
-    icon: CreditCard,
-    title: "Flexible Billing",
-    description:
-      "Stripe and Razorpay support for global and Indian payments. Monthly, yearly, and per-use pricing models with coupon codes.",
-    color: "text-pink-500",
-    bg: "bg-pink-500/10",
-  },
-  {
-    icon: Globe,
-    title: "Multi-Tenant CRM",
-    description:
-      "Built-in lead management, email sequences, pipeline stages, and deal scoring — no third-party CRM needed.",
-    color: "text-orange-500",
-    bg: "bg-orange-500/10",
-  },
-  {
-    icon: Headphones,
-    title: "Integrated Support",
-    description:
-      "Ticket management with priority queues, internal notes, file attachments, and AI-assisted reply suggestions.",
-    color: "text-cyan-500",
-    bg: "bg-cyan-500/10",
-  },
-  {
-    icon: Code2,
-    title: "Developer-First APIs",
-    description:
-      "RESTful APIs with JWT auth, rate limiting, webhook support, and OpenAPI docs for every endpoint.",
-    color: "text-red-500",
-    bg: "bg-red-500/10",
-  },
+const FEATURES = [
+  { icon:"✦", label:"AI Agents", title:"Deploy Intelligent Agents", desc:"Launch trained AI agents to your marketplace in minutes. Auto-scale, monitor usage, and monetize effortlessly.", color:"rgba(139,92,246,.15)", border:"rgba(139,92,246,.2)" },
+  { icon:"⬡", label:"Marketplace", title:"Publish & Sell Products", desc:"List SaaS tools, APIs, and AI workflows. Built-in pricing tiers, reviews, and one-click checkout with Stripe.", color:"rgba(59,130,246,.12)", border:"rgba(59,130,246,.2)" },
+  { icon:"◎", label:"Support", title:"Unified Support Center", desc:"Real-time threaded ticketing with AI reply suggestions, SLA tracking, and team collaboration built-in.", color:"rgba(16,185,129,.12)", border:"rgba(16,185,129,.2)" },
+  { icon:"◑", label:"Billing", title:"Stripe-Powered Billing", desc:"Subscriptions, invoices, usage metering, and prorated upgrades — all connected and automated.", color:"rgba(245,158,11,.12)", border:"rgba(245,158,11,.2)" },
+  { icon:"◻", label:"Projects", title:"Project Delivery Tracking", desc:"Kanban boards, milestones, and delivery timelines. Keep clients updated and teams aligned.", color:"rgba(236,72,153,.12)", border:"rgba(236,72,153,.2)" },
+  { icon:"◈", label:"Analytics", title:"Real-Time Intelligence", desc:"Token usage, revenue metrics, agent performance, and user behavior — all surfaced in one dashboard.", color:"rgba(6,182,212,.12)", border:"rgba(6,182,212,.2)" },
 ]
 
 export default function FeaturesGrid() {
   return (
-    <section className="py-24 px-4 bg-muted/30">
+    <section className="py-24 px-4 bg-[#080808]">
+      <style>{S}</style>
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-            Everything your SaaS needs
+
+        {/* Header */}
+        <div className="text-center mb-14">
+          <span className="text-xs font-black text-purple-400 uppercase tracking-widest">Platform</span>
+          <h2 className="text-4xl sm:text-5xl font-black mt-3 mb-4 leading-tight">
+            Everything you need.<br /><span className="fg-gradient">Nothing you don&apos;t.</span>
           </h2>
-          <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
-            A complete platform — from marketplace to billing to support — built for modern
-            AI-first businesses.
-          </p>
+          <p className="text-zinc-500 text-lg max-w-xl mx-auto">One platform to build, ship, sell, and scale AI-native products.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className={`inline-flex items-center justify-center w-10 h-10 rounded-lg ${f.bg} mb-4`}>
-                <f.icon className={`w-5 h-5 ${f.color}`} />
+        {/* Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {FEATURES.map((f, i) => (
+            <div key={i} className="fg-glass">
+              <div className="fg-icon" style={{background:f.color, border:`1px solid ${f.border}`}}>
+                <span className="text-white opacity-90">{f.icon}</span>
               </div>
-              <h3 className="font-semibold text-base mb-2">{f.title}</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">{f.description}</p>
+              <span className="text-[10px] text-zinc-600 font-black uppercase tracking-widest">{f.label}</span>
+              <h3 className="text-lg font-black text-white mt-1 mb-2">{f.title}</h3>
+              <p className="text-sm text-zinc-500 leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>

@@ -1,219 +1,307 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
+
+const S = `
+.d-glass{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.06)}
+.d-btn{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+.d-input{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);outline:none;transition:border-color .2s}
+.d-input:focus{border-color:rgba(139,92,246,.5)}
+.d-tab{border-bottom:2px solid transparent;transition:all .2s}
+.d-tab-active{border-bottom-color:#8b5cf6;color:white}
+`
+
+const API_KEYS = [
+  { name:"Production Server", prefix:"sk_live_abc123...", lastUsed:"10m ago", created:"May 1, 2026" },
+  { name:"Local Dev",         prefix:"sk_test_xyz789...", lastUsed:"Never",   created:"Yesterday" },
+]
+
+const SESSIONS = [
+  { device:"Mac OS · Chrome",  ip:"192.168.1.1",  active:"Just now",  current:true },
+  { device:"iOS · Safari",     ip:"10.0.0.5",     active:"2h ago",    current:false },
+  { device:"Windows · Firefox",ip:"192.168.1.22", active:"3d ago",    current:false },
+]
+
+const LOGIN_HISTORY = [
+  { event:"Successful login",      ip:"192.168.1.1",  device:"Mac OS", time:"Just now" },
+  { event:"Successful login",      ip:"10.0.0.5",     device:"iOS",    time:"2h ago" },
+  { event:"Failed login attempt",  ip:"203.0.113.42", device:"Unknown",time:"1d ago" },
+  { event:"Password changed",      ip:"192.168.1.1",  device:"Mac OS", time:"3d ago" },
+]
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState("profile")
+  const [tab, setTab] = useState("profile")
+  const [saved, setSaved] = useState(false)
+  const [showKey, setShowKey] = useState<number|null>(null)
+
+  const handleSave = () => {
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  const TABS = [
+    { id:"profile",       label:"Profile" },
+    { id:"security",      label:"Security" },
+    { id:"api",           label:"API Keys" },
+    { id:"notifications", label:"Notifications" },
+    { id:"sessions",      label:"Sessions" },
+  ]
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <style>{S}</style>
+
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Account Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your profile, security, and developer keys.</p>
+        <h1 className="text-3xl font-black tracking-tight">Account Settings</h1>
+        <p className="text-zinc-500 text-sm mt-1">Manage your profile, security, API keys, and preferences.</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b overflow-x-auto hide-scrollbar">
-        {[
-          { id: "profile", label: "Profile" },
-          { id: "security", label: "Security" },
-          { id: "api", label: "API Keys" },
-          { id: "notifications", label: "Notifications" }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-6 py-3 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
-              activeTab === tab.id 
-                ? 'border-primary text-primary' 
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-            }`}
-          >
-            {tab.label}
+      <div className="flex gap-0 border-b border-white/5 overflow-x-auto">
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)}
+            className={`px-5 py-3 text-sm font-semibold whitespace-nowrap d-tab ${tab===t.id?"d-tab-active text-white":"text-zinc-600 hover:text-zinc-400"}`}>
+            {t.label}
           </button>
         ))}
       </div>
 
-      {/* Tab Content */}
-      <div className="bg-background border rounded-xl shadow-sm p-6 sm:p-8">
-        
-        {/* Profile Tab */}
-        {activeTab === "profile" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <div>
-              <h2 className="text-xl font-bold mb-4">Personal Information</h2>
-              <div className="flex flex-col sm:flex-row gap-8 items-start">
-                <div className="space-y-3 flex flex-col items-center">
-                  <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-bold text-primary">
-                    AB
-                  </div>
-                  <Button variant="outline" size="sm">Change Avatar</Button>
+      {/* ── PROFILE ──────────────────────────────────────────── */}
+      {tab === "profile" && (
+        <div className="space-y-6">
+          <div className="d-glass rounded-2xl p-6">
+            <h2 className="font-black text-lg mb-5">Personal Information</h2>
+            <div className="flex flex-col sm:flex-row gap-6 items-start">
+              {/* Avatar */}
+              <div className="flex flex-col items-center gap-3 shrink-0">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center text-2xl font-black">
+                  AC
                 </div>
-                <div className="flex-1 space-y-4 w-full">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">First Name</label>
-                      <input type="text" defaultValue="Acme" className="w-full border rounded-lg p-2.5 text-sm bg-background" />
+                <button className="d-glass px-3 py-1.5 rounded-xl text-xs text-zinc-400 hover:text-zinc-200 hover:border-white/10 transition-all">
+                  Change Avatar
+                </button>
+              </div>
+              {/* Fields */}
+              <div className="flex-1 space-y-4 w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[["First Name","Acme"],["Last Name","Corp"]].map(([label,val])=>(
+                    <div key={label}>
+                      <label className="text-xs text-zinc-600 font-semibold uppercase tracking-widest block mb-1.5">{label}</label>
+                      <input defaultValue={val} className="w-full d-input rounded-xl px-4 py-3 text-sm text-white" />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Last Name</label>
-                      <input type="text" defaultValue="Corp" className="w-full border rounded-lg p-2.5 text-sm bg-background" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Email Address</label>
-                    <input type="email" defaultValue="abhibhidevelopers@abhibhidevelopers.online" className="w-full border rounded-lg p-2.5 text-sm bg-muted text-muted-foreground" readOnly />
-                    <p className="text-xs text-muted-foreground">To change your email, please contact support.</p>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Timezone</label>
-                    <select className="w-full border rounded-lg p-2.5 text-sm bg-background">
-                      <option>Pacific Time (PT)</option>
-                      <option>Eastern Time (ET)</option>
-                      <option>Coordinated Universal Time (UTC)</option>
-                    </select>
-                  </div>
-                  <Button className="mt-4">Save Changes</Button>
+                  ))}
                 </div>
+                <div>
+                  <label className="text-xs text-zinc-600 font-semibold uppercase tracking-widest block mb-1.5">Email Address</label>
+                  <input type="email" defaultValue="abhibhidevelopers@abhibhidevelopers.online" readOnly
+                    className="w-full d-input rounded-xl px-4 py-3 text-sm text-zinc-500 cursor-not-allowed" />
+                  <p className="text-xs text-zinc-700 mt-1">Contact support to change your email.</p>
+                </div>
+                <div>
+                  <label className="text-xs text-zinc-600 font-semibold uppercase tracking-widest block mb-1.5">Timezone</label>
+                  <select className="w-full d-input rounded-xl px-4 py-3 text-sm text-white bg-transparent">
+                    {["Asia/Kolkata (IST)","Pacific Time (PT)","Eastern Time (ET)","UTC"].map(tz=>(
+                      <option key={tz} style={{background:"#111"}}>{tz}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-zinc-600 font-semibold uppercase tracking-widest block mb-1.5">Company / Organization</label>
+                  <input defaultValue="Acme Corp" className="w-full d-input rounded-xl px-4 py-3 text-sm text-white" />
+                </div>
+                <button onClick={handleSave}
+                  className={`d-btn px-6 py-3 rounded-xl text-sm font-bold text-white hover:scale-105 transition-all ${saved?"bg-emerald-600":"d-btn"}`}>
+                  {saved ? "✓ Saved!" : "Save Changes"}
+                </button>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Security Tab */}
-        {activeTab === "security" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold">Two-Factor Authentication (2FA)</h2>
-              <p className="text-sm text-muted-foreground">Add an extra layer of security to your account by requiring a code from your authenticator app.</p>
-              <div className="p-4 border rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">📱</span>
+          {/* Danger Zone */}
+          <div className="d-glass rounded-2xl p-6 border border-red-500/15">
+            <h2 className="font-black text-lg text-red-400 mb-2">Danger Zone</h2>
+            <p className="text-sm text-zinc-500 mb-4">These actions are irreversible. Please proceed with caution.</p>
+            <div className="flex flex-wrap gap-3">
+              <button className="d-glass px-4 py-2.5 rounded-xl text-sm text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-all">
+                Delete Account
+              </button>
+              <button className="d-glass px-4 py-2.5 rounded-xl text-sm text-amber-400 border border-amber-500/20 hover:bg-amber-500/10 transition-all">
+                Export Data
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SECURITY ──────────────────────────────────────────── */}
+      {tab === "security" && (
+        <div className="space-y-5">
+          {/* 2FA */}
+          <div className="d-glass rounded-2xl p-6">
+            <h2 className="font-black text-lg mb-4">Two-Factor Authentication</h2>
+            <div className="d-glass rounded-xl p-4 flex items-center gap-4 border border-amber-500/20">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-xl">📱</div>
+              <div className="flex-1">
+                <p className="font-bold text-sm">Authenticator App</p>
+                <p className="text-xs text-zinc-600">Not configured — highly recommended</p>
+              </div>
+              <button className="d-btn px-4 py-2 rounded-xl text-sm font-bold text-white hover:scale-105 transition-all">Enable 2FA</button>
+            </div>
+          </div>
+
+          {/* Password */}
+          <div className="d-glass rounded-2xl p-6">
+            <h2 className="font-black text-lg mb-4">Change Password</h2>
+            <div className="space-y-3 max-w-md">
+              {["Current Password","New Password","Confirm New Password"].map(f=>(
+                <div key={f}>
+                  <label className="text-xs text-zinc-600 font-semibold uppercase tracking-widest block mb-1.5">{f}</label>
+                  <input type="password" className="w-full d-input rounded-xl px-4 py-3 text-sm text-white" />
+                </div>
+              ))}
+              <button className="d-btn px-5 py-2.5 rounded-xl text-sm font-bold text-white hover:scale-105 transition-all mt-2">
+                Update Password
+              </button>
+            </div>
+          </div>
+
+          {/* Login history */}
+          <div className="d-glass rounded-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/5">
+              <h2 className="font-black text-lg">Login History</h2>
+            </div>
+            <div className="divide-y divide-white/5">
+              {LOGIN_HISTORY.map((l,i)=>(
+                <div key={i} className="px-5 py-4 flex items-center gap-4">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${l.event.includes("Failed")?"bg-red-400":"bg-green-400"}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{l.event}</p>
+                    <p className="text-xs text-zinc-600">{l.ip} · {l.device}</p>
+                  </div>
+                  <span className="text-xs text-zinc-700 whitespace-nowrap">{l.time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── API KEYS ──────────────────────────────────────────── */}
+      {tab === "api" && (
+        <div className="space-y-5">
+          <div className="d-glass rounded-2xl p-5 border border-amber-500/15 flex gap-3">
+            <span className="text-amber-400 text-sm mt-0.5">⚠</span>
+            <p className="text-xs text-amber-200">Never share API keys publicly. If compromised, revoke immediately and generate a new key.</p>
+          </div>
+
+          <div className="d-glass rounded-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+              <h2 className="font-black">API Keys</h2>
+              <button className="d-btn px-4 py-2 rounded-xl text-sm font-bold text-white hover:scale-105 transition-all">+ Generate Key</button>
+            </div>
+            <div className="divide-y divide-white/5">
+              {API_KEYS.map((key, i)=>(
+                <div key={i} className="px-5 py-4 grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center">
                   <div>
-                    <p className="font-medium">Authenticator App</p>
-                    <p className="text-sm text-muted-foreground">Not configured</p>
+                    <p className="text-sm font-bold">{key.name}</p>
+                    <p className="text-xs text-zinc-600">Last used: {key.lastUsed}</p>
                   </div>
+                  <p className="font-mono text-xs text-zinc-500 hidden md:block">
+                    {showKey===i ? "sk_live_DEMO_KEY_HIDDEN_FOR_SECURITY" : key.prefix}
+                  </p>
+                  <button onClick={()=>setShowKey(showKey===i?null:i)} className="text-xs text-zinc-600 hover:text-zinc-300 transition-colors">
+                    {showKey===i?"Hide":"Show"}
+                  </button>
+                  <button className="d-glass px-3 py-1.5 rounded-xl text-xs text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-all">
+                    Revoke
+                  </button>
                 </div>
-                <Button>Enable 2FA</Button>
-              </div>
-            </div>
-
-            <div className="space-y-4 pt-6 border-t">
-              <h2 className="text-xl font-bold">Active Sessions</h2>
-              <p className="text-sm text-muted-foreground">These are the devices that have logged into your account recently.</p>
-              <div className="space-y-3">
-                <div className="p-4 border rounded-xl flex items-center justify-between bg-muted/20">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">💻</span>
-                    <div>
-                      <p className="font-medium flex items-center gap-2">Mac OS • Chrome <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">CURRENT</span></p>
-                      <p className="text-sm text-muted-foreground">IP: 192.168.1.1 • Last active: Just now</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 border rounded-xl flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">📱</span>
-                    <div>
-                      <p className="font-medium">iOS • Safari</p>
-                      <p className="text-sm text-muted-foreground">IP: 10.0.0.5 • Last active: 2 hours ago</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 border-red-200">Revoke</Button>
-                </div>
-              </div>
-              <Button variant="destructive" className="mt-2">Log out of all other devices</Button>
+              ))}
             </div>
           </div>
-        )}
 
-        {/* API Keys Tab */}
-        {activeTab === "api" && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-xl font-bold">API Keys</h2>
-                <p className="text-sm text-muted-foreground">Manage your secret keys for accessing the OpenClaude API.</p>
-              </div>
-              <Button>Generate New Key</Button>
-            </div>
-            
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl border border-yellow-200 dark:border-yellow-900/50 flex gap-3">
-              <span className="text-yellow-600">⚠️</span>
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                Do not share your API keys in public repositories or client-side code. If a key is compromised, roll it immediately.
-              </p>
-            </div>
-
-            <div className="border rounded-xl overflow-hidden">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-muted/50 text-muted-foreground">
-                  <tr>
-                    <th className="p-4 font-medium">Name</th>
-                    <th className="p-4 font-medium">Key Prefix</th>
-                    <th className="p-4 font-medium">Last Used</th>
-                    <th className="p-4 font-medium">Created</th>
-                    <th className="p-4 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  <tr className="hover:bg-muted/10">
-                    <td className="p-4 font-medium">Production Server</td>
-                    <td className="p-4 font-mono text-muted-foreground">sk_live_abc123...</td>
-                    <td className="p-4">10 mins ago</td>
-                    <td className="p-4">May 01, 2024</td>
-                    <td className="p-4 text-right">
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">Revoke</Button>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-muted/10">
-                    <td className="p-4 font-medium">Local Dev</td>
-                    <td className="p-4 font-mono text-muted-foreground">sk_test_xyz789...</td>
-                    <td className="p-4">Never</td>
-                    <td className="p-4">Yesterday</td>
-                    <td className="p-4 text-right">
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">Revoke</Button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+          <div className="d-glass rounded-2xl p-5">
+            <h3 className="font-bold text-sm mb-2">API Documentation</h3>
+            <p className="text-xs text-zinc-600 mb-3">Use these keys to authenticate with the NexusAI REST API.</p>
+            <div className="d-glass rounded-xl p-4 font-mono text-xs text-zinc-400 overflow-x-auto">
+              {`curl -X POST https://api.nexusai.app/v1/chat \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"message": "Hello!"}'`}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Notifications Tab */}
-        {activeTab === "notifications" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <div>
-              <h2 className="text-xl font-bold mb-4">Notification Preferences</h2>
-              <p className="text-sm text-muted-foreground mb-6">Choose what updates you want to receive via email.</p>
-              
-              <div className="space-y-6">
-                {[
-                  { title: "Product Updates", desc: "News about major new features and updates.", default: true },
-                  { title: "Billing & Invoices", desc: "Receipts and renewal reminders. (Cannot be disabled)", default: true, disabled: true },
-                  { title: "API Usage Alerts", desc: "Notifications when you approach your rate limits.", default: true },
-                  { title: "Marketing & Promos", desc: "Occasional discounts and promotional offers.", default: false },
-                ].map((pref, i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{pref.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{pref.desc}</p>
-                    </div>
-                    <label className={`relative inline-flex items-center ${pref.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-                      <input type="checkbox" className="sr-only peer" defaultChecked={pref.default} disabled={pref.disabled} />
-                      <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
+      {/* ── NOTIFICATIONS ─────────────────────────────────────── */}
+      {tab === "notifications" && (
+        <div className="d-glass rounded-2xl p-6">
+          <h2 className="font-black text-lg mb-5">Notification Preferences</h2>
+          <div className="space-y-4">
+            {[
+              {title:"Product Updates",       desc:"Major new features and improvements",      on:true,  locked:false},
+              {title:"Billing & Invoices",    desc:"Receipts and renewal reminders",            on:true,  locked:true},
+              {title:"AI Usage Alerts",       desc:"Alerts when approaching token limits",      on:true,  locked:false},
+              {title:"Ticket Updates",        desc:"Replies and status changes on your tickets",on:true,  locked:false},
+              {title:"Security Alerts",       desc:"Suspicious login activity warnings",        on:true,  locked:true},
+              {title:"Marketing & Promos",    desc:"Occasional discounts and offers",           on:false, locked:false},
+            ].map((pref,i)=>(
+              <div key={i} className={`flex items-center justify-between py-4 border-b border-white/5 last:border-0 ${pref.locked?"opacity-60":""}`}>
+                <div>
+                  <p className="text-sm font-semibold flex items-center gap-2">
+                    {pref.title}
+                    {pref.locked && <span className="text-[10px] d-glass px-1.5 py-0.5 rounded text-zinc-600">Required</span>}
+                  </p>
+                  <p className="text-xs text-zinc-600 mt-0.5">{pref.desc}</p>
+                </div>
+                <label className={`relative inline-flex items-center ${pref.locked?"cursor-not-allowed":"cursor-pointer"}`}>
+                  <input type="checkbox" defaultChecked={pref.on} disabled={pref.locked} className="sr-only peer" />
+                  <div className="w-10 h-5.5 bg-zinc-800 peer-checked:bg-violet-600 rounded-full transition-all relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4.5" style={{height:"22px"}}></div>
+                </label>
+              </div>
+            ))}
+          </div>
+          <button className="d-btn px-5 py-2.5 rounded-xl text-sm font-bold text-white hover:scale-105 transition-all mt-4">
+            Save Preferences
+          </button>
+        </div>
+      )}
+
+      {/* ── SESSIONS ──────────────────────────────────────────── */}
+      {tab === "sessions" && (
+        <div className="space-y-4">
+          <div className="d-glass rounded-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+              <h2 className="font-black">Active Sessions</h2>
+              <button className="d-glass px-3 py-1.5 rounded-xl text-xs text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-all">
+                Revoke All Others
+              </button>
+            </div>
+            <div className="divide-y divide-white/5">
+              {SESSIONS.map((s,i)=>(
+                <div key={i} className={`px-5 py-4 flex items-center gap-4 ${s.current?"bg-violet-500/5":""}`}>
+                  <div className="w-10 h-10 rounded-xl d-glass flex items-center justify-center text-lg">
+                    {s.device.includes("Mac")?"💻":s.device.includes("iOS")?"📱":"🖥"}
                   </div>
-                ))}
-              </div>
-              <Button className="mt-8">Save Preferences</Button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold flex items-center gap-2">
+                      {s.device}
+                      {s.current && <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-black tracking-wider">CURRENT</span>}
+                    </p>
+                    <p className="text-xs text-zinc-600">IP: {s.ip} · {s.active}</p>
+                  </div>
+                  {!s.current && (
+                    <button className="d-glass px-3 py-1.5 rounded-xl text-xs text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-all shrink-0">
+                      Revoke
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
     </div>
   )
 }

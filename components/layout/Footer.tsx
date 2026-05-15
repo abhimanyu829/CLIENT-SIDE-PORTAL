@@ -1,46 +1,72 @@
 import Link from "next/link"
 
+const LINKS = [
+  { section: "Product",   items: [["Marketplace","/marketplace"],["AI Agents","/ai-agents"],["Demos","/demo"],["Pricing","/#pricing"]] },
+  { section: "Resources", items: [["Blog","/blog"],["Docs","/docs"],["API Reference","/docs/api"],["Status","https://status.nexusai.app"]] },
+  { section: "Company",   items: [["About","/about"],["Careers","/careers"],["Contact","/contact"],["Privacy","/privacy"]] },
+]
+
+const SOCIALS = [
+  { icon:"𝕏", href:"https://twitter.com" },
+  { icon:"in", href:"https://linkedin.com" },
+  { icon:"⊡", href:"https://github.com" },
+]
+
+const S = `
+.f-glass{background:rgba(255,255,255,.02);border-top:1px solid rgba(255,255,255,.05)}
+.f-link{color:rgba(255,255,255,.4);font-size:.8125rem;transition:color .2s}
+.f-link:hover{color:rgba(255,255,255,.9)}
+`
+
 export default function Footer() {
   return (
-    <footer className="w-full border-t bg-background py-12">
-      <div className="container grid grid-cols-1 md:grid-cols-4 gap-8">
-        <div className="space-y-4">
-          <h3 className="font-bold text-lg">OpenClaude</h3>
-          <p className="text-sm text-muted-foreground">
-            The ultimate open-source platform for SaaS and AI marketplace.
-          </p>
-        </div>
-        
-        <div className="space-y-4">
-          <h4 className="font-semibold">Product</h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li><Link href="/marketplace" className="hover:text-foreground">Marketplace</Link></li>
-            <li><Link href="/demo" className="hover:text-foreground">Demos</Link></li>
-            <li><Link href="/pricing" className="hover:text-foreground">Pricing</Link></li>
-          </ul>
+    <footer className="f-glass mt-auto" style={{background:"rgba(4,4,4,.95)"}}>
+      <style>{S}</style>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-10">
+
+          {/* Brand */}
+          <div className="col-span-2">
+            <Link href="/" className="flex items-center gap-2 mb-4">
+              <span className="text-xl font-black" style={{background:"linear-gradient(135deg,#a78bfa,#60a5fa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>⬡ NexusAI</span>
+            </Link>
+            <p className="text-sm text-zinc-600 leading-relaxed max-w-xs mb-6">
+              The enterprise AI SaaS marketplace. Deploy agents, manage subscriptions, and scale intelligently.
+            </p>
+            <div className="flex gap-3">
+              {SOCIALS.map(s => (
+                <a key={s.href} href={s.href} target="_blank" rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-xl border border-white/8 flex items-center justify-center text-zinc-600 hover:text-white hover:border-white/20 transition-all text-xs font-bold">
+                  {s.icon}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Links */}
+          {LINKS.map(group => (
+            <div key={group.section}>
+              <p className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-4">{group.section}</p>
+              <ul className="space-y-2.5">
+                {group.items.map(([label, href]) => (
+                  <li key={href}>
+                    <Link href={href} className="f-link">{label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        <div className="space-y-4">
-          <h4 className="font-semibold">Resources</h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li><Link href="/blog" className="hover:text-foreground">Blog</Link></li>
-            <li><Link href="/docs" className="hover:text-foreground">Documentation</Link></li>
-            <li><Link href="/help" className="hover:text-foreground">Help Center</Link></li>
-          </ul>
+        {/* Bottom bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-10 mt-10 border-t border-white/5">
+          <p className="text-xs text-zinc-700">© {new Date().getFullYear()} NexusAI Inc. All rights reserved.</p>
+          <div className="flex gap-5">
+            {[["Terms","/terms"],["Privacy","/privacy"],["Cookies","/cookies"]].map(([l,h])=>(
+              <Link key={h} href={h} className="f-link">{l}</Link>
+            ))}
+          </div>
         </div>
-
-        <div className="space-y-4">
-          <h4 className="font-semibold">Company</h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li><Link href="/about" className="hover:text-foreground">About Us</Link></li>
-            <li><Link href="/contact" className="hover:text-foreground">Contact</Link></li>
-            <li><Link href="/privacy" className="hover:text-foreground">Privacy Policy</Link></li>
-            <li><Link href="/terms" className="hover:text-foreground">Terms of Service</Link></li>
-          </ul>
-        </div>
-      </div>
-      <div className="container mt-12 border-t pt-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} OpenClaude. All rights reserved.
       </div>
     </footer>
   )

@@ -1,116 +1,150 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react"
 
-const STAGES = ["Lead", "Contacted", "Proposal", "Won"]
+const S = `
+.crm-glass{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:1rem;padding:1.25rem}
+.crm-row:hover{background:rgba(255,255,255,.025)}
+.crm-btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:.75rem;padding:.5rem 1.25rem;font-size:.8125rem;font-weight:700;color:#fff;transition:all .2s;cursor:pointer}
+.crm-btn:hover{opacity:.9}
+.crm-stage{font-size:.625rem;font-weight:900;padding:.2rem .5rem;border-radius:9999px;text-transform:uppercase;letter-spacing:.06em}
+@keyframes crmpulse{0%,100%{opacity:.5}50%{opacity:1}}.crm-live{animation:crmpulse 2s infinite}
+`
 
-const demoLeads = [
-  { id: "1", name: "Acme Corp", value: 5000, stage: "Lead" },
-  { id: "2", name: "Global Tech", value: 12000, stage: "Contacted" },
-  { id: "3", name: "Stark Ind", value: 50000, stage: "Proposal" },
-  { id: "4", name: "Wayne Ent", value: 25000, stage: "Won" },
+const MOCK_LEADS = [
+  {id:"1",name:"Acme Corp",contact:"Sarah Chen",email:"sarah@acme.com",value:12000,stage:"PROPOSAL",probability:75},
+  {id:"2",name:"TechFlow Inc",contact:"Marcus W",email:"marcus@tf.io",value:8500,stage:"QUALIFIED",probability:50},
+  {id:"3",name:"DevLaunch",contact:"Priya K",email:"priya@dl.dev",value:22000,stage:"NEGOTIATION",probability:90},
+  {id:"4",name:"StartupXYZ",contact:"Alex R",email:"alex@xyz.co",value:4200,stage:"NEW",probability:20},
+  {id:"5",name:"ScaleBase",contact:"Jordan M",email:"jordan@sb.ai",value:35000,stage:"WON",probability:100},
 ]
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n)
+const STAGE_STYLE: Record<string,string> = {
+  NEW:         "bg-zinc-700/30 text-zinc-400",
+  CONTACTED:   "bg-blue-500/15 text-blue-400",
+  QUALIFIED:   "bg-amber-500/15 text-amber-400",
+  PROPOSAL:    "bg-purple-500/15 text-purple-400",
+  NEGOTIATION: "bg-orange-500/15 text-orange-400",
+  WON:         "bg-emerald-500/15 text-emerald-400",
+  LOST:        "bg-red-500/15 text-red-400",
+}
 
 export default function CRMTemplate() {
-  const [leads, setLeads] = useState(demoLeads)
-  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [leads, setLeads] = useState(MOCK_LEADS)
+  const [selected, setSelected] = useState<string|null>(null)
+  const [activity, setActivity] = useState<string[]>([])
 
-  const handleDrop = (stage: string) => {
-    if (draggedId) {
-      setLeads(prev => prev.map(l => l.id === draggedId ? { ...l, stage } : l))
-      setDraggedId(null)
-    }
-  }
+  const totalPipeline = leads.reduce((s,l) => s + l.value * l.probability / 100, 0)
 
-  const totalPipeline = leads.filter(l => l.stage !== "Won").reduce((s, l) => s + l.value, 0)
-  const wonCount = leads.filter(l => l.stage === "Won").length
-  const winRate = leads.length > 0 ? Math.round((wonCount / leads.length) * 100) : 0
+  useEffect(() => {
+    const msgs = ["📧 Email sent to Acme Corp","✓ Call scheduled with DevLaunch","◑ Proposal viewed by TechFlow","✦ AI scored ScaleBase deal 94/100"]
+    let i = 0
+    const id = setInterval(() => {
+      setActivity(prev => [msgs[i % msgs.length], ...prev.slice(0,4)])
+      i++
+    }, 3000)
+    return () => clearInterval(id)
+  }, [])
+
+  const selectedLead = leads.find(l => l.id === selected)
 
   return (
-    <div className="flex h-full w-full bg-muted/20">
-      {/* Sidebar Nav */}
-      <aside className="w-64 border-r bg-card hidden md:flex flex-col">
-        <div className="p-4 border-b font-bold">Sales CRM AI</div>
-        <nav className="p-4 space-y-2 flex-1">
-          {["Dashboard", "Pipeline", "Contacts", "Reports", "Settings"].map(item => (
-            <div key={item} className={`px-3 py-2 rounded-md text-sm cursor-pointer transition-colors ${item === "Pipeline" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted"}`}>
-              {item}
-            </div>
-          ))}
-        </nav>
-      </aside>
+    <div className="h-full flex gap-4 text-white bg-[#090909] p-4 rounded-2xl overflow-hidden">
+      <style>{S}</style>
 
-      {/* Main CRM Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Header & KPIs */}
-        <div className="p-6 border-b bg-background space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Pipeline Overview</h1>
-            <Button size="sm">+ New Lead</Button>
+      {/* Left Panel */}
+      <div className="flex-1 space-y-4 overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-black text-lg">CRM Pipeline</h2>
+            <p className="text-xs text-zinc-600">Demo workspace · 5 min session</p>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-xl bg-card shadow-sm">
-              <p className="text-sm text-muted-foreground">Total Pipeline</p>
-              <p className="text-2xl font-bold">{fmt(totalPipeline)}</p>
-            </div>
-            <div className="p-4 border rounded-xl bg-card shadow-sm">
-              <p className="text-sm text-muted-foreground">Win Rate</p>
-              <p className="text-2xl font-bold text-green-600">{winRate}%</p>
-            </div>
-            <div className="p-4 border rounded-xl bg-card shadow-sm">
-              <p className="text-sm text-muted-foreground">Active Deals</p>
-              <p className="text-2xl font-bold">{leads.filter(l => l.stage !== "Won").length}</p>
-            </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full crm-live" />
+            <span className="text-xs text-zinc-600">Live</span>
           </div>
         </div>
 
-        {/* Kanban Board */}
-        <div className="flex-1 p-6 overflow-x-auto">
-          <div className="flex gap-6 h-full min-w-max">
-            {STAGES.map(stage => (
-              <div
-                key={stage}
-                className="w-80 flex flex-col bg-muted/50 rounded-xl border p-4 h-full"
-                onDragOver={e => e.preventDefault()}
-                onDrop={() => handleDrop(stage)}
-              >
-                <div className="font-semibold mb-4 flex justify-between items-center text-sm">
-                  <span>{stage}</span>
-                  <span className="bg-background px-2 py-0.5 rounded-full border text-xs">
-                    {leads.filter(l => l.stage === stage).length}
-                  </span>
-                </div>
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            {label:"Pipeline",value:`$${(totalPipeline/1000).toFixed(0)}K`,color:"text-purple-400"},
+            {label:"Active Deals",value:leads.filter(l=>!["WON","LOST"].includes(l.stage)).length,color:"text-blue-400"},
+            {label:"Win Rate",value:"68%",color:"text-emerald-400"},
+          ].map(s=>(
+            <div key={s.label} className="crm-glass text-center">
+              <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
+              <p className="text-[10px] text-zinc-600">{s.label}</p>
+            </div>
+          ))}
+        </div>
 
-                <div className="flex-1 space-y-3 overflow-y-auto pr-1">
-                  {leads.filter(l => l.stage === stage).map(lead => (
-                    <div
-                      key={lead.id}
-                      draggable
-                      onDragStart={() => setDraggedId(lead.id)}
-                      className="bg-background p-4 rounded-lg border shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-colors"
-                    >
-                      <div className="font-medium text-sm">{lead.name}</div>
-                      <div className="text-muted-foreground text-sm mt-1">{fmt(lead.value)}</div>
-                      <div className="mt-3 flex gap-2">
-                        <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded dark:bg-blue-900/30 dark:text-blue-400">
-                          AI Scored: High
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                  {leads.filter(l => l.stage === stage).length === 0 && (
-                    <div className="h-20 border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground text-xs">
-                      Drop leads here
-                    </div>
-                  )}
-                </div>
+        {/* Lead Table */}
+        <div className="crm-glass" style={{padding:0,overflow:"hidden"}}>
+          <div className="px-4 py-3 border-b border-white/5">
+            <p className="font-black text-sm">All Leads</p>
+          </div>
+          {leads.map(lead => (
+            <div key={lead.id} onClick={() => setSelected(lead.id === selected ? null : lead.id)}
+              className={`crm-row px-4 py-3 flex items-center gap-3 cursor-pointer border-b border-white/5 last:border-0 transition-all ${selected===lead.id?"bg-purple-500/8":""}`}>
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center text-xs font-black shrink-0">
+                {lead.name[0]}
               </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold truncate">{lead.name}</p>
+                <p className="text-[11px] text-zinc-600">{lead.contact}</p>
+              </div>
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold">${lead.value.toLocaleString()}</p>
+                <p className="text-[10px] text-zinc-600">{lead.probability}%</p>
+              </div>
+              <span className={`crm-stage ${STAGE_STYLE[lead.stage]}`}>{lead.stage}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right Panel */}
+      <div className="w-56 space-y-4 shrink-0 hidden lg:flex flex-col">
+        {/* Lead detail */}
+        {selectedLead ? (
+          <div className="crm-glass">
+            <p className="font-black text-sm mb-3">{selectedLead.name}</p>
+            <p className="text-xs text-zinc-600 mb-1">{selectedLead.contact}</p>
+            <p className="text-xs text-zinc-700 mb-3">{selectedLead.email}</p>
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-600">Value</span>
+                <span className="font-bold">${selectedLead.value.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-zinc-600">Probability</span>
+                <span className="font-bold text-emerald-400">{selectedLead.probability}%</span>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <button className="crm-btn flex-1 text-[11px]">Email</button>
+              <button className="crm-btn flex-1 text-[11px]">Call</button>
+            </div>
+          </div>
+        ) : (
+          <div className="crm-glass text-center text-xs text-zinc-700 py-8">
+            Select a lead to view details
+          </div>
+        )}
+
+        {/* Live Activity */}
+        <div className="crm-glass flex-1 overflow-hidden">
+          <p className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-green-400 rounded-full crm-live" />
+            Activity
+          </p>
+          <div className="space-y-2">
+            {activity.map((a,i) => (
+              <p key={i} className="text-[10px] text-zinc-600 leading-relaxed">{a}</p>
             ))}
+            {activity.length === 0 && <p className="text-[10px] text-zinc-800">Waiting for events...</p>}
           </div>
         </div>
       </div>

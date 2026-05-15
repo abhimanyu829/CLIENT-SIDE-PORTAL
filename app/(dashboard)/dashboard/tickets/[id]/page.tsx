@@ -3,13 +3,14 @@ import { auth } from "@/lib/auth"
 import { redirect, notFound } from "next/navigation"
 import TicketDetailClient from "./TicketDetailClient"
 
-export default async function TicketDetailPage({ params }: { params: { id: string } }) {
+export default async function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user?.id) redirect("/auth/signin")
 
+  const { id } = await params
   const ticket = await db.ticket.findUnique({
     where: { 
-      id: params.id,
+      id,
       clientId: session.user.id
     },
     include: {

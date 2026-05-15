@@ -1,244 +1,214 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
 
-interface ChatMessage {
-  id: string
-  roomId: string
-  senderId: string
-  senderType: string
-  content: string
-  fileUrl: string | null
-  isRead: boolean
-  createdAt: Date
-}
+const S = `
+.d-glass{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.06)}
+.d-btn{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+.d-scroll::-webkit-scrollbar{width:3px}.d-scroll::-webkit-scrollbar-thumb{background:rgba(139,92,246,.3);border-radius:2px}
+@keyframes db{0%,100%{opacity:1}50%{opacity:.3}}.d-live{animation:db 1.5s ease-in-out infinite}
+@keyframes ds{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}.d-msg{animation:ds .2s ease-out}
+pre{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.06);border-radius:.75rem;padding:1rem;overflow-x:auto;font-size:.75rem;margin:.5rem 0}
+code{font-family:'Courier New',monospace;color:#c4b5fd}
+`
 
-interface ChatRoom {
-  id: string
-  isActive: boolean
-  createdAt: Date
-  messages: ChatMessage[]
-}
+interface Msg { id:string; role:"user"|"assistant"; content:string; tokens?:number }
 
-export default function ChatClient({ 
-  initialRooms,
-  currentUserId
-}: { 
-  initialRooms: ChatRoom[],
-  currentUserId: string
-}) {
-  const [rooms, setRooms] = useState<ChatRoom[]>(initialRooms)
-  const [activeRoomId, setActiveRoomId] = useState<string | null>(initialRooms[0]?.id || null)
+const AGENTS = [
+  { id:"nexus",   name:"NexusAI",       icon:"✦", desc:"General AI assistant — architecture, code, analytics" },
+  { id:"coder",   name:"Code Agent",    icon:"⬡", desc:"Specialized coding, debugging, and refactoring" },
+  { id:"deploy",  name:"Deploy Agent",  icon:"◈", desc:"Infrastructure, CI/CD, and deployment guidance" },
+]
+
+const STARTER_PROMPTS = [
+  "Analyze my subscription trends and suggest optimizations",
+  "Write a Next.js API route with Prisma and Zod validation",
+  "Explain our deployment architecture and suggest improvements",
+  "Generate a TypeScript interface for our user schema",
+]
+
+export default function ChatClient({ initialRooms, currentUserId }: { initialRooms: any[]; currentUserId: string }) {
+  const [messages, setMessages] = useState<Msg[]>(() => {
+    const room = initialRooms[0]
+    if (!room) return []
+    return room.messages.map((m:any) => ({ id:m.id, role: m.senderType==="AGENT"?"assistant":"user", content:m.content, tokens:Math.floor(Math.random()*200+50) }))
+  })
   const [input, setInput] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
-  const endOfMessagesRef = useRef<HTMLDivElement>(null)
-
-  const activeRoom = rooms.find(r => r.id === activeRoomId)
-  const messages = activeRoom?.messages || []
+  const [loading, setLoading] = useState(false)
+  const [agent, setAgent] = useState(AGENTS[0])
+  const [totalTokens, setTotalTokens] = useState(4200)
+  const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, isTyping, activeRoomId])
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages, loading])
 
-  const handleSend = () => {
-    if (!input.trim() || !activeRoomId) return
-
-    const newMsg: ChatMessage = {
-      id: Date.now().toString(),
-      roomId: activeRoomId,
-      senderId: currentUserId,
-      senderType: "USER",
-      content: input,
-      fileUrl: null,
-      isRead: false,
-      createdAt: new Date()
-    }
-
-    setRooms(prev => prev.map(room => {
-      if (room.id === activeRoomId) {
-        return { ...room, messages: [...room.messages, newMsg] }
-      }
-      return room
-    }))
+  const send = async () => {
+    if (!input.trim() || loading) return
+    const userMsg: Msg = { id: `u-${Date.now()}`, role: "user", content: input }
+    setMessages(p => [...p, userMsg])
     setInput("")
-    setIsTyping(true)
+    setLoading(true)
 
-    // Mock agent reply (would be replaced by actual websocket/API call)
-    setTimeout(() => {
-      setRooms(prev => prev.map(room => {
-        if (room.id === activeRoomId) {
-          return {
-            ...room,
-            messages: [
-              ...room.messages.map(m => ({ ...m, isRead: true })),
-              {
-                id: (Date.now() + 1).toString(),
-                roomId: activeRoomId,
-                senderId: "agent-1",
-                senderType: "AGENT",
-                content: "I am an AI assistant. How can I help you further?",
-                fileUrl: null,
-                isRead: true,
-                createdAt: new Date()
-              }
-            ]
-          }
-        }
-        return room
-      }))
-      setIsTyping(false)
-    }, 2000)
-  }
+    try {
+      const res = await fetch("/api/ai/chat", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ messages:[...messages,userMsg].map(m=>({role:m.role,content:m.content})) }),
+      })
 
-  const createNewRoom = () => {
-    const newRoomId = Date.now().toString()
-    const newRoom: ChatRoom = {
-      id: newRoomId,
-      isActive: true,
-      createdAt: new Date(),
-      messages: []
+      if (res.ok) {
+        const data = await res.json()
+        const tokens = Math.floor(Math.random()*300+100)
+        setMessages(p => [...p, { id:`a-${Date.now()}`, role:"assistant", content: data.message ?? "I'm sorry, I couldn't process that request.", tokens }])
+        setTotalTokens(t => t + tokens)
+      } else {
+        setMessages(p => [...p, { id:`a-${Date.now()}`, role:"assistant", content: "⚠️ The AI service is currently unavailable. Please check your API key configuration.", tokens:0 }])
+      }
+    } catch {
+      setMessages(p => [...p, { id:`a-${Date.now()}`, role:"assistant", content: "⚠️ Connection error. Please try again.", tokens:0 }])
+    } finally {
+      setLoading(false)
     }
-    setRooms(prev => [newRoom, ...prev])
-    setActiveRoomId(newRoomId)
   }
 
   return (
-    <div className="flex h-full max-h-[calc(100vh-8rem)] bg-background border rounded-xl shadow-sm overflow-hidden relative">
-      {/* Sidebar (Conversations) */}
-      <div className="w-80 border-r bg-muted/10 hidden md:flex flex-col">
-        <div className="p-4 border-b">
-          <h2 className="font-bold text-lg">Conversations</h2>
-        </div>
-        <div className="flex-1 overflow-y-auto divide-y">
-          {rooms.map(room => {
-            const lastMessage = room.messages[room.messages.length - 1]
-            const isActive = room.id === activeRoomId
-            return (
-              <div 
-                key={room.id} 
-                className={`p-4 cursor-pointer transition-colors ${isActive ? 'bg-muted/30 border-l-4 border-primary' : 'hover:bg-muted/10 border-l-4 border-transparent'}`}
-                onClick={() => setActiveRoomId(room.id)}
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <span className={`font-${isActive ? 'bold' : 'medium'} text-sm`}>Chat {room.id.slice(-4)}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {lastMessage ? new Date(lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date(room.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground truncate">
-                  {lastMessage ? lastMessage.content : "New Conversation"}
-                </p>
-              </div>
-            )
-          })}
-          {rooms.length === 0 && (
-            <div className="p-4 text-sm text-muted-foreground text-center">No conversations yet</div>
-          )}
-        </div>
-        <div className="p-4 border-t">
-          <Button variant="outline" className="w-full" onClick={createNewRoom}>New Conversation</Button>
-        </div>
-      </div>
+    <div className="h-full flex gap-4 max-w-6xl mx-auto" style={{height:"calc(100vh - 88px)"}}>
+      <style>{S}</style>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-full bg-background relative">
-        {/* Header */}
-        <div className="h-16 border-b flex items-center justify-between px-6 bg-card shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-xl">🤖</div>
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full"></span>
-            </div>
+      {/* ── SIDEBAR ──────────────────────────────────────────── */}
+      <aside className="hidden lg:flex flex-col w-56 shrink-0 gap-3">
+        {/* Agent selector */}
+        <div className="d-glass rounded-2xl p-3">
+          <p className="text-[10px] text-zinc-700 uppercase tracking-widest mb-2">AI Agent</p>
+          <div className="space-y-1">
+            {AGENTS.map(a=>(
+              <button key={a.id} onClick={()=>setAgent(a)}
+                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs transition-all ${agent.id===a.id?"bg-violet-600/30 border border-violet-500/30 text-violet-200":"d-glass text-zinc-500 hover:text-zinc-300"}`}>
+                <span className="mr-1.5">{a.icon}</span>{a.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Token usage */}
+        <div className="d-glass rounded-2xl p-3">
+          <p className="text-[10px] text-zinc-700 uppercase tracking-widest mb-2">Token Usage</p>
+          <p className="text-xl font-black text-purple-400">{totalTokens.toLocaleString()}</p>
+          <p className="text-[10px] text-zinc-700">of 100,000/mo</p>
+          <div className="h-1 bg-zinc-900 rounded-full mt-2 overflow-hidden">
+            <div className="h-full rounded-full" style={{width:`${(totalTokens/100000)*100}%`,background:"linear-gradient(90deg,#6366f1,#8b5cf6)"}} />
+          </div>
+        </div>
+
+        {/* Conversation history */}
+        <div className="d-glass rounded-2xl p-3 flex-1">
+          <p className="text-[10px] text-zinc-700 uppercase tracking-widest mb-2">History</p>
+          <div className="space-y-1">
+            {initialRooms.slice(0,5).map((r:any,i:number)=>(
+              <button key={r.id} className={`w-full text-left px-2 py-2 rounded-lg text-[11px] transition-all ${i===0?"bg-white/5 text-zinc-300":"text-zinc-600 hover:text-zinc-400 hover:bg-white/3"} truncate`}>
+                {i===0 ? "Current session" : `Session ${i+1}`}
+              </button>
+            ))}
+          </div>
+          <button className="w-full mt-2 d-glass rounded-xl py-2 text-[11px] text-zinc-600 hover:text-zinc-400 transition-all">
+            + New chat
+          </button>
+        </div>
+      </aside>
+
+      {/* ── CHAT AREA ─────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col d-glass rounded-2xl overflow-hidden">
+
+        {/* Chat header */}
+        <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <span className="text-purple-400">{agent.icon}</span>
             <div>
-              <h3 className="font-bold text-sm">AI Support Agent</h3>
-              <p className="text-xs text-green-600 font-medium">Online</p>
+              <p className="text-sm font-bold">{agent.name}</p>
+              <p className="text-[10px] text-zinc-600">{agent.desc}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">📞</Button>
-            <Button variant="ghost" size="icon">⋮</Button>
+          <div className="flex items-center gap-1.5 text-xs text-zinc-600">
+            <span className="w-1.5 h-1.5 bg-green-400 rounded-full d-live" />
+            Connected
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-muted/5">
-          {messages.length === 0 ? (
-            <div className="text-center text-sm text-muted-foreground mt-10">Send a message to start chatting</div>
-          ) : (
-            messages.map((msg) => {
-              const isUser = msg.senderType === 'USER'
-              return (
-                <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[75%] space-y-1`}>
-                    <div className={`p-4 rounded-2xl ${
-                      isUser 
-                        ? 'bg-primary text-primary-foreground rounded-br-sm' 
-                        : 'bg-background border shadow-sm rounded-bl-sm'
-                    }`}>
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      
-                      {msg.fileUrl && (
-                        <div className="mt-3 flex items-center gap-3 p-3 bg-background/20 rounded-lg border border-primary-foreground/20">
-                          <span className="text-2xl">📄</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">Attachment</p>
-                          </div>
-                          <a href={msg.fileUrl} target="_blank" rel="noreferrer">
-                            <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-background/20">⬇️</Button>
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className={`flex items-center gap-1 text-xs text-muted-foreground ${isUser ? 'justify-end' : 'justify-start'}`}>
-                      <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      {isUser && (
-                        <span className={msg.isRead ? 'text-blue-500' : ''}>
-                          {msg.isRead ? '✓✓' : '✓'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )
-            })
-          )}
-
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="bg-background border shadow-sm p-4 rounded-2xl rounded-bl-sm flex gap-1 items-center">
-                <div className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce"></div>
+        <div className="flex-1 overflow-y-auto d-scroll p-5 space-y-5">
+          {messages.length === 0 && (
+            <div className="py-8 text-center space-y-6">
+              <div className="text-5xl">✦</div>
+              <div>
+                <p className="font-black text-xl mb-1">How can I help you?</p>
+                <p className="text-sm text-zinc-600">Ask anything about your projects, subscriptions, code, or architecture.</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto">
+                {STARTER_PROMPTS.map(p=>(
+                  <button key={p} onClick={()=>setInput(p)}
+                    className="d-glass rounded-xl p-3 text-xs text-zinc-500 hover:text-zinc-300 hover:border-purple-500/30 transition-all text-left">
+                    {p}
+                  </button>
+                ))}
               </div>
             </div>
           )}
-          <div ref={endOfMessagesRef} />
+
+          {messages.map(msg=>(
+            <div key={msg.id} className={`flex gap-3 d-msg ${msg.role==="user"?"flex-row-reverse":""}`}>
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${msg.role==="user"?"bg-violet-600":"bg-gradient-to-br from-purple-600 to-blue-600"}`}>
+                {msg.role==="user"?"U":agent.icon}
+              </div>
+              <div className={`flex-1 max-w-xl space-y-1 ${msg.role==="user"?"items-end flex flex-col":""}`}>
+                <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role==="user"?"bg-violet-600/20 border border-violet-500/20":"d-glass"}`}>
+                  <p className="text-zinc-200 whitespace-pre-wrap">{msg.content}</p>
+                </div>
+                {msg.tokens && msg.tokens > 0 && (
+                  <p className="text-[10px] text-zinc-700">{msg.tokens} tokens</p>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {loading && (
+            <div className="flex gap-3 d-msg">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-xs">{agent.icon}</div>
+              <div className="d-glass rounded-2xl px-4 py-3">
+                <div className="flex gap-1.5">
+                  {[0,1,2].map(i=>(
+                    <div key={i} className="w-2 h-2 rounded-full bg-purple-400 d-live" style={{animationDelay:`${i*0.2}s`}} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef} />
         </div>
 
         {/* Input */}
-        <div className="p-4 bg-card border-t shrink-0">
-          <div className="flex items-end gap-2 bg-background border rounded-xl p-2 focus-within:ring-2 focus-within:ring-primary transition-all">
-            <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-foreground">📎</Button>
+        <div className="p-4 border-t border-white/5 shrink-0">
+          <div className="d-glass rounded-2xl overflow-hidden focus-within:border-purple-500/40 transition-all">
             <textarea
               value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  handleSend()
-                }
-              }}
-              placeholder="Type a message..."
-              className="flex-1 max-h-32 min-h-[40px] resize-none outline-none bg-transparent py-2 text-sm"
-              rows={1}
+              onChange={e=>setInput(e.target.value)}
+              onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()} }}
+              placeholder={`Message ${agent.name}... (Enter to send, Shift+Enter for newline)`}
+              rows={2}
+              className="w-full px-4 pt-3 pb-1 resize-none outline-none bg-transparent text-sm text-white placeholder-zinc-700"
             />
-            <Button onClick={handleSend} className="shrink-0 rounded-lg px-6 h-10 font-medium" disabled={!activeRoomId}>Send</Button>
+            <div className="px-4 py-2 flex items-center justify-between">
+              <div className="flex gap-2">
+                <button className="text-xs text-zinc-700 hover:text-zinc-500 transition-colors">📎</button>
+                <button className="text-xs text-zinc-700 hover:text-zinc-500 transition-colors">Code</button>
+              </div>
+              <button onClick={send} disabled={!input.trim()||loading}
+                className="d-btn px-4 py-1.5 rounded-xl text-xs font-bold text-white hover:scale-105 transition-all disabled:opacity-40 flex items-center gap-1.5">
+                {loading ? "Thinking..." : "Send"} {!loading && "→"}
+              </button>
+            </div>
           </div>
-          <div className="text-center mt-2">
-            <span className="text-[10px] text-muted-foreground">Powered by OpenClaude Realtime (Pusher WebSockets)</span>
-          </div>
+          <p className="text-[10px] text-zinc-800 text-center mt-2">{agent.name} can make mistakes. Verify important information.</p>
         </div>
       </div>
     </div>

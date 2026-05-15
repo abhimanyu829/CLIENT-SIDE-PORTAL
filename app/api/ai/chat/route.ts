@@ -5,6 +5,14 @@ import { db } from "@/lib/db"
 import { TicketPriority, TicketStatus } from "@prisma/client"
 
 export async function POST(req: Request) {
+  // Guard: fail fast with a clear message if OpenAI is not configured
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json(
+      { error: "AI chat is not configured. Set OPENAI_API_KEY in your .env file." },
+      { status: 503 }
+    )
+  }
+
   try {
     const body = await req.json()
     const { messages, sessionId } = body
