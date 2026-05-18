@@ -47,7 +47,7 @@ export default async function BlogPostPage({ params }: BlogPostProps) {
 
   const tags: string[] = Array.isArray(post.tags) ? post.tags as string[] : []
   const related = await getRelatedPosts(slug, tags)
-  const readTime = Math.max(1, Math.ceil((post.content?.split(" ").length ?? 300) / 200))
+  const readTime = Math.max(1, Math.ceil((post.contentMdx?.split(" ").length ?? 300) / 200))
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -137,8 +137,8 @@ export default async function BlogPostPage({ params }: BlogPostProps) {
 
             {/* Body */}
             <div className="prose-dark">
-              {post.content ? (
-                <div dangerouslySetInnerHTML={{ __html: post.content.replace(/\n/g, "<br />") }} />
+              {post.contentMdx ? (
+                <div dangerouslySetInnerHTML={{ __html: post.contentMdx.replace(/\n/g, "<br />") }} />
               ) : (
                 <div className="space-y-4 text-zinc-400">
                   <p>This is a placeholder article. The full content will be published soon.</p>
@@ -170,7 +170,7 @@ export default async function BlogPostPage({ params }: BlogPostProps) {
                   </div>
                   <div>
                     <p className="font-bold text-lg mb-1">{post.author.name}</p>
-                    <p className="text-zinc-500 text-sm">{post.author.bio ?? "Engineer at NexusAI. Building the future of AI infrastructure."}</p>
+                    <p className="text-zinc-500 text-sm">{post.author.name ?? "Engineer at NexusAI. Building the future of AI infrastructure."}</p>
                   </div>
                 </div>
               </div>

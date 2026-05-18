@@ -70,7 +70,7 @@ const DEMOS = [
 async function createDemoSession(template: string) {
   try {
     const session = await db.demoSession.create({
-      data: { template, expiresAt: new Date(Date.now() + 5 * 60 * 1000) },
+      data: { templateId: template, sessionToken: "demo-" + Date.now(), mockDataJson: {}, expiresAt: new Date(Date.now() + 5 * 60 * 1000), productId: "placeholder" },
     })
     return session.id
   } catch {

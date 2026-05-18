@@ -3,18 +3,22 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 
+
 // GET /api/products — list published products with filters
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const type = searchParams.get("type") ?? undefined
     const search = searchParams.get("q") ?? undefined
+    const minPrice = searchParams.get("minPrice") ? parseFloat(searchParams.get("minPrice")!) : undefined
+    const maxPrice = searchParams.get("maxPrice") ? parseFloat(searchParams.get("maxPrice")!) : undefined
+    const rating = searchParams.get("rating") ? parseFloat(searchParams.get("rating")!) : undefined
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"))
     const limit = Math.min(50, parseInt(searchParams.get("limit") ?? "12"))
     const skip = (page - 1) * limit
     const sortBy = searchParams.get("sort") ?? "createdAt"
 
-    const where = {
+    const where: any = {
       status: "PUBLISHED" as const,
       ...(type ? { type: type as any } : {}),
       ...(search
@@ -22,9 +26,23 @@ export async function GET(req: Request) {
             OR: [
               { name: { contains: search, mode: "insensitive" as const } },
               { tagline: { contains: search, mode: "insensitive" as const } },
+              { description: { contains: search, mode: "insensitive" as const } },
             ],
           }
         : {}),
+      ...(rating ? { averageRating: { gte: rating } } : {}),
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.tiers = {
+        some: {
+          isActive: true,
+          price: {
+            ...(minPrice !== undefined ? { gte: minPrice } : {}),
+            ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
+          }
+        }
+      };
     }
 
     const orderBy: any =
@@ -60,7 +78,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
-
 // POST /api/products — admin: create a new product
 export async function POST(req: Request) {
   try {

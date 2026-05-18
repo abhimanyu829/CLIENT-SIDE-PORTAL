@@ -49,7 +49,7 @@ export async function GET(req: Request) {
       orderBy: { paidAt: "asc" },
     })
 
-    const revenueByDay = payments.reduce<Record<string, number>>((acc, p) => {
+    const revenueByDay = (payments as any[]).reduce((acc: Record<string, number>, p: any) => {
       const day = p.paidAt?.toISOString().split("T")[0] ?? "unknown"
       acc[day] = (acc[day] ?? 0) + Number(p.amount)
       return acc

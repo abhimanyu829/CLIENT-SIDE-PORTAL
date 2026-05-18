@@ -130,7 +130,7 @@ export default async function BlogListPage() {
                           <p className="text-sm font-medium">{featured.author?.name ?? "NexusAI Team"}</p>
                           <p className="text-xs text-zinc-600">
                             {featured.publishedAt && new Date(featured.publishedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}
-                            {" · "}{readingTime(featured.content)}
+                            {" · "}{readingTime(featured.contentMdx)}
                           </p>
                         </div>
                       </div>
@@ -183,7 +183,7 @@ export default async function BlogListPage() {
                           <span>{new Date(post.publishedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>
                         )}
                         <span>·</span>
-                        <span>{readingTime(post.content)}</span>
+                        <span>{readingTime(post.contentMdx)}</span>
                       </div>
                       <h3 className="text-lg font-bold mb-3 group-hover:text-purple-300 transition-colors leading-snug flex-1">
                         {post.title}

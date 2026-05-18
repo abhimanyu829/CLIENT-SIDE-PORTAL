@@ -1,0 +1,18 @@
+# Dockerfile.worker — BullMQ background job processor
+FROM node:20-alpine
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts
+
+COPY . .
+RUN npx prisma generate
+
+# Compile TypeScript worker entry-point
+RUN npx tsc --outDir dist --module commonjs --target es2020 \
+    --esModuleInterop true --skipLibCheck true \
+    jobs/worker.ts || true
+
+ENV NODE_ENV=production
+
+CMD ["node", "-r", "tsconfig-paths/register", "--loader", "tsx", "jobs/worker.ts"]

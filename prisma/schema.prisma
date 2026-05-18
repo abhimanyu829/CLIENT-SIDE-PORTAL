@@ -144,6 +144,7 @@ model User {
   sessions        UserSession[]
   chatMessages    ChatMessage[]
   posts           BlogPost[]
+  teamMemberships TeamMember[]
 
   @@index([email])
   @@index([role])
@@ -256,7 +257,8 @@ model ProductReview {
   rating       Int
   title        String
   body         String
-  isVerified   Boolean  @default(false)
+  verifiedPurchase Boolean  @default(false)
+  status       ReviewStatus @default(PENDING)
   helpfulCount Int      @default(0)
   createdAt    DateTime @default(now())
   product      Product  @relation(fields: [productId], references: [id])
@@ -473,6 +475,7 @@ model Lead {
   assignee        User?     @relation("AssignedLeads", fields: [assignedTo], references: [id])
   interactions    LeadInteraction[]
   emailSequences  EmailSequence[]
+  activities      LeadActivity[]
   @@index([stage, score])
   @@index([email])
 }
@@ -577,3 +580,110 @@ model BlogPost {
 
 
 
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LeadActivityType {
+  STAGE_CHANGE
+  NOTE
+  EMAIL
+}
+
+model LeadActivity {
+  id        String           @id @default(cuid())
+  leadId    String
+  type      LeadActivityType
+  note      String?
+  createdBy String?
+  createdAt DateTime         @default(now())
+  lead      Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  @@index([leadId])
+}
+
+// ── Campaign & Offers ─────────────────────────────────────────────────────────
+
+enum CampaignType {
+  FESTIVAL
+  FLASH
+  REFERRAL
+  LOYALTY
+  BLACKFRIDAY
+  CUSTOM
+}
+
+model Campaign {
+  id                String       @id @default(cuid())
+  name              String
+  label             String?
+  type              CampaignType
+  startsAt          DateTime
+  endsAt            DateTime
+  discountPercent   Float
+  bannerText        String?
+  applicableTierIds String[]
+  isActive          Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  @@index([isActive, startsAt, endsAt])
+}
+
+// ── Feature Flags ─────────────────────────────────────────────────────────────
+
+model FeatureFlag {
+  id             String   @id @default(cuid())
+  name           String   @unique   // e.g. "enable_ai_chat"
+  description    String?
+  isEnabled      Boolean  @default(false)
+  rolloutPercent Int      @default(100) // 0-100 percentage of users to enable for
+  targetUserIds  String[] // explicit user allowlist (overrides rollout)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  @@index([name])
+}
+
+// ── Teams ─────────────────────────────────────────────────────────────────────
+
+enum TeamMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model Team {
+  id           String       @id @default(cuid())
+  name         String
+  slug         String       @unique
+  ownerId      String
+  billingEmail String?
+  avatarUrl    String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  members      TeamMember[]
+  @@index([ownerId])
+}
+
+model TeamMember {
+  id           String         @id @default(cuid())
+  teamId       String
+  userId       String
+  role         TeamMemberRole @default(MEMBER)
+  inviteStatus InviteStatus   @default(PENDING)
+  invitedBy    String?
+  invitedAt    DateTime       @default(now())
+  acceptedAt   DateTime?
+  team         Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+}

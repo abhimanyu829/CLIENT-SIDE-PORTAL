@@ -1,50 +1,36 @@
-import { Worker, Job } from "bullmq"
-import { env } from "@/lib/env"
+/**
+ * BullMQ Worker Entry-point
+ * Imports all job workers so they register their processors with the queues.
+ * Run: node --loader tsx jobs/worker.ts
+ */
+import "@/jobs/invoice.job"
+import "@/jobs/email.job"
+import "@/jobs/dunning.job"
+import "@/jobs/abandonment.job"
+import { scheduleCampaignSync } from "@/jobs/campaign.job"
 import { logger } from "@/lib/logger"
-import { resend } from "@/lib/resend"
-import React from "react"
-import { WelcomeEmail } from "@/emails/WelcomeEmail"
-import { SubscriptionRenewalEmail } from "@/emails/SubscriptionRenewalEmail"
 
-const connection = {
-  url: env.REDIS_URL,
+async function main() {
+  logger.info("🚀 BullMQ worker started — listening for jobs")
+
+  // Start campaign auto-activate/deactivate cron
+  await scheduleCampaignSync()
+
+  logger.info("✅ All workers and crons registered")
 }
 
-const getEmailTemplate = (templateName: string, props: any) => {
-  switch (templateName) {
-    case "WelcomeEmail":
-      return React.createElement(WelcomeEmail, props)
-    case "SubscriptionRenewalEmail":
-      return React.createElement(SubscriptionRenewalEmail, props)
-    default:
-      throw new Error(`Template ${templateName} not found`)
-  }
-}
-
-export const emailWorker = new Worker("email", async (job: Job) => {
-  logger.info({ jobId: job.id }, "Processing email job")
-  
-  const { to, subject, templateName, props } = job.data
-
-  try {
-    const template = getEmailTemplate(templateName, props)
-    
-    await resend.emails.send({
-      from: env.EMAIL_FROM,
-      to,
-      subject,
-      react: template,
-    })
-    
-    logger.info({ jobId: job.id, to }, "Email sent successfully")
-  } catch (error: any) {
-    logger.error({ err: error, jobId: job.id }, "Failed to send email")
-    throw error
-  }
-}, { connection })
-
-emailWorker.on("failed", (job, err) => {
-  logger.error({ err, jobId: job?.id }, "Email job failed")
+main().catch((err) => {
+  logger.error({ err }, "Worker startup failed")
+  process.exit(1)
 })
 
-logger.info("Email worker initialized")
+// Graceful shutdown
+process.on("SIGTERM", async () => {
+  logger.info("SIGTERM received — shutting down workers")
+  process.exit(0)
+})
+
+process.on("SIGINT", async () => {
+  logger.info("SIGINT received — shutting down workers")
+  process.exit(0)
+})
