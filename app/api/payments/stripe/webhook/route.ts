@@ -285,6 +285,40 @@ export async function POST(req: NextRequest) {
 
   logger.info({ type: event.type, id: event.id }, "Stripe webhook received")
 
+  // ── Idempotency check via WebhookEvent table ──────────────────────────────
+  // Record event before processing; skip if already PROCESSED
+  let webhookRecord = await db.webhookEvent.findUnique({ where: { eventId: event.id } })
+
+  if (webhookRecord?.status === "PROCESSED") {
+    logger.info({ eventId: event.id }, "Stripe webhook already processed — skipping")
+    return NextResponse.json({ received: true, idempotent: true })
+  }
+
+  if (!webhookRecord) {
+    webhookRecord = await db.webhookEvent.create({
+      data: {
+        source: "STRIPE",
+        eventType: event.type,
+        eventId: event.id,
+        payload: event as object,
+        status: "PENDING",
+        attempts: 1,
+        lastAttemptAt: new Date(),
+      },
+    })
+  } else {
+    // Retry existing FAILED event
+    await db.webhookEvent.update({
+      where: { id: webhookRecord.id },
+      data: {
+        status: "PENDING",
+        attempts: { increment: 1 },
+        lastAttemptAt: new Date(),
+        errorMessage: null,
+      },
+    })
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed":
@@ -311,10 +345,28 @@ export async function POST(req: NextRequest) {
       default:
         logger.info({ type: event.type }, "Unhandled Stripe event — skipped")
     }
+
+    // Mark as PROCESSED
+    await db.webhookEvent.update({
+      where: { id: webhookRecord.id },
+      data: { status: "PROCESSED", processedAt: new Date() },
+    })
   } catch (error) {
     logger.error({ error, eventType: event.type }, "Error handling Stripe webhook event")
-    // Return 200 anyway so Stripe doesn't retry — log the error for manual inspection
+
+    // Mark as FAILED; if max attempts reached, mark DEAD
+    const currentAttempts = (webhookRecord.attempts ?? 0) + 1
+    await db.webhookEvent.update({
+      where: { id: webhookRecord.id },
+      data: {
+        status: currentAttempts >= 5 ? "DEAD" : "FAILED",
+        errorMessage: (error as Error).message?.slice(0, 500) ?? "Unknown error",
+      },
+    })
+
+    // Return 200 anyway so Stripe doesn't retry immediately — BullMQ handles retries
   }
 
   return NextResponse.json({ received: true })
 }
+

@@ -1,6 +1,8 @@
 import { Metadata } from "next"
 import Link from "next/link"
 import { db } from "@/lib/db"
+import { FAQSection } from "@/components/public/FAQSection"
+import { CallToAction } from "@/components/public/CallToAction"
 
 export const metadata: Metadata = {
   title: "Blog — NexusAI Engineering",
@@ -239,6 +241,22 @@ export default async function BlogListPage() {
           </div>
         </div>
       </div>
+
+      <FAQSection 
+        title="Blog & Resources FAQs"
+        faqs={[
+          { question: "How often do you publish new articles?", answer: "We publish deeply researched engineering and AI articles weekly, usually on Tuesdays and Thursdays." },
+          { question: "Can I contribute to the NexusAI blog?", answer: "Yes, we accept guest posts from AI researchers and SaaS engineers. Reach out to content@nexusai.com with your pitch." },
+          { question: "Do you have an RSS feed?", answer: "Yes, you can subscribe to our RSS feed at /blog/rss.xml to get updates in your favorite reader." }
+        ]}
+      />
+
+      <CallToAction 
+        title="Build the future with us"
+        description="Ready to stop reading and start building? Join NexusAI today."
+        ctaText="Create Free Account"
+        ctaHref="/register"
+      />
     </div>
   )
 }

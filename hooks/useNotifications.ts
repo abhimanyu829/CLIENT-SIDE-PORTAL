@@ -1,93 +1,73 @@
 "use client"
-
-import { useEffect } from 'react'
-import { create } from 'zustand'
-import { pusherClient } from '@/lib/pusher'
-
-interface Notification {
-  id: string
-  title: string
-  message: string
-  type: string
-  read: boolean
-  createdAt: string | Date
-}
-
-interface NotificationStore {
-  notifications: Notification[]
-  unreadCount: number
-  setNotifications: (notifications: Notification[]) => void
-  addNotification: (notification: Notification) => void
-  markAsRead: (id: string) => void
-  markAllAsRead: () => void
-}
-
-export const useNotificationStore = create<NotificationStore>((set) => ({
-  notifications: [],
-  unreadCount: 0,
-  setNotifications: (notifications) => set({
-    notifications,
-    unreadCount: notifications.filter(n => !n.read).length
-  }),
-  addNotification: (notification) => set((state) => {
-    const newNotifications = [notification, ...state.notifications]
-    return {
-      notifications: newNotifications,
-      unreadCount: newNotifications.filter(n => !n.read).length
-    }
-  }),
-  markAsRead: (id) => set((state) => {
-    const newNotifications = state.notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    )
-    return {
-      notifications: newNotifications,
-      unreadCount: newNotifications.filter(n => !n.read).length
-    }
-  }),
-  markAllAsRead: () => set((state) => {
-    const newNotifications = state.notifications.map(n => ({ ...n, read: true }))
-    return {
-      notifications: newNotifications,
-      unreadCount: 0
-    }
-  })
-}))
+import { useEffect, useRef } from "react"
+import { useDashboardStore } from "./useDashboardStore"
 
 export function useNotifications(userId?: string) {
-  const { notifications, unreadCount, setNotifications, addNotification, markAsRead, markAllAsRead } = useNotificationStore()
+  const { setNotifications, addNotification, markRead, markAllRead, unreadCount, notifications } =
+    useDashboardStore()
+  const isFetching = useRef(false)
+
+  const fetchNotifications = async () => {
+    if (isFetching.current) return
+    isFetching.current = true
+    try {
+      const res = await fetch("/api/notifications", { credentials: "include" })
+      if (!res.ok) return
+      const { data } = await res.json()
+      setNotifications(
+        (data ?? []).map((n: any) => ({
+          id: n.id,
+          icon:
+            n.type === "PAYMENT"
+              ? "💳"
+              : n.type === "TICKET"
+              ? "🎫"
+              : n.type === "SUBSCRIPTION"
+              ? "⬡"
+              : n.type === "PROJECT"
+              ? "📋"
+              : n.type === "CHAT"
+              ? "✦"
+              : "🔔",
+          title: n.title,
+          body: n.body,
+          isRead: n.isRead,
+          type: n.type,
+          actionUrl: n.actionUrl,
+          createdAt: n.createdAt,
+        }))
+      )
+    } catch {
+      // silently fail
+    } finally {
+      isFetching.current = false
+    }
+  }
+
+  const handleMarkRead = async (id: string) => {
+    markRead(id)
+    await fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    }).catch(() => {})
+  }
+
+  const handleMarkAllRead = async () => {
+    markAllRead()
+    await fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ markAllAsRead: true }),
+    }).catch(() => {})
+  }
 
   useEffect(() => {
-    if (!userId) return
-
-    const fetchNotifications = async () => {
-      try {
-        const res = await fetch('/api/notifications')
-        if (res.ok) {
-          const { data } = await res.json()
-          setNotifications(data || [])
-        }
-      } catch (error) {
-        console.error("Failed to fetch notifications:", error)
-      }
-    }
     fetchNotifications()
+    // Poll every 30 seconds as fallback
+    const interval = setInterval(fetchNotifications, 30_000)
+    return () => clearInterval(interval)
+  }, [userId]) // eslint-disable-line
 
-    const channel = pusherClient.subscribe(`private-user-${userId}`)
-    
-    channel.bind('new-notification', (data: Notification) => {
-      addNotification(data)
-    })
-
-    return () => {
-      pusherClient.unsubscribe(`private-user-${userId}`)
-    }
-  }, [userId, setNotifications, addNotification])
-
-  return {
-    notifications,
-    unreadCount,
-    markAsRead,
-    markAllAsRead
-  }
+  return { notifications, unreadCount, markRead: handleMarkRead, markAllRead: handleMarkAllRead, refetch: fetchNotifications }
 }

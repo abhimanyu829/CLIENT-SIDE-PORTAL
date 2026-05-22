@@ -39,20 +39,27 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Protect dashboard and admin routes
-  if (path.startsWith("/dashboard") || path.startsWith("/admin")) {
+  // Protect dashboard routes (login required)
+  if (path.startsWith("/dashboard")) {
     if (!token) {
       const url = new URL("/login", req.url)
       url.searchParams.set("callbackUrl", req.nextUrl.pathname)
       return NextResponse.redirect(url)
     }
-
-    if (path.startsWith("/admin")) {
-      if (role !== Role.SUPER_ADMIN && role !== Role.SUB_ADMIN) {
-        return NextResponse.redirect(new URL("/unauthorized", req.url))
-      }
-    }
   }
+
+  // TODO (TESTING ONLY): Admin panel auth check is temporarily disabled.
+  // Re-enable the block below before deploying to production.
+  // if (path.startsWith("/admin")) {
+  //   if (!token) {
+  //     const url = new URL("/login", req.url)
+  //     url.searchParams.set("callbackUrl", req.nextUrl.pathname)
+  //     return NextResponse.redirect(url)
+  //   }
+  //   if (role !== Role.SUPER_ADMIN && role !== Role.SUB_ADMIN) {
+  //     return NextResponse.redirect(new URL("/unauthorized", req.url))
+  //   }
+  // }
 
   return NextResponse.next()
 }

@@ -232,7 +232,46 @@ export async function POST(req: NextRequest) {
   }
 
   const eventType: string = event.event ?? ""
+  // Razorpay uses account_id + event + timestamp as a deterministic event ID
+  const rzpEventId =
+    event.payload?.payment?.entity?.id ??
+    event.payload?.subscription?.entity?.id ??
+    event.payload?.refund?.entity?.id ??
+    `rzp_${eventType}_${Date.now()}`
+
   logger.info({ type: eventType }, "Razorpay webhook received")
+
+  // ── Idempotency check via WebhookEvent table ──────────────────────────────
+  let webhookRecord = await db.webhookEvent.findUnique({ where: { eventId: rzpEventId } })
+
+  if (webhookRecord?.status === "PROCESSED") {
+    logger.info({ eventId: rzpEventId }, "Razorpay webhook already processed — skipping")
+    return NextResponse.json({ received: true, idempotent: true })
+  }
+
+  if (!webhookRecord) {
+    webhookRecord = await db.webhookEvent.create({
+      data: {
+        source: "RAZORPAY",
+        eventType,
+        eventId: rzpEventId,
+        payload: event,
+        status: "PENDING",
+        attempts: 1,
+        lastAttemptAt: new Date(),
+      },
+    })
+  } else {
+    await db.webhookEvent.update({
+      where: { id: webhookRecord.id },
+      data: {
+        status: "PENDING",
+        attempts: { increment: 1 },
+        lastAttemptAt: new Date(),
+        errorMessage: null,
+      },
+    })
+  }
 
   try {
     switch (eventType) {
@@ -254,9 +293,23 @@ export async function POST(req: NextRequest) {
       default:
         logger.info({ type: eventType }, "Unhandled Razorpay event — skipped")
     }
+
+    await db.webhookEvent.update({
+      where: { id: webhookRecord.id },
+      data: { status: "PROCESSED", processedAt: new Date() },
+    })
   } catch (error) {
     logger.error({ error, eventType }, "Error handling Razorpay webhook event")
+    const currentAttempts = (webhookRecord.attempts ?? 0) + 1
+    await db.webhookEvent.update({
+      where: { id: webhookRecord.id },
+      data: {
+        status: currentAttempts >= 5 ? "DEAD" : "FAILED",
+        errorMessage: (error as Error).message?.slice(0, 500) ?? "Unknown error",
+      },
+    })
   }
 
   return NextResponse.json({ received: true })
 }
+

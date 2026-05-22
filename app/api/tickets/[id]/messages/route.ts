@@ -1,101 +1,87 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { pusherServer } from "@/lib/pusher"
 
-// GET /api/tickets/[id]/messages — get all messages for a ticket
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+async function triggerPusher(channel: string, event: string, data: unknown) {
+  if (!process.env.PUSHER_APP_ID) return
   try {
-    const { id: ticketId } = await params
-    const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Verify the user owns the ticket or is admin
-    const ticket = await db.ticket.findUnique({
-      where: { id: ticketId },
-      select: { clientId: true },
+    const Pusher = (await import("pusher")).default
+    const pusher = new Pusher({
+      appId: process.env.PUSHER_APP_ID!,
+      key: process.env.PUSHER_KEY!,
+      secret: process.env.PUSHER_SECRET!,
+      cluster: process.env.PUSHER_CLUSTER ?? "ap2",
+      useTLS: true,
     })
+    await pusher.trigger(channel, event, data)
+  } catch {}
+}
 
-    if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 })
+// GET /api/tickets/[id]/messages
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const isAdmin = (session.user as any).role === "ADMIN"
-    if (ticket.clientId !== session.user.id && !isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
+    const { id } = await params
+
+    const ticket = await db.ticket.findFirst({
+      where: { id, clientId: session.user.id },
+    })
+    if (!ticket) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
     const messages = await db.ticketMessage.findMany({
-      where: {
-        ticketId,
-        ...(isAdmin ? {} : { isInternal: false }),
-      },
+      where: { ticketId: id },
       orderBy: { createdAt: "asc" },
     })
 
     return NextResponse.json({ data: messages })
   } catch (err) {
-    console.error("[tickets/[id]/messages] GET:", err)
+    console.error("[tickets/messages GET]", err)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-// POST /api/tickets/[id]/messages — add a reply to a ticket
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+// POST /api/tickets/[id]/messages
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id: ticketId } = await params
     const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const userId = session.user.id
 
-    const { content, attachments = [], isInternal = false } = await req.json()
+    const { id } = await params
 
+    const ticket = await db.ticket.findFirst({
+      where: { id, clientId: userId },
+    })
+    if (!ticket) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+    const { content } = await req.json()
     if (!content?.trim()) {
       return NextResponse.json({ error: "Content is required" }, { status: 400 })
     }
 
-    // Verify ticket exists and user has access
-    const ticket = await db.ticket.findUnique({
-      where: { id: ticketId },
-      select: { id: true, clientId: true, status: true },
+    const message = await db.ticketMessage.create({
+      data: { ticketId: id, senderId: userId, content: content.trim() },
     })
 
-    if (!ticket) return NextResponse.json({ error: "Ticket not found" }, { status: 404 })
+    // Update ticket updatedAt
+    await db.ticket.update({ where: { id }, data: { updatedAt: new Date() } })
 
-    const isAdmin = (session.user as any).role === "ADMIN"
-    if (ticket.clientId !== session.user.id && !isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
-
-    const [message] = await db.$transaction([
-      db.ticketMessage.create({
-        data: {
-          ticketId: ticket.id,
-          senderId: session.user.id,
-          content: content.trim(),
-          attachments,
-          isInternal: isAdmin && isInternal,
-        },
-      }),
-      // Reopen ticket if it was resolved and user replied
-      ...(ticket.status === "RESOLVED" && !isAdmin
-        ? [db.ticket.update({ where: { id: ticket.id }, data: { status: "OPEN" } })]
-        : []),
-    ])
-
-    // Real-time push to Pusher channel
-    await pusherServer.trigger(`ticket-${ticket.id}`, "new-message", message).catch(() => {})
+    // Pusher real-time
+    await triggerPusher(`private-user-${ticket.clientId}`, "ticket.message", {
+      ticketId: id,
+      message: {
+        id: message.id,
+        content: message.content,
+        senderId: message.senderId,
+        createdAt: message.createdAt,
+      },
+    })
 
     return NextResponse.json({ data: message }, { status: 201 })
   } catch (err) {
-    console.error("[tickets/[id]/messages] POST:", err)
+    console.error("[tickets/messages POST]", err)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

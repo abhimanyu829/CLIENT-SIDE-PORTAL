@@ -1,206 +1,193 @@
-import { Suspense } from "react"
-import Link from "next/link"
 import { db } from "@/lib/db"
-import { ProductStatus } from "@prisma/client"
-import { Metadata } from "next"
+import { ProductStatus, ProductType, CampaignStatus } from "@prisma/client"
+import { unstable_cache } from "next/cache"
+import OfferBanner from "@/components/marketplace/OfferBanner"
+import MarketplaceClient from "./MarketplaceClient"
+import { PageHero } from "@/components/public/PageHero"
+import { FeatureGrid } from "@/components/public/FeatureGrid"
+import { StatsRow } from "@/components/public/StatsRow"
+import { FAQSection } from "@/components/public/FAQSection"
+import { CallToAction } from "@/components/public/CallToAction"
+import { Shield, Zap, Globe, Lock, Cpu, BarChart } from "lucide-react"
 
-export const metadata: Metadata = {
-  title: "Marketplace — NexusAI",
-  description: "Browse premium AI agents, SaaS products, and automation tools. Find, try, and deploy in seconds.",
+export const revalidate = 30
+
+export async function generateMetadata() {
+  const count = await db.product.count({ where: { status: ProductStatus.PUBLISHED } }).catch(() => 0)
+  return {
+    title: `${count} Products — NexusAI Marketplace | AI Agents, SaaS Tools & More`,
+    description: `Browse ${count}+ premium AI agents, SaaS tools, automation workflows, APIs, and developer products. Filter, compare, and deploy instantly.`,
+    openGraph: {
+      title: `${count} Products — NexusAI Marketplace`,
+      description: `Browse and deploy ${count}+ AI products instantly`,
+    },
+  }
 }
 
-async function getProducts(type?: string) {
-  return await db.product.findMany({
-    where: {
-      status: ProductStatus.PUBLISHED,
-      ...(type && type !== "ALL" ? { type: type as any } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    include: { tiers: { take: 1, orderBy: { price: "asc" } } },
+const getMarketplaceData = unstable_cache(async () => {
+  const now = new Date()
+  const [featured, trending, flashSale, bestSellers, allProducts, campaign, totalCount] = await Promise.all([
+    // Featured products
+    db.product.findMany({
+      where: { status: ProductStatus.PUBLISHED, isFeatured: true },
+      include: { tiers: { orderBy: { price: "asc" }, take: 1 }, _count: { select: { subscriptions: true } } },
+      orderBy: { viewCount: "desc" },
+      take: 6,
+    }),
+    // Trending
+    db.product.findMany({
+      where: { status: ProductStatus.PUBLISHED, isTrending: true },
+      include: { tiers: { orderBy: { price: "asc" }, take: 1 }, _count: { select: { subscriptions: true } } },
+      orderBy: { viewCount: "desc" },
+      take: 8,
+    }),
+    // Flash sale (has flashSalePrice and endsAt in future)
+    db.product.findMany({
+      where: {
+        status: ProductStatus.PUBLISHED,
+        tiers: { some: { flashSalePrice: { not: null }, flashSaleEndsAt: { gt: now } } },
+      },
+      include: { tiers: { where: { flashSaleEndsAt: { gt: now } }, orderBy: { price: "asc" }, take: 1 }, _count: { select: { subscriptions: true } } },
+      take: 4,
+    }),
+    // Best sellers
+    db.product.findMany({
+      where: { status: ProductStatus.PUBLISHED, isBestSeller: true },
+      include: { tiers: { orderBy: { price: "asc" }, take: 1 }, _count: { select: { subscriptions: true } } },
+      orderBy: [{ reviewCount: "desc" }, { averageRating: "desc" }],
+      take: 4,
+    }),
+    // All products for main grid (first page)
+    db.product.findMany({
+      where: { status: ProductStatus.PUBLISHED },
+      include: { tiers: { orderBy: { price: "asc" }, take: 1 }, _count: { select: { subscriptions: true } } },
+      orderBy: [{ isFeatured: "desc" }, { viewCount: "desc" }],
+      take: 24,
+    }),
+    // Active campaign
+    db.campaign.findFirst({
+      where: { status: CampaignStatus.ACTIVE, startsAt: { lte: now }, endsAt: { gte: now } },
+      select: { id: true, bannerText: true, ctaText: true, ctaUrl: true, bannerImageUrl: true, endsAt: true, discountPercent: true, type: true },
+    }),
+    // Total count
+    db.product.count({ where: { status: ProductStatus.PUBLISHED } }),
+  ])
+
+  return { featured, trending, flashSale, bestSellers, allProducts, campaign, totalCount }
+}, ["marketplace-data"], { revalidate: 30, tags: ["products", "campaigns", "featured-products", "trending"] })
+
+function toIso(value: Date | string | null | undefined) {
+  if (!value) return undefined
+  if (value instanceof Date) return value.toISOString()
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
+}
+
+function serialize(products: any[]) {
+  return products.map(p => {
+    const tier = p.tiers?.[0]
+    return {
+      id: p.id,
+      slug: p.slug,
+      name: p.name,
+      tagline: p.tagline,
+      type: p.type,
+      category: p.category,
+      thumbnailUrl: p.thumbnailUrl,
+      iconUrl: p.iconUrl,
+      isPremium: p.isPremium,
+      isFeatured: p.isFeatured,
+      isTrending: p.isTrending,
+      isBestSeller: p.isBestSeller,
+      badgeText: p.badgeText,
+      averageRating: p.averageRating,
+      reviewCount: p.reviewCount,
+      viewCount: p.viewCount,
+      tags: p.tags,
+      demoUrl: p.demoUrl,
+      activeUsers: p._count?.subscriptions ?? 0,
+      createdAt: toIso(p.createdAt),
+      startingPrice: tier ? Number(tier.price) : undefined,
+      discountPrice: tier?.discountPrice ? Number(tier.discountPrice) : undefined,
+      flashSalePrice: tier?.flashSalePrice ? Number(tier.flashSalePrice) : undefined,
+      flashSaleEndsAt: toIso(tier?.flashSaleEndsAt),
+      currency: tier?.currency,
+      interval: tier?.interval,
+    }
   })
 }
 
-const FILTERS = ["ALL","AI_AGENT","SERVICE","AUTOMATION","ANALYTICS","API"]
-const FILTER_LABELS: Record<string,string> = {ALL:"All Products",AI_AGENT:"AI Agents",SERVICE:"SaaS",AUTOMATION:"Automation",ANALYTICS:"Analytics",API:"APIs"}
+export default async function MarketplacePage() {
+  const { featured, trending, flashSale, bestSellers, allProducts, campaign, totalCount } = await getMarketplaceData()
 
-async function ProductGrid({ type }: { type?: string }) {
-  const products = await getProducts(type)
-
-  if (products.length === 0) {
-    return (
-      <div className="col-span-full flex flex-col items-center justify-center py-24 text-center">
-        <div className="text-5xl mb-4">🔍</div>
-        <h3 className="text-xl font-bold text-white mb-2">No products found</h3>
-        <p className="text-zinc-500">Be the first to publish in this category.</p>
-      </div>
-    )
-  }
+  const campaignData = campaign ? {
+    id: campaign.id,
+    bannerText: campaign.bannerText,
+    ctaText: campaign.ctaText,
+    ctaUrl: campaign.ctaUrl,
+    bannerImageUrl: campaign.bannerImageUrl,
+    endsAt: toIso(campaign.endsAt) ?? new Date().toISOString(),
+    discountPercent: campaign.discountPercent,
+    type: campaign.type,
+  } : null
 
   return (
-    <>
-      {products.map((p) => (
-        <Link key={p.id} href={`/marketplace/${p.slug}`}>
-          <article className="group glass rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/40 hover:shadow-2xl hover:shadow-purple-500/10">
-            <div className="aspect-video relative overflow-hidden bg-zinc-900">
-              {p.thumbnailUrl ? (
-                <img src={p.thumbnailUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-blue-900/40 flex items-center justify-center">
-                  <span className="text-5xl">{p.type === "AI_AGENT" ? "🤖" : "⚡"}</span>
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <div className="absolute top-3 left-3 flex gap-2">
-                <span className="bg-black/70 backdrop-blur-sm text-xs font-semibold px-2.5 py-1 rounded-full text-purple-300 border border-white/10">
-                  {FILTER_LABELS[p.type] ?? p.type}
-                </span>
-              </div>
-              {p.tiers[0] && (
-                <div className="absolute bottom-3 right-3">
-                  <span className="bg-emerald-500/90 backdrop-blur text-xs font-bold px-2.5 py-1 rounded-full text-white">
-                    ${Number(p.tiers[0].price)/100}/{p.tiers[0].interval === "MONTHLY" ? "mo" : "yr"}
-                  </span>
-                </div>
-              )}
-            </div>
+    <div className="bg-[#080808] text-white min-h-screen">
+      <PageHero 
+        title={<>The Enterprise <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-400">AI Marketplace</span></>}
+        description="Discover, deploy, and scale production-grade AI agents, SaaS tools, and developer APIs in seconds. The trusted ecosystem for modern AI infrastructure."
+        pillText="NexusAI Ecosystem"
+        ctaText="Start Deploying"
+        ctaHref="/register"
+        secondaryCtaText="View Documentation"
+        secondaryCtaHref="/docs"
+      />
+      <OfferBanner campaign={campaignData} />
+      <MarketplaceClient
+        featured={serialize(featured)}
+        trending={serialize(trending)}
+        flashSale={serialize(flashSale)}
+        bestSellers={serialize(bestSellers)}
+        allProducts={serialize(allProducts)}
+        totalCount={totalCount}
+      />
+      
+      <StatsRow stats={[
+        { value: "10k+", label: "Active Deployments" },
+        { value: "99.99%", label: "Platform Uptime" },
+        { value: "500+", label: "Verified Agents" },
+        { value: "0ms", label: "Cold Starts" }
+      ]} />
 
-            <div className="p-5">
-              <h3 className="font-bold text-white text-lg mb-1 group-hover:text-purple-300 transition-colors">{p.name}</h3>
-              <p className="text-zinc-500 text-sm mb-4 line-clamp-2">{p.tagline}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  {[1,2,3,4,5].map(s=>(
-                    <span key={s} className={`text-sm ${p.averageRating >= s ? "text-amber-400" : "text-zinc-700"}`}>★</span>
-                  ))}
-                  <span className="text-xs text-zinc-600 ml-1">({p.reviewCount})</span>
-                </div>
-                <span className="text-xs text-zinc-600">{p.viewCount.toLocaleString()} views</span>
-              </div>
-            </div>
-          </article>
-        </Link>
-      ))}
-    </>
-  )
-}
+      <FeatureGrid 
+        title="Why Choose NexusAI Marketplace?"
+        description="Built for enterprise scale, security, and instant deployment."
+        features={[
+          { icon: Shield, title: "Enterprise Security", description: "All products undergo rigorous security audits, penetration testing, and compliance checks before listing." },
+          { icon: Zap, title: "Instant Deployment", description: "Deploy AI agents and SaaS tools to your dedicated cloud environment with a single click." },
+          { icon: Globe, title: "Global Edge Network", description: "Low-latency API access and CDN distribution ensures your tools run lightning fast worldwide." },
+          { icon: Lock, title: "Data Privacy", description: "SOC2 Type II compliance and strict data isolation ensures your sensitive IP remains protected." },
+          { icon: Cpu, title: "Model Agnostic", description: "Seamlessly switch between GPT-4, Claude 3, and Llama 3 across all your deployed AI agents." },
+          { icon: BarChart, title: "Unified Analytics", description: "Monitor usage, costs, and performance across all your third-party SaaS tools in one dashboard." }
+        ]}
+      />
 
-function ProductGridSkeleton() {
-  return (
-    <>
-      {[1,2,3,4,5,6].map(i=>(
-        <div key={i} className="glass rounded-2xl overflow-hidden animate-pulse">
-          <div className="aspect-video bg-zinc-800" />
-          <div className="p-5 space-y-3">
-            <div className="h-5 bg-zinc-800 rounded w-3/4" />
-            <div className="h-3 bg-zinc-800 rounded" />
-            <div className="h-3 bg-zinc-800 rounded w-1/2" />
-          </div>
-        </div>
-      ))}
-    </>
-  )
-}
+      <FAQSection 
+        title="Marketplace FAQs"
+        faqs={[
+          { question: "How are products vetted before listing?", answer: "Every product undergoes a 4-step manual review process including security auditing, code scanning, performance benchmarking, and creator identity verification." },
+          { question: "Can I sell my own AI agents?", answer: "Yes! Developers can monetize their AI agents and SaaS tools by listing them on the NexusAI Marketplace. We handle billing, authentication, and hosting." },
+          { question: "Are subscriptions managed in one place?", answer: "Yes, all marketplace subscriptions are centralized in your NexusAI dashboard with unified billing and usage limits." },
+          { question: "What is the refund policy?", answer: "We offer a 14-day money-back guarantee on all premium SaaS tools and AI agents if they don't meet your expectations." }
+        ]}
+      />
 
-export default function MarketplacePage() {
-  return (
-    <div className="min-h-screen bg-black text-white">
-      <style>{`
-        .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
-        .text-gradient { background: linear-gradient(135deg,#a78bfa,#60a5fa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-        .filter-active { background: rgba(139,92,246,0.2); border-color: rgba(139,92,246,0.5); color: #c4b5fd; }
-      `}</style>
-
-      {/* Hero */}
-      <section className="relative py-24 px-4 text-center overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-0 right-1/4 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="max-w-3xl mx-auto relative z-10">
-          <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 text-sm text-zinc-400 mb-6">
-            <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" />
-            {0} products live · Updated daily
-          </div>
-          <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-4">
-            AI <span className="text-gradient">Marketplace</span>
-          </h1>
-          <p className="text-xl text-zinc-400 mb-8">
-            Discover, deploy, and monetize premium AI agents and SaaS tools.
-          </p>
-          {/* Search */}
-          <div className="relative max-w-xl mx-auto">
-            <input
-              type="search"
-              placeholder="Search AI agents, SaaS tools, APIs..."
-              className="w-full glass rounded-xl px-5 py-4 text-white placeholder-zinc-600 outline-none focus:border-purple-500/50 pr-12 text-sm"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600">⌘K</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Filters */}
-      <div className="sticky top-0 z-20 bg-black/80 backdrop-blur-xl border-b border-white/5 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto scrollbar-hide">
-          {FILTERS.map(f=>(
-            <Link key={f} href={f==="ALL" ? "/marketplace" : `/marketplace?type=${f}`}>
-              <button className={`glass rounded-lg px-4 py-2 text-xs font-medium whitespace-nowrap transition-all hover:border-purple-500/40 ${f==="ALL" ? "filter-active" : "text-zinc-400"}`}>
-                {FILTER_LABELS[f]}
-              </button>
-            </Link>
-          ))}
-          <div className="ml-auto flex items-center gap-2">
-            <select className="glass rounded-lg px-3 py-2 text-xs text-zinc-400 bg-transparent outline-none cursor-pointer">
-              <option value="newest">Newest First</option>
-              <option value="popular">Most Popular</option>
-              <option value="rating">Highest Rated</option>
-              <option value="price_asc">Price: Low → High</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Featured Sections */}
-      <div className="max-w-7xl mx-auto px-4 py-12">
-
-        {/* Trending Banner */}
-        <div className="glass rounded-2xl p-6 mb-10 flex items-center gap-6 overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-900/20 to-blue-900/10 pointer-events-none" />
-          <div className="relative z-10 flex-1">
-            <p className="text-purple-400 text-xs font-mono tracking-widest uppercase mb-1">🔥 Trending Now</p>
-            <h2 className="text-xl font-bold text-white">Top AI Agents this week</h2>
-            <p className="text-zinc-500 text-sm">Deployed by 2,400+ developers in the last 7 days</p>
-          </div>
-          <div className="relative z-10 flex gap-3">
-            {["Sales AI","Code Helper","Doc AI"].map(t=>(
-              <span key={t} className="glass text-xs px-3 py-1.5 rounded-full text-zinc-300">{t}</span>
-            ))}
-          </div>
-        </div>
-
-        {/* Category labels */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">All Products</h2>
-          <span className="text-zinc-600 text-sm">Sorted by latest</span>
-        </div>
-
-        {/* Product Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          <Suspense fallback={<ProductGridSkeleton />}>
-            <ProductGrid />
-          </Suspense>
-        </div>
-
-        {/* Editor Picks */}
-        <div className="mt-20">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-xl">🏆</span>
-            <h2 className="text-2xl font-bold text-white">Editor&apos;s Picks</h2>
-            <span className="glass text-xs px-2.5 py-1 rounded-full text-zinc-400">Curated weekly</span>
-          </div>
-          <div className="glass rounded-2xl p-8 text-center text-zinc-600">
-            <p>Editor picks will appear here once products are featured by admins.</p>
-          </div>
-        </div>
-      </div>
+      <CallToAction 
+        title="Ready to upgrade your workflow?"
+        description="Join thousands of companies using NexusAI to deploy enterprise-grade AI tools."
+        ctaText="Explore All Products"
+        ctaHref="/register"
+      />
     </div>
   )
 }

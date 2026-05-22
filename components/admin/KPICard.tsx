@@ -1,55 +1,91 @@
 "use client"
 
-interface KPICardProps {
+import React from "react"
+import { cn } from "@/lib/utils"
+import { Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react"
+
+interface KpiCardProps {
   title: string
   value: string | number
-  sub?: string
-  icon?: string
-  trend?: { value: number; label: string }
-  color?: "default" | "green" | "blue" | "purple" | "red" | "orange"
+  subtitle?: string
+  trend?: number // percentage change
+  prefix?: string
+  suffix?: string
   loading?: boolean
+  className?: string
+  icon?: React.ReactNode
 }
 
-const colorMap: Record<string, string> = {
-  default: "from-zinc-500/10 to-zinc-400/5 border-zinc-200 dark:border-zinc-700",
-  green: "from-emerald-500/10 to-emerald-400/5 border-emerald-200 dark:border-emerald-700",
-  blue: "from-blue-500/10 to-blue-400/5 border-blue-200 dark:border-blue-700",
-  purple: "from-violet-500/10 to-violet-400/5 border-violet-200 dark:border-violet-700",
-  red: "from-rose-500/10 to-rose-400/5 border-rose-200 dark:border-rose-700",
-  orange: "from-orange-500/10 to-orange-400/5 border-orange-200 dark:border-orange-700",
-}
-
-const trendColor = (v: number) =>
-  v > 0 ? "text-emerald-600" : v < 0 ? "text-rose-500" : "text-muted-foreground"
-
-export function KPICard({ title, value, sub, icon, trend, color = "default", loading }: KPICardProps) {
-  if (loading) {
-    return (
-      <div className="relative border rounded-2xl p-5 bg-gradient-to-br from-muted/40 to-muted/10 animate-pulse">
-        <div className="h-4 w-24 bg-muted rounded mb-3" />
-        <div className="h-8 w-32 bg-muted rounded mb-2" />
-        <div className="h-3 w-20 bg-muted rounded" />
-      </div>
-    )
-  }
+export function KpiCard({
+  title,
+  value,
+  subtitle,
+  trend,
+  prefix = "",
+  suffix = "",
+  loading = false,
+  className,
+  icon,
+}: KpiCardProps) {
+  const trendPositive = trend !== undefined && trend > 0
+  const trendNegative = trend !== undefined && trend < 0
+  const trendNeutral = trend !== undefined && trend === 0
 
   return (
     <div
-      className={`relative border rounded-2xl p-5 bg-gradient-to-br shadow-sm hover:shadow-md transition-shadow ${colorMap[color]}`}
-    >
-      {icon && (
-        <span className="absolute top-4 right-4 text-2xl opacity-60 select-none">{icon}</span>
+      className={cn(
+        "relative rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md",
+        className
       )}
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-        {title}
-      </p>
-      <p className="text-3xl font-bold tracking-tight">{value}</p>
-      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-      {trend && (
-        <p className={`text-xs font-medium mt-2 ${trendColor(trend.value)}`}>
-          {trend.value > 0 ? "▲" : trend.value < 0 ? "▼" : "—"} {Math.abs(trend.value)}%{" "}
-          <span className="text-muted-foreground font-normal">{trend.label}</span>
-        </p>
+    >
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      )}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-muted-foreground truncate uppercase tracking-wide">
+            {title}
+          </p>
+          <p className="mt-1 text-2xl font-bold tracking-tight">
+            {loading ? (
+              <span className="inline-block h-7 w-24 rounded bg-muted animate-pulse" />
+            ) : (
+              <>
+                {prefix}
+                {typeof value === "number" ? value.toLocaleString() : value}
+                {suffix}
+              </>
+            )}
+          </p>
+          {subtitle && (
+            <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+          )}
+        </div>
+        {icon && (
+          <div className="shrink-0 rounded-lg bg-primary/10 p-2 text-primary">
+            {icon}
+          </div>
+        )}
+      </div>
+      {trend !== undefined && !loading && (
+        <div
+          className={cn(
+            "mt-3 flex items-center gap-1 text-xs font-medium",
+            trendPositive && "text-emerald-600 dark:text-emerald-400",
+            trendNegative && "text-red-600 dark:text-red-400",
+            trendNeutral && "text-muted-foreground"
+          )}
+        >
+          {trendPositive && <TrendingUp className="h-3.5 w-3.5" />}
+          {trendNegative && <TrendingDown className="h-3.5 w-3.5" />}
+          {trendNeutral && <Minus className="h-3.5 w-3.5" />}
+          <span>
+            {trendPositive ? "+" : ""}
+            {trend.toFixed(1)}% vs last period
+          </span>
+        </div>
       )}
     </div>
   )

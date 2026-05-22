@@ -1,47 +1,65 @@
 import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
 import { auth } from "@/lib/auth"
+import { db } from "@/lib/db"
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await auth()
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     
     const notifications = await db.notification.findMany({
       where: { userId: session.user.id },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 20
     })
 
     return NextResponse.json({ data: notifications })
-  } catch (error) {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  } catch (err) {
+    console.error("[notifications GET]", err)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-export async function PATCH(req: Request) {
+export async function POST(req: Request) {
   try {
-    const session = await auth()
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-    const body = await req.json()
-    const { id, markAllAsRead } = body
-
-    if (markAllAsRead) {
-      // isRead is the correct Prisma field name (not 'read')
-      await db.notification.updateMany({
-        where: { userId: session.user.id, isRead: false },
-        data: { isRead: true }
-      })
-    } else if (id) {
-      await db.notification.update({
-        where: { id },
-        data: { isRead: true }
-      })
+    // Basic API Key check for internal service usage
+    const authHeader = req.headers.get("authorization")
+    if (authHeader !== `Bearer ${process.env.ADMIN_SECRET}`) {
+      const session = await auth()
+      if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+
+    const { userId, type, title, body, actionUrl } = await req.json()
+    if (!userId || !title) return NextResponse.json({ error: "Missing fields" }, { status: 400 })
+
+    const notification = await db.notification.create({
+      data: {
+        userId,
+        type: type ?? "SYSTEM",
+        title,
+        body,
+        actionUrl,
+      }
+    })
+
+    // Optionally trigger Pusher
+    if (process.env.PUSHER_APP_ID) {
+      try {
+        const Pusher = (await import("pusher")).default
+        const pusher = new Pusher({
+          appId: process.env.PUSHER_APP_ID,
+          key: process.env.PUSHER_KEY!,
+          secret: process.env.PUSHER_SECRET!,
+          cluster: process.env.PUSHER_CLUSTER ?? "ap2",
+          useTLS: true,
+        })
+        await pusher.trigger(`private-user-${userId}`, "notification.new", notification)
+      } catch {}
+    }
+
+    return NextResponse.json({ data: notification }, { status: 201 })
+  } catch (err) {
+    console.error("[notifications POST]", err)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

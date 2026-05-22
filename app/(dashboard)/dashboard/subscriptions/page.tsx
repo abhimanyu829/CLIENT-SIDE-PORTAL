@@ -1,24 +1,28 @@
-import { db } from "@/lib/db"
 import { auth } from "@/lib/auth"
+import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
-import SubscriptionsClient from "./SubscriptionsClient"
+import SubscriptionsClient from "@/components/dashboard/SubscriptionsClient"
 
 export default async function SubscriptionsPage() {
   const session = await auth()
-  if (!session?.user?.id) redirect("/auth/signin")
+  if (!session?.user?.id) redirect("/login")
 
-  const [subscriptions, invoices] = await Promise.all([
+  const [subscriptions, products] = await Promise.all([
     db.subscription.findMany({
       where: { userId: session.user.id },
-      include: { product: true, tier: true },
-      orderBy: { createdAt: "desc" }
-    }).catch(() => []),
-    db.invoice.findMany({
-      where: { userId: session.user.id },
-      orderBy: { issuedAt: "desc" },
-      take: 5
-    }).catch(() => [])
+      include: { product: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    db.product.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { type: "asc" },
+    }),
   ])
 
-  return <SubscriptionsClient subscriptions={subscriptions} invoices={invoices} />
+  return (
+    <SubscriptionsClient 
+      initialSubscriptions={subscriptions as any}
+      availableProducts={products as any} 
+    />
+  )
 }
