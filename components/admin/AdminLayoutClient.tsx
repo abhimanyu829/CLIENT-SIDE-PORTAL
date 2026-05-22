@@ -20,13 +20,14 @@ import {
   LayoutDashboard, Users, CreditCard, ShoppingCart, Package,
   Tag, BarChart3, Bot, ShieldCheck, Settings, LogOut,
   ChevronLeft, ChevronRight, Menu, Bell, Sun, Moon, User,
-  ExternalLink, Webhook
+  ExternalLink, Webhook, Store
 } from "lucide-react"
 import { Toaster } from "@/components/ui/toaster"
 import RealtimeAdminProvider from "@/components/admin/RealtimeAdminProvider"
 
 const NAV_ITEMS = [
   { name: "Revenue Dashboard", path: "/admin", icon: LayoutDashboard },
+  { name: "Ecosystem Control", path: "/admin/ecosystem", icon: Store },
   { name: "User Management",   path: "/admin/users", icon: Users },
   { name: "Subscriptions",     path: "/admin/subscriptions", icon: CreditCard },
   { name: "Orders & Payments", path: "/admin/orders", icon: ShoppingCart },

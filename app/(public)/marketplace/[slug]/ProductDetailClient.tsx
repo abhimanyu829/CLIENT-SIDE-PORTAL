@@ -37,8 +37,14 @@ interface Product {
   thumbnailUrl?: string | null; iconUrl?: string | null; bannerUrl?: string | null
   screenshotUrls: string[]; videoUrls: string[]; demoUrl?: string | null; documentationUrl?: string | null
   features: any; techStack: string[]; tags: string[]; isPremium: boolean
+  faqs?: any; documentation?: any; setupGuide?: any; integrationCatalog?: any
+  roadmap?: any; supportPlans?: any; bundleOffers?: any; commerceConfig?: any; aiConfig?: any
   isFeatured: boolean; isTrending: boolean; isBestSeller: boolean; badgeText?: string | null
   averageRating: number; reviewCount: number; viewCount: number; activeUsers: number
+  vendor?: {
+    id: string; slug: string; displayName: string; status: string; type: string
+    sellerScore: number; averageRating: number; totalSales: number; badges: string[]; logoUrl?: string | null
+  } | null
   createdAt: string; updatedAt: string; tiers: Tier[]; reviews: Review[]
   versions: { id: string; version: number; createdAt: string }[]
   campaign?: { id: string; bannerText?: string | null; ctaText?: string | null; discountPercent: number; endsAt: string; flatDiscount?: number | null } | null
@@ -49,8 +55,12 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const [activeScreenshot, setActiveScreenshot] = useState(0)
   const [activeTab, setActiveTab] = useState<"overview" | "pricing" | "reviews" | "changelog">("overview")
   const [wishlisted, setWishlisted] = useState(false)
+  const [cartState, setCartState] = useState<"idle" | "adding" | "added" | "error">("idle")
 
   const features: string[] = Array.isArray(product.features) ? product.features as string[] : []
+  const integrations = Array.isArray(product.integrationCatalog) ? product.integrationCatalog as any[] : []
+  const supportPlans = Array.isArray(product.supportPlans) ? product.supportPlans as any[] : []
+  const faqs = Array.isArray(product.faqs) ? product.faqs as any[] : []
   const cheapestTier = product.tiers[0]
   const hasFlash = !!(cheapestTier?.flashSalePrice && cheapestTier.flashSaleEndsAt && new Date(cheapestTier.flashSaleEndsAt) > new Date())
   const allScreenshots = [
@@ -70,6 +80,20 @@ export default function ProductDetailClient({ product }: { product: Product }) {
     count: product.reviews.filter(rv => rv.rating === r).length,
     pct: product.reviews.length > 0 ? (product.reviews.filter(rv => rv.rating === r).length / product.reviews.length) * 100 : 0,
   }))
+
+  const addToCart = async (tierId?: string) => {
+    setCartState("adding")
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: product.id, tierId, quantity: 1 }),
+      })
+      setCartState(res.ok ? "added" : "error")
+    } catch {
+      setCartState("error")
+    }
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -141,6 +165,25 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                 <span className="text-zinc-600">👥 {product.activeUsers.toLocaleString()} users</span>
                 {product.category && <span className="text-zinc-600">📂 {product.category}</span>}
               </div>
+
+              {product.vendor && (
+                <div className="mt-6 glass rounded-2xl p-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 overflow-hidden rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center font-black">
+                      {product.vendor.logoUrl ? <img src={product.vendor.logoUrl} alt="" className="h-full w-full object-cover" /> : product.vendor.displayName.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">{product.vendor.displayName}</p>
+                      <p className="text-xs text-zinc-500">{product.vendor.type.replaceAll("_", " ")} - {product.vendor.status}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                    <div><p className="font-black text-white">{product.vendor.sellerScore.toFixed(0)}</p><p className="text-zinc-600">seller score</p></div>
+                    <div><p className="font-black text-white">{product.vendor.averageRating.toFixed(1)}</p><p className="text-zinc-600">vendor rating</p></div>
+                    <div><p className="font-black text-white">{product.vendor.totalSales}</p><p className="text-zinc-600">sales</p></div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Screenshot gallery */}
@@ -211,6 +254,35 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                         {product.techStack.map(t => (
                           <span key={t} className="glass px-4 py-2 rounded-xl text-sm text-zinc-300 font-medium">{t}</span>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(integrations.length > 0 || supportPlans.length > 0 || faqs.length > 0) && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="glass rounded-2xl p-5">
+                        <h3 className="font-black mb-3">Integrations</h3>
+                        <div className="space-y-2 text-sm text-zinc-400">
+                          {(integrations.length ? integrations : ["API access", "Webhooks", "SSO ready"]).slice(0, 5).map((item, i) => (
+                            <p key={i}>{typeof item === "string" ? item : item.name ?? "Integration"}</p>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="glass rounded-2xl p-5">
+                        <h3 className="font-black mb-3">Support Plans</h3>
+                        <div className="space-y-2 text-sm text-zinc-400">
+                          {(supportPlans.length ? supportPlans : ["Community", "Priority", "Enterprise SLA"]).slice(0, 5).map((item, i) => (
+                            <p key={i}>{typeof item === "string" ? item : item.name ?? "Support plan"}</p>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="glass rounded-2xl p-5">
+                        <h3 className="font-black mb-3">FAQs</h3>
+                        <div className="space-y-2 text-sm text-zinc-400">
+                          {(faqs.length ? faqs : ["Deployment timing", "Refund terms", "Vendor support"]).slice(0, 5).map((item, i) => (
+                            <p key={i}>{typeof item === "string" ? item : item.question ?? "Question"}</p>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -501,6 +573,13 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                       {cheapestTier.trialDays > 0 ? `Start ${cheapestTier.trialDays}-day Free Trial` : "Get Started →"}
                     </button>
                   </Link>
+                  <button
+                    onClick={() => addToCart(cheapestTier.id)}
+                    disabled={cartState === "adding"}
+                    className="w-full glass py-3.5 rounded-xl text-zinc-300 font-semibold text-sm hover:border-purple-500/50 transition-all disabled:opacity-60"
+                  >
+                    {cartState === "adding" ? "Adding..." : cartState === "added" ? "Added to enterprise cart" : "Add to cart"}
+                  </button>
                   {product.demoUrl && (
                     <Link href={`/demo?product=${product.slug}`}>
                       <button className="w-full glass py-3.5 rounded-xl text-zinc-300 font-semibold text-sm hover:border-purple-500/50 transition-all">

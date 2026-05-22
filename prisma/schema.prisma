@@ -12,6 +12,7 @@ datasource db {
 enum Role {
   SUPER_ADMIN
   SUB_ADMIN
+  VENDOR
   CLIENT
   GUEST
 }
@@ -32,7 +33,14 @@ enum ProductType {
   WEBSITE
   AUTOMATION
   API
+  TEMPLATE
+  PLUGIN
+  PROMPT
+  WORKFLOW
   DIGITAL
+  CLOUD_SERVICE
+  SUPPORT_PLAN
+  CONSULTING
   ADDON
   CREDIT_PACK
   ENTERPRISE
@@ -69,14 +77,20 @@ enum SubStatus {
 
 enum PaymentStatus {
   PENDING
+  AUTHORIZED
   SUCCESS
   FAILED
   REFUNDED
+  PARTIALLY_REFUNDED
+  DISPUTED
 }
 
 enum PaymentGateway {
   STRIPE
   RAZORPAY
+  PAYPAL
+  CRYPTO
+  MANUAL
 }
 
 enum ProjectStatus {
@@ -113,11 +127,112 @@ enum LeadStage {
 
 enum NotifType {
   PAYMENT
+  ORDER
+  VENDOR
   TICKET
   SUBSCRIPTION
   PROJECT
   SYSTEM
   CHAT
+  AI_USAGE
+  COMMERCE
+}
+
+enum VendorStatus {
+  PENDING
+  VERIFIED
+  SUSPENDED
+  REJECTED
+}
+
+enum VendorType {
+  SAAS_CREATOR
+  AI_DEVELOPER
+  AUTOMATION_BUILDER
+  AGENCY
+  ENTERPRISE_SELLER
+  FREELANCER
+  API_PROVIDER
+  CONSULTANT
+}
+
+enum CartStatus {
+  ACTIVE
+  ABANDONED
+  CONVERTED
+  EXPIRED
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING
+  PAID
+  PROCESSING
+  FULFILLED
+  PARTIALLY_REFUNDED
+  REFUNDED
+  CANCELLED
+  DISPUTED
+}
+
+enum FulfillmentType {
+  HOSTED
+  DOWNLOAD
+  API_ACCESS
+  SERVICE_DELIVERY
+  ENTERPRISE_ONBOARDING
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  PAID
+  FAILED
+  HELD
+}
+
+enum ServiceEngagementStatus {
+  PROPOSED
+  ACCEPTED
+  ACTIVE
+  IN_REVIEW
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum MilestoneStatus {
+  PENDING
+  FUNDED
+  IN_PROGRESS
+  SUBMITTED
+  APPROVED
+  RELEASED
+  DISPUTED
+}
+
+enum AgentDeploymentStatus {
+  QUEUED
+  DEPLOYING
+  LIVE
+  FAILED
+  PAUSED
+  ARCHIVED
+}
+
+enum MetricEventType {
+  VIEW
+  SEARCH
+  CART_ADD
+  CHECKOUT_STARTED
+  PURCHASE
+  SUBSCRIPTION_CREATED
+  AI_USAGE
+  API_CALL
+  REVIEW_CREATED
+  TICKET_CREATED
+  DEPLOYMENT_EVENT
 }
 
 enum CouponType {
@@ -156,41 +271,42 @@ enum WebhookStatus {
   FAILED
   DEAD
 }
+
 model User {
-  id               String     @id @default(cuid())
-  email            String     @unique
+  id               String                       @id @default(cuid())
+  email            String                       @unique
   name             String
   passwordHash     String?
-  role             Role       @default(CLIENT)
+  role             Role                         @default(CLIENT)
   department       Department?
   avatarUrl        String?
   phone            String?
-  timezone         String     @default("Asia/Kolkata")
-  isVerified       Boolean    @default(false)
-  twoFactorEnabled Boolean    @default(false)
+  timezone         String                       @default("Asia/Kolkata")
+  isVerified       Boolean                      @default(false)
+  twoFactorEnabled Boolean                      @default(false)
   twoFactorSecret  String?
-  stripeCustomerId String?    @unique
+  stripeCustomerId String?                      @unique
   lastLoginAt      DateTime?
-  notifPrefs       Json       @default("{}")
+  notifPrefs       Json                         @default("{}")
   embedding        Unsupported("vector(1536)")?
-  isBanned         Boolean    @default(false)
+  isBanned         Boolean                      @default(false)
   bannedAt         DateTime?
   banReason        String?
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  createdAt        DateTime                     @default(now())
+  updatedAt        DateTime                     @updatedAt
 
   permissions     UserPermission[]
   subscriptions   Subscription[]
   payments        Payment[]
-  clientProjects  Project[]       @relation("ClientProjects")
-  managedProjects Project[]       @relation("ManagerProjects")
-  clientTickets   Ticket[]        @relation("ClientTickets")
-  assignedTickets Ticket[]        @relation("AssignedTickets")
+  clientProjects  Project[]             @relation("ClientProjects")
+  managedProjects Project[]             @relation("ManagerProjects")
+  clientTickets   Ticket[]              @relation("ClientTickets")
+  assignedTickets Ticket[]              @relation("AssignedTickets")
   invoices        Invoice[]
   notifications   Notification[]
   reviews         ProductReview[]
   auditLogs       AuditLog[]
-  leads           Lead[]          @relation("AssignedLeads")
+  leads           Lead[]                @relation("AssignedLeads")
   apiKeys         ApiKey[]
   sessions        UserSession[]
   chatMessages    ChatMessage[]
@@ -199,6 +315,12 @@ model User {
   accounts        Account[]
   aiUsageLogs     AIUsageLog[]
   couponUsages    CouponUsage[]
+  vendorProfiles  VendorProfile[]
+  carts           Cart[]
+  orders          Order[]
+  entitlements    CustomerEntitlement[]
+  serviceRequests ServiceEngagement[]   @relation("ClientServiceEngagements")
+  metricEvents    PlatformMetricEvent[]
 
   @@index([email])
   @@index([role])
@@ -206,18 +328,18 @@ model User {
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String? @db.Text
-  access_token       String? @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String? @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -231,6 +353,7 @@ model Permission {
   resource    String
   description String?
   users       UserPermission[]
+
   @@index([action, resource])
 }
 
@@ -241,6 +364,7 @@ model UserPermission {
   grantedBy    String?
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   permission   Permission @relation(fields: [permissionId], references: [id])
+
   @@id([userId, permissionId])
 }
 
@@ -254,6 +378,7 @@ model UserSession {
   expiresAt    DateTime
   createdAt    DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([expiresAt])
 }
@@ -269,66 +394,126 @@ model ApiKey {
   isActive   Boolean   @default(true)
   createdAt  DateTime  @default(now())
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
 }
 
-model Product {
-  id             String        @id @default(cuid())
-  slug           String        @unique
-  name           String
-  tagline        String
-  description    String
-  longDescription String?      @db.Text
-  type           ProductType
-  category       String?
-  subcategory    String?
-  isPremium      Boolean       @default(false)
-  proPoints      Int           @default(0)
-  status         ProductStatus @default(DRAFT)
-  scheduledAt    DateTime?
-  thumbnailUrl   String?
-  iconUrl        String?
-  bannerUrl      String?
-  screenshotUrls String[]
-  videoUrls      String[]
-  demoUrl        String?
-  documentationUrl String?
-  mediaMetadata  Json          @default("{}")
-  demoTemplateId String?
-  features       Json
-  techStack      String[]
-  tags           String[]
-  // SEO
-  seoTitle       String?
-  seoDescription String?
-  seoKeywords    String[]
-  // Badges
-  isFeatured     Boolean       @default(false)
-  isPinned       Boolean       @default(false)
-  isTrending     Boolean       @default(false)
-  isBestSeller   Boolean       @default(false)
-  badgeText      String?
-  // Analytics
-  averageRating  Float         @default(0)
-  reviewCount    Int           @default(0)
-  viewCount      Int           @default(0)
-  // Versioning / locking
-  version        Int           @default(1)
-  lockedBy       String?
-  lockedAt       DateTime?
-  createdBy      String
-  lastEditedBy   String?
-  embedding      Unsupported("vector(1536)")?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+model VendorProfile {
+  id                String       @id @default(cuid())
+  userId            String
+  slug              String       @unique
+  displayName       String
+  legalName         String?
+  type              VendorType
+  status            VendorStatus @default(PENDING)
+  headline          String?
+  description       String?      @db.Text
+  websiteUrl        String?
+  supportEmail      String?
+  logoUrl           String?
+  coverUrl          String?
+  badges            String[]
+  verificationNotes String?
+  verifiedAt        DateTime?
+  sellerScore       Float        @default(0)
+  rankingScore      Float        @default(0)
+  averageRating     Float        @default(0)
+  reviewCount       Int          @default(0)
+  totalSales        Int          @default(0)
+  totalRevenue      Decimal      @default(0) @db.Decimal(12, 2)
+  commissionRate    Decimal      @default(15.00) @db.Decimal(5, 2)
+  payoutSettings    Json         @default("{}")
+  analyticsSnapshot Json         @default("{}")
+  onboardingState   Json         @default("{}")
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
-  tiers         ProductTier[]
-  reviews       ProductReview[]
-  demoSessions  DemoSession[]
-  subscriptions Subscription[]
-  versions      ProductVersion[]
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products           Product[]
+  payouts            VendorPayout[]
+  serviceEngagements ServiceEngagement[] @relation("VendorServiceEngagements")
+
+  @@index([userId])
+  @@index([status, type])
+  @@index([rankingScore])
+}
+
+model Product {
+  id                 String                       @id @default(cuid())
+  vendorId           String?
+  slug               String                       @unique
+  name               String
+  tagline            String
+  description        String
+  longDescription    String?                      @db.Text
+  type               ProductType
+  category           String?
+  subcategory        String?
+  isPremium          Boolean                      @default(false)
+  proPoints          Int                          @default(0)
+  status             ProductStatus                @default(DRAFT)
+  scheduledAt        DateTime?
+  thumbnailUrl       String?
+  iconUrl            String?
+  bannerUrl          String?
+  screenshotUrls     String[]
+  videoUrls          String[]
+  demoUrl            String?
+  documentationUrl   String?
+  mediaMetadata      Json                         @default("{}")
+  demoTemplateId     String?
+  features           Json
+  faqs               Json                         @default("[]")
+  documentation      Json                         @default("{}")
+  setupGuide         Json                         @default("{}")
+  integrationCatalog Json                         @default("[]")
+  roadmap            Json                         @default("[]")
+  changelog          Json                         @default("[]")
+  supportPlans       Json                         @default("[]")
+  bundleOffers       Json                         @default("[]")
+  commerceConfig     Json                         @default("{}")
+  aiConfig           Json                         @default("{}")
+  techStack          String[]
+  tags               String[]
+  // SEO
+  seoTitle           String?
+  seoDescription     String?
+  seoKeywords        String[]
+  // Badges
+  isFeatured         Boolean                      @default(false)
+  isPinned           Boolean                      @default(false)
+  isTrending         Boolean                      @default(false)
+  isBestSeller       Boolean                      @default(false)
+  badgeText          String?
+  // Analytics
+  averageRating      Float                        @default(0)
+  reviewCount        Int                          @default(0)
+  viewCount          Int                          @default(0)
+  // Versioning / locking
+  version            Int                          @default(1)
+  lockedBy           String?
+  lockedAt           DateTime?
+  createdBy          String
+  lastEditedBy       String?
+  embedding          Unsupported("vector(1536)")?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  tiers              ProductTier[]
+  reviews            ProductReview[]
+  demoSessions       DemoSession[]
+  subscriptions      Subscription[]
+  versions           ProductVersion[]
+  vendor             VendorProfile?        @relation(fields: [vendorId], references: [id])
+  cartItems          CartItem[]
+  orderItems         OrderItem[]
+  entitlements       CustomerEntitlement[]
+  serviceEngagements ServiceEngagement[]
+  agentDeployments   AgentDeployment[]
+  metricEvents       PlatformMetricEvent[]
 
   @@index([slug])
+  @@index([vendorId])
   @@index([type, status])
   @@index([averageRating])
   @@index([isFeatured])
@@ -336,192 +521,499 @@ model Product {
 }
 
 model ProductTier {
-  id               String          @id @default(cuid())
+  id               String           @id @default(cuid())
   productId        String
   name             String
   description      String?
-  price            Decimal         @db.Decimal(10, 2)
-  discountPrice    Decimal?        @db.Decimal(10, 2)
-  currency         String          @default("USD")
+  price            Decimal          @db.Decimal(10, 2)
+  discountPrice    Decimal?         @db.Decimal(10, 2)
+  currency         String           @default("USD")
   interval         BillingInterval
   features         String[]
   limits           Json?
   // Enhanced pricing
-  trialDays        Int             @default(0)
-  introPrice       Decimal?        @db.Decimal(10, 2)
-  introPeriodDays  Int             @default(0)
-  flashSalePrice   Decimal?        @db.Decimal(10, 2)
+  trialDays        Int              @default(0)
+  introPrice       Decimal?         @db.Decimal(10, 2)
+  introPeriodDays  Int              @default(0)
+  flashSalePrice   Decimal?         @db.Decimal(10, 2)
   flashSaleEndsAt  DateTime?
-  taxRate          Float           @default(0)
-  taxInclusive     Boolean         @default(false)
-  setupFee         Decimal?        @db.Decimal(10, 2)
+  taxRate          Float            @default(0)
+  taxInclusive     Boolean          @default(false)
+  setupFee         Decimal?         @db.Decimal(10, 2)
   maxSeats         Int?
-  minSeats         Int             @default(1)
+  minSeats         Int              @default(1)
   usageUnit        String?
-  usageUnitPrice   Decimal?        @db.Decimal(10, 8)
+  usageUnitPrice   Decimal?         @db.Decimal(10, 8)
+  regionalPrices   Json             @default("{}")
+  entitlementRules Json             @default("{}")
+  aiQuota          Json             @default("{}")
+  supportLevel     String?
+  fulfillmentType  FulfillmentType  @default(HOSTED)
   // Badges
-  isPopular        Boolean         @default(false)
-  isRecommended    Boolean         @default(false)
-  isActive         Boolean         @default(true)
+  isPopular        Boolean          @default(false)
+  isRecommended    Boolean          @default(false)
+  isActive         Boolean          @default(true)
   // Gateway IDs
   stripePriceId    String?
   stripeProductId  String?
   razorpayPlanId   String?
   // Versioning
-  sortOrder        Int             @default(0)
-  version          Int             @default(1)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  product          Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sortOrder        Int              @default(0)
+  version          Int              @default(1)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  product          Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
   subscriptions    Subscription[]
   pricingHistory   PricingHistory[]
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+
   @@index([productId])
   @@index([isActive])
 }
 
 model ProductReview {
-  id           String   @id @default(cuid())
-  productId    String
-  userId       String
-  rating       Int
-  title        String
-  body         String
-  verifiedPurchase Boolean  @default(false)
-  status       ReviewStatus @default(PENDING)
-  helpfulCount Int      @default(0)
-  createdAt    DateTime @default(now())
-  product      Product  @relation(fields: [productId], references: [id])
-  user         User     @relation(fields: [userId], references: [id])
+  id               String       @id @default(cuid())
+  productId        String
+  userId           String
+  rating           Int
+  title            String
+  body             String
+  verifiedPurchase Boolean      @default(false)
+  status           ReviewStatus @default(PENDING)
+  helpfulCount     Int          @default(0)
+  createdAt        DateTime     @default(now())
+  product          Product      @relation(fields: [productId], references: [id])
+  user             User         @relation(fields: [userId], references: [id])
+
   @@unique([productId, userId])
   @@index([productId, rating])
 }
 
 model DemoSession {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   productId    String
   userId       String?
   templateId   String
-  sessionToken String   @unique
+  sessionToken String    @unique
   mockDataJson Json
-  isExpired    Boolean  @default(false)
+  isExpired    Boolean   @default(false)
   convertedAt  DateTime?
-  startedAt    DateTime @default(now())
+  startedAt    DateTime  @default(now())
   expiresAt    DateTime
-  product      Product  @relation(fields: [productId], references: [id])
+  product      Product   @relation(fields: [productId], references: [id])
+
   @@index([sessionToken])
   @@index([expiresAt])
 }
 
 model Subscription {
-  id                 String    @id @default(cuid())
+  id                 String      @id @default(cuid())
   userId             String
   productId          String
   tierId             String
-  status             SubStatus @default(TRIALING)
+  status             SubStatus   @default(TRIALING)
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
-  cancelAtPeriodEnd  Boolean   @default(false)
+  cancelAtPeriodEnd  Boolean     @default(false)
   cancelledAt        DateTime?
   trialEndsAt        DateTime?
-  stripeSubId        String?   @unique
-  razorpaySubId      String?   @unique
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  user               User      @relation(fields: [userId], references: [id])
-  product            Product   @relation(fields: [productId], references: [id])
+  stripeSubId        String?     @unique
+  razorpaySubId      String?     @unique
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  user               User        @relation(fields: [userId], references: [id])
+  product            Product     @relation(fields: [productId], references: [id])
   tier               ProductTier @relation(fields: [tierId], references: [id])
   payments           Payment[]
   invoices           Invoice[]
+
   @@index([userId])
   @@index([status])
   @@index([currentPeriodEnd])
 }
 
 model Payment {
-  id               String        @id @default(cuid())
+  id               String         @id @default(cuid())
+  orderId          String?
   subscriptionId   String?
   userId           String
   amount           Decimal
-  currency         String        @default("USD")
-  status           PaymentStatus @default(PENDING)
+  currency         String         @default("USD")
+  status           PaymentStatus  @default(PENDING)
   gateway          PaymentGateway
-  gatewayPaymentId String?       @unique
+  gatewayPaymentId String?        @unique
   gatewayOrderId   String?
   failureReason    String?
   paidAt           DateTime?
-  createdAt        DateTime      @default(now())
-  user             User          @relation(fields: [userId], references: [id])
-  subscription     Subscription? @relation(fields: [subscriptionId], references: [id])
+  createdAt        DateTime       @default(now())
+  user             User           @relation(fields: [userId], references: [id])
+  order            Order?         @relation(fields: [orderId], references: [id])
+  subscription     Subscription?  @relation(fields: [subscriptionId], references: [id])
   invoice          Invoice?
+
   @@index([userId])
   @@index([status])
+  @@index([orderId])
 }
 
 model Invoice {
-  id             String       @id @default(cuid())
-  paymentId      String       @unique
+  id             String        @id @default(cuid())
+  paymentId      String        @unique
+  orderId        String?
   subscriptionId String?
   userId         String
-  number         String       @unique
+  number         String        @unique
   pdfUrl         String?
   totalAmount    Decimal
-  taxAmount      Decimal      @default(0)
-  currency       String       @default("USD")
-  status         String       @default("PAID")
+  taxAmount      Decimal       @default(0)
+  currency       String        @default("USD")
+  status         String        @default("PAID")
   lineItems      Json
-  issuedAt       DateTime     @default(now())
-  user           User         @relation(fields: [userId], references: [id])
-  payment        Payment      @relation(fields: [paymentId], references: [id])
+  issuedAt       DateTime      @default(now())
+  user           User          @relation(fields: [userId], references: [id])
+  payment        Payment       @relation(fields: [paymentId], references: [id])
+  order          Order?        @relation(fields: [orderId], references: [id])
   subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
   @@index([userId])
+  @@index([orderId])
   @@index([number])
 }
 
+model Cart {
+  id            String     @id @default(cuid())
+  userId        String?
+  sessionId     String?
+  status        CartStatus @default(ACTIVE)
+  currency      String     @default("USD")
+  region        String?
+  couponCode    String?
+  subtotal      Decimal    @default(0) @db.Decimal(12, 2)
+  discountTotal Decimal    @default(0) @db.Decimal(12, 2)
+  taxTotal      Decimal    @default(0) @db.Decimal(12, 2)
+  grandTotal    Decimal    @default(0) @db.Decimal(12, 2)
+  metadata      Json       @default("{}")
+  abandonedAt   DateTime?
+  convertedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  user  User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items CartItem[]
+  order Order?
+
+  @@index([userId, status])
+  @@index([sessionId])
+  @@index([updatedAt])
+}
+
+model CartItem {
+  id        String      @id @default(cuid())
+  cartId    String
+  productId String
+  tierId    String?
+  quantity  Int         @default(1)
+  unitPrice Decimal     @db.Decimal(12, 2)
+  currency  String      @default("USD")
+  itemType  ProductType
+  vendorId  String?
+  metadata  Json        @default("{}")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  cart    Cart         @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product      @relation(fields: [productId], references: [id])
+  tier    ProductTier? @relation(fields: [tierId], references: [id])
+
+  @@unique([cartId, productId, tierId])
+  @@index([productId])
+  @@index([vendorId])
+}
+
+model Order {
+  id              String          @id @default(cuid())
+  orderNumber     String          @unique
+  userId          String
+  cartId          String?         @unique
+  status          OrderStatus     @default(PENDING)
+  gateway         PaymentGateway?
+  currency        String          @default("USD")
+  region          String?
+  subtotal        Decimal         @default(0) @db.Decimal(12, 2)
+  discountTotal   Decimal         @default(0) @db.Decimal(12, 2)
+  taxTotal        Decimal         @default(0) @db.Decimal(12, 2)
+  platformFee     Decimal         @default(0) @db.Decimal(12, 2)
+  vendorNetTotal  Decimal         @default(0) @db.Decimal(12, 2)
+  grandTotal      Decimal         @default(0) @db.Decimal(12, 2)
+  couponCode      String?
+  affiliateCode   String?
+  referralCode    String?
+  billingSnapshot Json            @default("{}")
+  fulfillmentPlan Json            @default("{}")
+  metadata        Json            @default("{}")
+  paidAt          DateTime?
+  fulfilledAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user         User                  @relation(fields: [userId], references: [id])
+  cart         Cart?                 @relation(fields: [cartId], references: [id])
+  items        OrderItem[]
+  payments     Payment[]
+  invoices     Invoice[]
+  entitlements CustomerEntitlement[]
+  metricEvents PlatformMetricEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([affiliateCode])
+}
+
+model OrderItem {
+  id                String          @id @default(cuid())
+  orderId           String
+  productId         String
+  tierId            String?
+  vendorId          String?
+  name              String
+  itemType          ProductType
+  fulfillmentType   FulfillmentType @default(HOSTED)
+  quantity          Int             @default(1)
+  unitPrice         Decimal         @db.Decimal(12, 2)
+  discountAmount    Decimal         @default(0) @db.Decimal(12, 2)
+  taxAmount         Decimal         @default(0) @db.Decimal(12, 2)
+  platformFee       Decimal         @default(0) @db.Decimal(12, 2)
+  vendorNetAmount   Decimal         @default(0) @db.Decimal(12, 2)
+  currency          String          @default("USD")
+  entitlementConfig Json            @default("{}")
+  fulfillmentStatus String          @default("PENDING")
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  order   Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product      @relation(fields: [productId], references: [id])
+  tier    ProductTier? @relation(fields: [tierId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([vendorId])
+}
+
+model CustomerEntitlement {
+  id             String          @id @default(cuid())
+  userId         String
+  productId      String
+  orderId        String?
+  subscriptionId String?
+  status         String          @default("ACTIVE")
+  accessType     FulfillmentType
+  quota          Json            @default("{}")
+  usage          Json            @default("{}")
+  apiKeyPrefix   String?
+  startsAt       DateTime        @default(now())
+  expiresAt      DateTime?
+  metadata       Json            @default("{}")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+  order   Order?  @relation(fields: [orderId], references: [id])
+
+  @@index([userId, status])
+  @@index([productId])
+  @@index([orderId])
+  @@index([subscriptionId])
+}
+
+model VendorPayout {
+  id           String       @id @default(cuid())
+  vendorId     String
+  amount       Decimal      @db.Decimal(12, 2)
+  currency     String       @default("USD")
+  status       PayoutStatus @default(PENDING)
+  periodStart  DateTime
+  periodEnd    DateTime
+  processor    String?
+  processorRef String?
+  orderItemIds String[]
+  metadata     Json         @default("{}")
+  approvedBy   String?
+  approvedAt   DateTime?
+  paidAt       DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  vendor VendorProfile @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId, status])
+  @@index([periodStart, periodEnd])
+}
+
+model AffiliateReferral {
+  id               String   @id @default(cuid())
+  code             String   @unique
+  ownerUserId      String?
+  vendorId         String?
+  orderId          String?
+  commissionRate   Decimal  @default(10.00) @db.Decimal(5, 2)
+  commissionAmount Decimal  @default(0) @db.Decimal(12, 2)
+  clicks           Int      @default(0)
+  conversions      Int      @default(0)
+  status           String   @default("ACTIVE")
+  metadata         Json     @default("{}")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([ownerUserId])
+  @@index([vendorId])
+  @@index([orderId])
+}
+
+model ServiceEngagement {
+  id            String                  @id @default(cuid())
+  productId     String?
+  vendorId      String
+  clientId      String
+  title         String
+  summary       String
+  status        ServiceEngagementStatus @default(PROPOSED)
+  budget        Decimal                 @default(0) @db.Decimal(12, 2)
+  currency      String                  @default("USD")
+  proposal      Json                    @default("{}")
+  agreement     Json                    @default("{}")
+  schedule      Json                    @default("{}")
+  escrowBalance Decimal                 @default(0) @db.Decimal(12, 2)
+  startsAt      DateTime?
+  dueAt         DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  product    Product?           @relation(fields: [productId], references: [id])
+  vendor     VendorProfile      @relation("VendorServiceEngagements", fields: [vendorId], references: [id])
+  client     User               @relation("ClientServiceEngagements", fields: [clientId], references: [id])
+  milestones ServiceMilestone[]
+
+  @@index([vendorId, status])
+  @@index([clientId, status])
+  @@index([productId])
+}
+
+model ServiceMilestone {
+  id           String          @id @default(cuid())
+  engagementId String
+  title        String
+  description  String?
+  amount       Decimal         @default(0) @db.Decimal(12, 2)
+  status       MilestoneStatus @default(PENDING)
+  dueAt        DateTime?
+  submittedAt  DateTime?
+  approvedAt   DateTime?
+  releasedAt   DateTime?
+  deliverables Json            @default("[]")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  engagement ServiceEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+
+  @@index([engagementId, status])
+}
+
+model AgentDeployment {
+  id              String                @id @default(cuid())
+  productId       String
+  userId          String
+  status          AgentDeploymentStatus @default(QUEUED)
+  runtimeProvider String?
+  model           String?
+  endpointUrl     String?
+  memoryConfig    Json                  @default("{}")
+  toolConfig      Json                  @default("{}")
+  usageSnapshot   Json                  @default("{}")
+  costSnapshot    Json                  @default("{}")
+  lastHeartbeatAt DateTime?
+  deployedAt      DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId, status])
+  @@index([userId, status])
+}
+
+model PlatformMetricEvent {
+  id         String          @id @default(cuid())
+  type       MetricEventType
+  userId     String?
+  productId  String?
+  orderId    String?
+  vendorId   String?
+  sessionId  String?
+  source     String?
+  value      Decimal?        @db.Decimal(12, 4)
+  metadata   Json            @default("{}")
+  occurredAt DateTime        @default(now())
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  order   Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([type, occurredAt])
+  @@index([productId, occurredAt])
+  @@index([vendorId, occurredAt])
+  @@index([userId, occurredAt])
+}
+
 model Coupon {
-  id                  String     @id @default(cuid())
-  code                String     @unique
-  name                String?
-  description         String?
-  type                CouponType
-  discountValue       Decimal    @db.Decimal(10, 2)
-  maxDiscountCap      Decimal?   @db.Decimal(10, 2)
-  currency            String?
+  id                   String        @id @default(cuid())
+  code                 String        @unique
+  name                 String?
+  description          String?
+  type                 CouponType
+  discountValue        Decimal       @db.Decimal(10, 2)
+  maxDiscountCap       Decimal?      @db.Decimal(10, 2)
+  currency             String?
   // Reward fields (for non-monetary types)
-  freeCredits         Int?
-  freeTokens          Int?
-  freeAddonId         String?
-  upgradeToTierId     String?
-  trialExtensionDays  Int?
+  freeCredits          Int?
+  freeTokens           Int?
+  freeAddonId          String?
+  upgradeToTierId      String?
+  trialExtensionDays   Int?
   // Usage limits
-  maxUses             Int?
-  perUserLimit        Int        @default(1)
-  usedCount           Int        @default(0)
+  maxUses              Int?
+  perUserLimit         Int           @default(1)
+  usedCount            Int           @default(0)
   // Restrictions
-  applicableTierIds   String[]
+  applicableTierIds    String[]
   applicableProductIds String[]
-  minCartValue        Decimal?   @db.Decimal(10, 2)
-  startsAt            DateTime?
-  expiresAt           DateTime?
+  minCartValue         Decimal?      @db.Decimal(10, 2)
+  startsAt             DateTime?
+  expiresAt            DateTime?
   // Targeting
-  allowedGeos         String[]
-  blockedGeos         String[]
-  allowedDevices      String[]
-  targetSegment       String?    // new_users, returning_users, subscribers, all
-  requiresSubscription Boolean   @default(false)
-  newUsersOnly        Boolean    @default(false)
+  allowedGeos          String[]
+  blockedGeos          String[]
+  allowedDevices       String[]
+  targetSegment        String? // new_users, returning_users, subscribers, all
+  requiresSubscription Boolean       @default(false)
+  newUsersOnly         Boolean       @default(false)
   // Campaign link
-  campaignId          String?
+  campaignId           String?
   // Affiliate/influencer
-  affiliateCode       String?
-  affiliateCommission Float?
+  affiliateCode        String?
+  affiliateCommission  Float?
   // Metadata
-  isActive            Boolean    @default(true)
-  createdBy           String?
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
+  isActive             Boolean       @default(true)
+  createdBy            String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
   // Relations
-  campaign            Campaign?  @relation(fields: [campaignId], references: [id])
-  usages              CouponUsage[]
+  campaign             Campaign?     @relation(fields: [campaignId], references: [id])
+  usages               CouponUsage[]
+
   @@index([code])
   @@index([isActive])
   @@index([campaignId])
@@ -545,6 +1037,7 @@ model Project {
   manager     User?         @relation("ManagerProjects", fields: [managerId], references: [id])
   tickets     Ticket[]
   files       ProjectFile[]
+
   @@index([clientId])
   @@index([status])
 }
@@ -559,26 +1052,28 @@ model ProjectFile {
   mimeType   String
   createdAt  DateTime @default(now())
   project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@index([projectId])
 }
 
 model Ticket {
-  id          String         @id @default(cuid())
+  id          String          @id @default(cuid())
   projectId   String?
   clientId    String
   assignedTo  String?
   title       String
   description String
-  priority    TicketPriority @default(MEDIUM)
-  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority  @default(MEDIUM)
+  status      TicketStatus    @default(OPEN)
   category    String
   resolvedAt  DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  client      User           @relation("ClientTickets", fields: [clientId], references: [id])
-  assignee    User?          @relation("AssignedTickets", fields: [assignedTo], references: [id])
-  project     Project?       @relation(fields: [projectId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  client      User            @relation("ClientTickets", fields: [clientId], references: [id])
+  assignee    User?           @relation("AssignedTickets", fields: [assignedTo], references: [id])
+  project     Project?        @relation(fields: [projectId], references: [id])
   messages    TicketMessage[]
+
   @@index([clientId])
   @@index([status, priority])
 }
@@ -592,6 +1087,7 @@ model TicketMessage {
   isInternal  Boolean  @default(false)
   createdAt   DateTime @default(now())
   ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
   @@index([ticketId])
 }
 
@@ -602,6 +1098,7 @@ model ChatRoom {
   isActive  Boolean       @default(true)
   createdAt DateTime      @default(now())
   messages  ChatMessage[]
+
   @@index([userId])
 }
 
@@ -616,30 +1113,32 @@ model ChatMessage {
   createdAt  DateTime @default(now())
   room       ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
   sender     User     @relation(fields: [senderId], references: [id])
+
   @@index([roomId])
   @@index([createdAt])
 }
 
 model Lead {
-  id              String    @id @default(cuid())
+  id              String            @id @default(cuid())
   email           String
   name            String?
   phone           String?
   company         String?
   source          String
-  stage           LeadStage @default(NEW)
-  score           Int       @default(0)
+  stage           LeadStage         @default(NEW)
+  score           Int               @default(0)
   assignedTo      String?
   notes           String?
   convertedAt     DateTime?
   convertedUserId String?
   metadata        Json?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  assignee        User?     @relation("AssignedLeads", fields: [assignedTo], references: [id])
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  assignee        User?             @relation("AssignedLeads", fields: [assignedTo], references: [id])
   interactions    LeadInteraction[]
   emailSequences  EmailSequence[]
   activities      LeadActivity[]
+
   @@index([stage, score])
   @@index([email])
 }
@@ -652,6 +1151,7 @@ model LeadInteraction {
   summary   String
   createdAt DateTime @default(now())
   lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
   @@index([leadId])
 }
 
@@ -666,26 +1166,28 @@ model EmailSequence {
   completedAt DateTime?
   createdAt   DateTime  @default(now())
   lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
   @@index([nextSendAt])
 }
 
 model AIAgent {
-  id            String   @id @default(cuid())
-  slug          String   @unique
-  name          String
-  category      String
-  description   String
-  capabilities  String[]
-  apiEndpoint   String?
-  configSchema  Json
-  pricingModel  String
-  callPrice     Decimal?
-  isPremium     Boolean  @default(false)
-  proPoints     Int      @default(0)
-  isActive      Boolean  @default(true)
-  thumbnailUrl  String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  category     String
+  description  String
+  capabilities String[]
+  apiEndpoint  String?
+  configSchema Json
+  pricingModel String
+  callPrice    Decimal?
+  isPremium    Boolean  @default(false)
+  proPoints    Int      @default(0)
+  isActive     Boolean  @default(true)
+  thumbnailUrl String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
   @@index([category, isActive])
 }
 
@@ -700,6 +1202,7 @@ model Notification {
   metadata  Json?
   createdAt DateTime  @default(now())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, isRead])
   @@index([createdAt])
 }
@@ -716,6 +1219,7 @@ model AuditLog {
   userAgent  String?
   createdAt  DateTime @default(now())
   user       User?    @relation(fields: [userId], references: [id])
+
   @@index([userId])
   @@index([action])
   @@index([entity, entityId])
@@ -737,15 +1241,10 @@ model BlogPost {
   viewCount     Int       @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
   @@index([slug])
   @@index([publishedAt])
 }
-
-
-
-
-
-
 
 enum ReviewStatus {
   PENDING
@@ -767,6 +1266,7 @@ model LeadActivity {
   createdBy String?
   createdAt DateTime         @default(now())
   lead      Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
   @@index([leadId])
 }
 
@@ -795,38 +1295,39 @@ enum CampaignStatus {
 }
 
 model Campaign {
-  id                String         @id @default(cuid())
-  name              String
-  label             String?
-  description       String?
-  type              CampaignType
-  status            CampaignStatus @default(DRAFT)
-  startsAt          DateTime
-  endsAt            DateTime
-  discountPercent   Float          @default(0)
-  flatDiscount      Decimal?       @db.Decimal(10, 2)
-  bannerText        String?
-  bannerImageUrl    String?
-  ctaText           String?
-  ctaUrl            String?
-  applicableTierIds String[]
+  id                   String         @id @default(cuid())
+  name                 String
+  label                String?
+  description          String?
+  type                 CampaignType
+  status               CampaignStatus @default(DRAFT)
+  startsAt             DateTime
+  endsAt               DateTime
+  discountPercent      Float          @default(0)
+  flatDiscount         Decimal?       @db.Decimal(10, 2)
+  bannerText           String?
+  bannerImageUrl       String?
+  ctaText              String?
+  ctaUrl               String?
+  applicableTierIds    String[]
   applicableProductIds String[]
-  targetSegment     String?        // all, new_users, returning, subscribers
-  allowedGeos       String[]
+  targetSegment        String? // all, new_users, returning, subscribers
+  allowedGeos          String[]
   // A/B test
-  isAbTest          Boolean        @default(false)
-  abVariantA        Json?
-  abVariantB        Json?
+  isAbTest             Boolean        @default(false)
+  abVariantA           Json?
+  abVariantB           Json?
   // Analytics
-  impressions       Int            @default(0)
-  clicks            Int            @default(0)
-  conversions       Int            @default(0)
-  revenue           Decimal        @default(0) @db.Decimal(10, 2)
-  isActive          Boolean        @default(false)
-  createdBy         String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  coupons           Coupon[]
+  impressions          Int            @default(0)
+  clicks               Int            @default(0)
+  conversions          Int            @default(0)
+  revenue              Decimal        @default(0) @db.Decimal(10, 2)
+  isActive             Boolean        @default(false)
+  createdBy            String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  coupons              Coupon[]
+
   @@index([isActive, startsAt, endsAt])
   @@index([status])
 }
@@ -835,13 +1336,14 @@ model Campaign {
 
 model FeatureFlag {
   id             String   @id @default(cuid())
-  name           String   @unique   // e.g. "enable_ai_chat"
+  name           String   @unique // e.g. "enable_ai_chat"
   description    String?
   isEnabled      Boolean  @default(false)
   rolloutPercent Int      @default(100) // 0-100 percentage of users to enable for
   targetUserIds  String[] // explicit user allowlist (overrides rollout)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
   @@index([name])
 }
 
@@ -869,6 +1371,7 @@ model Team {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   members      TeamMember[]
+
   @@index([ownerId])
 }
 
@@ -883,6 +1386,7 @@ model TeamMember {
   acceptedAt   DateTime?
   team         Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([teamId, userId])
   @@index([teamId])
   @@index([userId])
@@ -893,8 +1397,8 @@ model TeamMember {
 model AIUsageLog {
   id               String        @id @default(cuid())
   userId           String
-  model            String        // e.g. "gpt-4o", "gpt-4o-mini"
-  endpoint         String        // e.g. "/api/ai/chat"
+  model            String // e.g. "gpt-4o", "gpt-4o-mini"
+  endpoint         String // e.g. "/api/ai/chat"
   promptTokens     Int           @default(0)
   completionTokens Int           @default(0)
   totalTokens      Int           @default(0)
@@ -915,17 +1419,17 @@ model AIUsageLog {
 // ── Webhook Events (Idempotency + Replay) ─────────────────────────────────────
 
 model WebhookEvent {
-  id             String        @id @default(cuid())
-  source         WebhookSource
-  eventType      String        // e.g. "payment_intent.succeeded"
-  eventId        String        @unique // idempotency key from gateway
-  payload        Json
-  status         WebhookStatus @default(PENDING)
-  attempts       Int           @default(0)
-  lastAttemptAt  DateTime?
-  processedAt    DateTime?
-  errorMessage   String?
-  createdAt      DateTime      @default(now())
+  id            String        @id @default(cuid())
+  source        WebhookSource
+  eventType     String // e.g. "payment_intent.succeeded"
+  eventId       String        @unique // idempotency key from gateway
+  payload       Json
+  status        WebhookStatus @default(PENDING)
+  attempts      Int           @default(0)
+  lastAttemptAt DateTime?
+  processedAt   DateTime?
+  errorMessage  String?
+  createdAt     DateTime      @default(now())
 
   @@index([status])
   @@index([source])
@@ -936,17 +1440,17 @@ model WebhookEvent {
 // ── Pricing History (Immutable price ledger) ───────────────────────────────────
 
 model PricingHistory {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   tierId      String
   productId   String
-  oldPrice    Decimal  @db.Decimal(10, 2)
-  newPrice    Decimal  @db.Decimal(10, 2)
-  currency    String   @default("USD")
-  interval    String   // BillingInterval as string for historical immutability
-  changedBy   String   // adminId
+  oldPrice    Decimal     @db.Decimal(10, 2)
+  newPrice    Decimal     @db.Decimal(10, 2)
+  currency    String      @default("USD")
+  interval    String // BillingInterval as string for historical immutability
+  changedBy   String // adminId
   reason      String?
-  effectiveAt DateTime @default(now())
-  createdAt   DateTime @default(now())
+  effectiveAt DateTime    @default(now())
+  createdAt   DateTime    @default(now())
   tier        ProductTier @relation(fields: [tierId], references: [id])
 
   @@index([tierId])
@@ -975,14 +1479,14 @@ model ProductVersion {
 // ── Coupon Usage Tracking ──────────────────────────────────────────────────────
 
 model CouponUsage {
-  id         String   @id @default(cuid())
-  couponId   String
-  userId     String
-  orderId    String?
-  discount   Decimal  @db.Decimal(10, 2)
-  usedAt     DateTime @default(now())
-  coupon     Coupon   @relation(fields: [couponId], references: [id])
-  user       User     @relation(fields: [userId], references: [id])
+  id       String   @id @default(cuid())
+  couponId String
+  userId   String
+  orderId  String?
+  discount Decimal  @db.Decimal(10, 2)
+  usedAt   DateTime @default(now())
+  coupon   Coupon   @relation(fields: [couponId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
 
   @@unique([couponId, userId])
   @@index([couponId])

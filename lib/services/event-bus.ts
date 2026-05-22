@@ -56,6 +56,15 @@ export const EVENTS = {
   PRODUCT_CREATED:          "PRODUCT_CREATED",
   PRODUCT_UPDATED:          "PRODUCT_UPDATED",
   TIER_PRICE_CHANGED:       "TIER_PRICE_CHANGED",
+
+  VENDOR_CREATED:           "VENDOR_CREATED",
+  VENDOR_VERIFIED:          "VENDOR_VERIFIED",
+  CART_UPDATED:             "CART_UPDATED",
+  ORDER_CREATED:            "ORDER_CREATED",
+  ORDER_PAID:               "ORDER_PAID",
+  ENTITLEMENT_GRANTED:      "ENTITLEMENT_GRANTED",
+  SERVICE_ENGAGEMENT_CREATED: "SERVICE_ENGAGEMENT_CREATED",
+  AGENT_DEPLOYED:           "AGENT_DEPLOYED",
 } as const
 
 export type EventType = (typeof EVENTS)[keyof typeof EVENTS]
@@ -161,6 +170,12 @@ const ACTIVITY_EMOJIS: Partial<Record<EventType, string>> = {
   PAYMENT_SUCCESS:        "💳",
   USER_CREATED:           "👋",
   PLAN_CHANGED:           "⬆️",
+  CART_UPDATED:           "Cart",
+  ORDER_CREATED:          "Order",
+  ORDER_PAID:             "Paid",
+  VENDOR_CREATED:         "Vendor",
+  SERVICE_ENGAGEMENT_CREATED: "Service",
+  AGENT_DEPLOYED:         "Agent",
 }
 
 function buildActivityMessage(type: EventType, payload: Record<string, unknown>): string | null {
@@ -195,6 +210,30 @@ function buildActivityMessage(type: EventType, payload: Record<string, unknown>)
     case "PLAN_CHANGED": {
       const plan = (payload.newPlan as string) || "new plan"
       return `${emoji} Someone upgraded to ${plan}`
+    }
+    case "CART_UPDATED": {
+      const product = (payload.productName as string) || "a product"
+      return `${emoji} ${product} was added to a marketplace cart`
+    }
+    case "ORDER_CREATED": {
+      const orderNumber = (payload.orderNumber as string) || "a new order"
+      return `${emoji} ${orderNumber} started checkout`
+    }
+    case "ORDER_PAID": {
+      const orderNumber = (payload.orderNumber as string) || "an order"
+      return `${emoji} ${orderNumber} was paid and fulfilled`
+    }
+    case "VENDOR_CREATED": {
+      const vendorName = (payload.vendorName as string) || "A vendor"
+      return `${emoji} ${vendorName} joined the seller ecosystem`
+    }
+    case "SERVICE_ENGAGEMENT_CREATED": {
+      const title = (payload.title as string) || "Enterprise service engagement"
+      return `${emoji} ${title} entered the delivery pipeline`
+    }
+    case "AGENT_DEPLOYED": {
+      const productName = (payload.productName as string) || "An AI agent"
+      return `${emoji} ${productName} deployment is live`
     }
     default:
       return null
