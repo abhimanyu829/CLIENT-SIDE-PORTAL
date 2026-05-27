@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next dev --webpack",
+    "dev:turbo": "next dev",
     "build": "next build",
     "start": "next start",
+    "workers": "ts-node --project tsconfig.json lib/workers.ts",
+    "jobs:schedule": "ts-node --project tsconfig.json -e \"require('./lib/workers').scheduleRecurringJobs()\"",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "db:generate": "prisma generate",

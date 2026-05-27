@@ -14,6 +14,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     <DashboardLayoutClient 
       userId={session.user.id} 
       userName={session.user.name ?? "User"}
+      isVerified={session.user.isVerified ?? false}
     >
       {children}
     </DashboardLayoutClient>

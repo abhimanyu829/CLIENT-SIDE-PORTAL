@@ -3,7 +3,7 @@
 import { useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { pusherClient } from "@/lib/pusher"
+import { pusherClient } from "@/lib/pusher-client"
 
 // Event types that trigger admin panel refresh
 const REFRESH_EVENTS = new Set([
@@ -12,8 +12,11 @@ const REFRESH_EVENTS = new Set([
   "USER_ROLE_CHANGED",
   "SUBSCRIPTION_ACTIVATED",
   "SUBSCRIPTION_CANCELLED",
+  "SUBSCRIPTION_PAUSED",
+  "SUBSCRIPTION_REACTIVATED",
   "PLAN_CHANGED",
   "PAYMENT_SUCCESS",
+  "PAYMENT_FAILED",
   "REFUND_PROCESSED",
   "COUPON_APPLIED",
   "FEATURE_FLAG_TOGGLED",

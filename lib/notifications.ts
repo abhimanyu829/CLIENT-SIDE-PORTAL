@@ -3,7 +3,7 @@ import { NotifType, Prisma } from "@prisma/client"
 
 // Map our local type to Prisma's NotifType enum
 // Schema values: PAYMENT | TICKET | SUBSCRIPTION | PROJECT | SYSTEM | CHAT
-export type NotificationType = "PAYMENT" | "TICKET" | "SUBSCRIPTION" | "PROJECT" | "SYSTEM" | "CHAT"
+export type NotificationType = "PAYMENT" | "ORDER" | "TICKET" | "SUBSCRIPTION" | "PROJECT" | "SYSTEM" | "CHAT" | "AI_USAGE" | "COMMERCE" | "VENDOR"
 
 export interface CreateNotificationParams {
   userId: string

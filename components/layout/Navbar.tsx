@@ -157,6 +157,10 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
               Pricing
               <span className={`absolute bottom-[-4px] left-0 h-[1.5px] bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 ${pathname === "/pricing" ? "w-full" : "w-0 group-hover:w-full"}`} />
             </Link>
+            <Link href="/cart" className={`group relative px-3 py-2 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${pathname === "/cart" ? "text-white/95" : "text-white/55 hover:text-white/95"}`}>
+              Cart
+              <span className={`absolute bottom-[-4px] left-0 h-[1.5px] bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 ${pathname === "/cart" ? "w-full" : "w-0 group-hover:w-full"}`} />
+            </Link>
           </nav>
 
           {/* Right section */}
@@ -239,6 +243,9 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
             ))}
             <Link href="/pricing" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all">
               <span>💰</span><span className="text-sm font-medium">Pricing</span>
+            </Link>
+            <Link href="/cart" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all">
+              <span className="text-sm font-medium">Cart</span>
             </Link>
           </nav>
 

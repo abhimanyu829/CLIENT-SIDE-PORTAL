@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin-auth"
 import { db } from "@/lib/db"
 import { auditLog } from "@/lib/admin-audit"
+import { processRefund } from "@/lib/services/refund-service"
 
 export async function PATCH(
   req: NextRequest,
@@ -20,9 +21,6 @@ export async function PATCH(
 
   switch (action) {
     case "refund": {
-      if (payment.status !== "SUCCESS") {
-        return NextResponse.json({ error: "Only successful payments can be refunded" }, { status: 400 })
-      }
       if (!reason) {
         return NextResponse.json({ error: "Refund reason is mandatory" }, { status: 400 })
       }
@@ -31,33 +29,12 @@ export async function PATCH(
         return NextResponse.json({ error: "Invalid refund amount" }, { status: 400 })
       }
 
-      // Mock integration with Stripe or Razorpay APIs
-      // stripe.refunds.create({ charge: payment.gatewayPaymentId, amount: refundAmt * 100 })
-
-      await auditLog({
-        userId: admin.userId,
-        action: "ORDER_REFUNDED",
-        entity: "Payment",
-        entityId: id,
-        before: { status: payment.status, amount: payment.amount },
-        after: { status: "REFUNDED", refundAmount: refundAmt, reason },
-      })
-
-      // Update payment status to REFUNDED
-      await db.payment.update({
-        where: { id },
-        data: { status: "REFUNDED" },
-      })
-
-      // Update invoice status if it exists
-      if (payment.invoice) {
-        await db.invoice.update({
-          where: { id: payment.invoice.id },
-          data: { status: "REFUNDED" },
-        })
+      const result = await processRefund(id, refundAmt, reason, admin.userId)
+      if (!result.success) {
+        return NextResponse.json({ error: result.error }, { status: 400 })
       }
 
-      return NextResponse.json({ success: true, message: `Successfully refunded $${refundAmt}` })
+      return NextResponse.json({ success: true, message: `Successfully refunded $${result.amount}`, refundId: result.refundId })
     }
 
     case "resend": {

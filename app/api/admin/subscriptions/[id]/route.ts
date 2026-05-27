@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin-auth"
 import { db } from "@/lib/db"
 import { auditLog } from "@/lib/admin-audit"
+import { cancelSubscription, changePlan, pauseSubscription, reactivateSubscription, syncSubscriptionAccessState } from "@/lib/services/subscription-service"
 
 export async function PATCH(
   req: NextRequest,
@@ -20,50 +21,17 @@ export async function PATCH(
 
   switch (action) {
     case "cancel": {
-      await auditLog({
-        userId: admin.userId,
-        action: "SUBSCRIPTION_CANCELLED",
-        entity: "Subscription",
-        entityId: id,
-        before: { status: sub.status },
-        after: { status: "CANCELLED", reason },
-      })
-      await db.subscription.update({
-        where: { id: id },
-        data: { status: "CANCELLED", cancelledAt: new Date() },
-      })
+      await cancelSubscription(id, admin.userId, reason ?? "Admin cancellation")
       return NextResponse.json({ success: true, message: "Subscription cancelled" })
     }
 
     case "pause": {
-      await auditLog({
-        userId: admin.userId,
-        action: "SUBSCRIPTION_PAUSED",
-        entity: "Subscription",
-        entityId: id,
-        before: { status: sub.status },
-        after: { status: "PAUSED", reason },
-      })
-      await db.subscription.update({
-        where: { id: id },
-        data: { status: "PAUSED" },
-      })
+      await pauseSubscription(id, admin.userId, reason ?? "Admin pause")
       return NextResponse.json({ success: true, message: "Subscription paused" })
     }
 
     case "resume": {
-      await auditLog({
-        userId: admin.userId,
-        action: "SUBSCRIPTION_RESUMED",
-        entity: "Subscription",
-        entityId: id,
-        before: { status: sub.status },
-        after: { status: "ACTIVE", reason },
-      })
-      await db.subscription.update({
-        where: { id: id },
-        data: { status: "ACTIVE" },
-      })
+      await reactivateSubscription(id, admin.userId)
       return NextResponse.json({ success: true, message: "Subscription resumed" })
     }
 
@@ -86,26 +54,13 @@ export async function PATCH(
         where: { id: id },
         data: { trialEndsAt: newTrialEnd },
       })
+      await syncSubscriptionAccessState(id)
       return NextResponse.json({ success: true, message: "Trial extended" })
     }
 
     case "migrate-plan": {
       if (!newTierId) return NextResponse.json({ error: "newTierId is required" }, { status: 400 })
-      const tier = await db.productTier.findUnique({ where: { id: newTierId } })
-      if (!tier) return NextResponse.json({ error: "Tier not found" }, { status: 404 })
-
-      await auditLog({
-        userId: admin.userId,
-        action: "SUBSCRIPTION_MIGRATED",
-        entity: "Subscription",
-        entityId: id,
-        before: { tierId: sub.tierId, productId: sub.productId },
-        after: { tierId: newTierId, productId: tier.productId, reason },
-      })
-      await db.subscription.update({
-        where: { id: id },
-        data: { tierId: newTierId, productId: tier.productId },
-      })
+      await changePlan(id, newTierId, admin.userId, reason ?? "Admin plan migration")
       return NextResponse.json({ success: true, message: "Plan migrated successfully" })
     }
 
@@ -126,6 +81,7 @@ export async function PATCH(
         where: { id: id },
         data: { currentPeriodEnd: newEnd },
       })
+      await syncSubscriptionAccessState(id)
       return NextResponse.json({ success: true, message: "Renewal date overridden" })
     }
 

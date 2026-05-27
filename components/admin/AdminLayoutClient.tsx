@@ -20,24 +20,25 @@ import {
   LayoutDashboard, Users, CreditCard, ShoppingCart, Package,
   Tag, BarChart3, Bot, ShieldCheck, Settings, LogOut,
   ChevronLeft, ChevronRight, Menu, Bell, Sun, Moon, User,
-  ExternalLink, Webhook, Store
+  ExternalLink, Webhook, Store, ScanSearch
 } from "lucide-react"
 import { Toaster } from "@/components/ui/toaster"
 import RealtimeAdminProvider from "@/components/admin/RealtimeAdminProvider"
 
 const NAV_ITEMS = [
-  { name: "Revenue Dashboard", path: "/admin", icon: LayoutDashboard },
-  { name: "Ecosystem Control", path: "/admin/ecosystem", icon: Store },
-  { name: "User Management",   path: "/admin/users", icon: Users },
-  { name: "Subscriptions",     path: "/admin/subscriptions", icon: CreditCard },
-  { name: "Orders & Payments", path: "/admin/orders", icon: ShoppingCart },
-  { name: "Products & Plans",  path: "/admin/products", icon: Package },
-  { name: "Offers & Coupons",  path: "/admin/coupons", icon: Tag },
-  { name: "Analytics",         path: "/admin/analytics", icon: BarChart3 },
-  { name: "AI Monitoring",     path: "/admin/ai-monitoring", icon: Bot },
-  { name: "Webhooks & Events", path: "/admin/webhooks", icon: Webhook },
-  { name: "Security & Audit",  path: "/admin/audit", icon: ShieldCheck },
-  { name: "Platform Settings", path: "/admin/settings", icon: Settings },
+  { name: "Revenue Dashboard",   path: "/admin",             icon: LayoutDashboard },
+  { name: "Ecosystem Control",   path: "/admin/ecosystem",   icon: Store },
+  { name: "User Management",     path: "/admin/users",       icon: Users },
+  { name: "Subscriptions",       path: "/admin/subscriptions", icon: CreditCard },
+  { name: "Orders & Payments",  path: "/admin/orders",      icon: ShoppingCart },
+  { name: "Payment Inspection",  path: "/admin/payments",    icon: ScanSearch },
+  { name: "Products & Plans",   path: "/admin/products",    icon: Package },
+  { name: "Offers & Coupons",   path: "/admin/coupons",     icon: Tag },
+  { name: "Analytics",           path: "/admin/analytics",   icon: BarChart3 },
+  { name: "AI Monitoring",       path: "/admin/ai-monitoring", icon: Bot },
+  { name: "Webhooks & Events",  path: "/admin/webhooks",    icon: Webhook },
+  { name: "Security & Audit",   path: "/admin/audit",       icon: ShieldCheck },
+  { name: "Platform Settings",   path: "/admin/settings",    icon: Settings },
 ]
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes

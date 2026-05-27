@@ -1,8 +1,15 @@
-import { Queue } from "bullmq"
+import { Queue, type QueueOptions } from "bullmq"
 import { env } from "@/lib/env"
 import { logger } from "@/lib/logger"
 
-const connection = { url: env.REDIS_URL }
+const REDIS_URL = env.REDIS_URL
+const REDIS_AVAILABLE = !!REDIS_URL
+
+if (!REDIS_AVAILABLE) {
+  console.warn("⚠️  Redis not configured (REDIS_URL missing). BullMQ queues are disabled — payment webhooks and background jobs will run synchronously.")
+}
+
+const connection = REDIS_URL ? { url: REDIS_URL } : undefined
 
 const defaultJobOptions = {
   attempts: 3,
@@ -11,40 +18,77 @@ const defaultJobOptions = {
   removeOnFail: { count: 500 },
 }
 
-// ── Email queue ───────────────────────────────────────────────────────────────
-export const emailQueue = new Queue("email", { connection, defaultJobOptions })
+function createLazyQueue(name: string, options: Partial<QueueOptions> = {}) {
+  let queue: Queue | null = null
 
-// ── AI / inference queue ──────────────────────────────────────────────────────
-// Used for long-running AI tasks that shouldn't block the request cycle
-export const aiQueue = new Queue("ai", { connection, defaultJobOptions })
+  const getQueue = () => {
+    if (!REDIS_AVAILABLE || !connection) return null
+    if (!queue) {
+      queue = new Queue(name, {
+        ...options,
+        connection,
+        defaultJobOptions: {
+          ...defaultJobOptions,
+          ...options.defaultJobOptions,
+        },
+      })
+      logger.info({ queue: name }, "BullMQ queue initialized")
+    }
+    return queue
+  }
 
-// ── Payment / webhook queue ───────────────────────────────────────────────────
-// Processes Stripe/Razorpay webhooks with retry safety
-export const paymentQueue = new Queue("payment", {
-  connection,
+  // Return a Proxy that gracefully no-ops when Redis is unavailable
+  return new Proxy({} as Queue, {
+    get(_target, prop, receiver) {
+      const q = getQueue()
+      if (!q) {
+        // Return no-op functions for all method calls when Redis is unavailable
+        if (typeof prop === "string") {
+          return async (..._args: unknown[]) => {
+            // Silently skip — the caller should handle this gracefully
+          }
+        }
+        return undefined
+      }
+      const value = Reflect.get(q, prop, receiver)
+      return typeof value === "function" ? value.bind(q) : value
+    },
+  })
+}
+
+// Queues are lazy so Next dev/build can compile route modules without opening Redis clients.
+// When Redis is unavailable, all queue operations silently no-op.
+export const emailQueue = createLazyQueue("email")
+
+// Used for long-running AI tasks that should not block the request cycle.
+export const aiQueue = createLazyQueue("ai")
+
+// Processes Stripe/Razorpay webhooks with retry safety.
+export const paymentQueue = createLazyQueue("payment", {
   defaultJobOptions: {
     ...defaultJobOptions,
-    attempts: 5, // higher retry count for financial operations
+    attempts: 5,
   },
 })
 
-// ── Notification queue ────────────────────────────────────────────────────────
-export const notifQueue = new Queue("notifications", { connection, defaultJobOptions })
+export const notifQueue = createLazyQueue("notifications")
+export const invoiceQueue = createLazyQueue("invoice")
+export const subscriptionQueue = createLazyQueue("subscription", {
+  defaultJobOptions: {
+    ...defaultJobOptions,
+    attempts: 5,
+  },
+})
+export const analyticsQueue = createLazyQueue("analytics")
 
-// ── Invoice / PDF generation queue ───────────────────────────────────────────
-export const invoiceQueue = new Queue("invoice", { connection, defaultJobOptions })
-
-// ── Audit log queue ───────────────────────────────────────────────────────────
-export const auditQueue = new Queue("audit", {
-  connection,
+export const auditQueue = createLazyQueue("audit", {
   defaultJobOptions: {
     attempts: 5,
     removeOnComplete: { count: 200 },
-    removeOnFail: false, // keep all audit failures for inspection
+    removeOnFail: false,
   },
 })
 
-// Job name constants to avoid string typos
 export const EMAIL_JOBS = {
   SEND_WELCOME: "send-welcome",
   SEND_INVOICE: "send-invoice",
@@ -66,4 +110,14 @@ export const PAYMENT_JOBS = {
   RECONCILE: "reconcile",
 } as const
 
-logger.info("✅ BullMQ queues initialized: email, ai, payment, notifications, audit")
+export const INVOICE_JOBS = {
+  GENERATE: "generate.invoice",
+  SEND: "send.invoice",
+  REGENERATE: "regenerate.invoice",
+} as const
+
+export const SUBSCRIPTION_JOBS = {
+  EXPIRE_OVERDUE: "subscription.expire-overdue",
+  RECONCILE: "subscription.reconcile",
+  DUNNING_STEP: "dunning.step",
+} as const

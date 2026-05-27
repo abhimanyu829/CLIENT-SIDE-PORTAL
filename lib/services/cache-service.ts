@@ -83,9 +83,9 @@ export async function cacheSet<T>(
 export async function cacheGet<T>(key: string): Promise<T | null> {
   if (!redis) return null
   try {
-    const raw = await redis.get<string>(key)
+    const raw = await redis.get<T | string>(key)
     if (!raw) return null
-    return JSON.parse(raw) as T
+    return typeof raw === "string" ? (JSON.parse(raw) as T) : raw
   } catch {
     return null
   }

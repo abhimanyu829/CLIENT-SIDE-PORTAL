@@ -52,12 +52,32 @@ export async function checkAndDeductQuota(
   userId: string,
   estimatedTokens: number
 ): Promise<QuotaCheck> {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { isBanned: true, isVerified: true } })
+  if (!user?.isVerified || user.isBanned) {
+    return {
+      allowed: false,
+      remainingTokens: 0,
+      dailyLimit: 0,
+      usedToday: 0,
+      reason: "Account is not eligible for AI access",
+    }
+  }
+
   // Get user's subscription to determine quota limit
   const activeSub = await db.subscription.findFirst({
-    where: { userId, status: "ACTIVE" },
+    where: { userId, status: "ACTIVE", currentPeriodEnd: { gt: new Date() } },
     include: { tier: true },
     orderBy: { createdAt: "desc" },
   })
+  if (!activeSub) {
+    return {
+      allowed: false,
+      remainingTokens: 0,
+      dailyLimit: 0,
+      usedToday: 0,
+      reason: "No active subscription with AI access",
+    }
+  }
 
   const tierLimits = activeSub?.tier.limits as Record<string, number> | null
   const dailyLimit = tierLimits?.dailyTokens ?? DEFAULT_DAILY_TOKEN_LIMIT

@@ -27,6 +27,7 @@ export async function middleware(req: NextRequest) {
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
   const role = token?.role as Role | undefined
+  const isVerified = token?.isVerified as boolean | undefined
 
   const isAuthPage =
     path.startsWith("/login") || path.startsWith("/register")
@@ -43,23 +44,48 @@ export async function middleware(req: NextRequest) {
   if (path.startsWith("/dashboard")) {
     if (!token) {
       const url = new URL("/login", req.url)
-      url.searchParams.set("callbackUrl", req.nextUrl.pathname)
+      url.searchParams.set("callbackUrl", req.nextUrl.pathname + req.nextUrl.search)
       return NextResponse.redirect(url)
+    }
+    if (isVerified === false) {
+      const verifyUrl = new URL("/verify-required", req.url)
+      verifyUrl.searchParams.set("redirect", req.nextUrl.pathname)
+      return NextResponse.redirect(verifyUrl)
     }
   }
 
-  // TODO (TESTING ONLY): Admin panel auth check is temporarily disabled.
-  // Re-enable the block below before deploying to production.
-  // if (path.startsWith("/admin")) {
-  //   if (!token) {
-  //     const url = new URL("/login", req.url)
-  //     url.searchParams.set("callbackUrl", req.nextUrl.pathname)
-  //     return NextResponse.redirect(url)
-  //   }
-  //   if (role !== Role.SUPER_ADMIN && role !== Role.SUB_ADMIN) {
-  //     return NextResponse.redirect(new URL("/unauthorized", req.url))
-  //   }
-  // }
+  // Protect checkout and cart routes (login + verification required)
+  if (path.startsWith("/checkout") || path.startsWith("/cart")) {
+    if (!token) {
+      const url = new URL("/login", req.url)
+      url.searchParams.set("callbackUrl", req.nextUrl.pathname + req.nextUrl.search)
+      return NextResponse.redirect(url)
+    }
+    if (isVerified === false) {
+      const verifyUrl = new URL("/verify-required", req.url)
+      verifyUrl.searchParams.set("redirect", req.nextUrl.pathname)
+      return NextResponse.redirect(verifyUrl)
+    }
+  }
+
+  // Protect commerce APIs (Cart, Payments)
+  if (path.startsWith("/api/cart") || path.startsWith("/api/payments")) {
+    if (!token) {
+      return NextResponse.json({ success: false, error: { code: "UNAUTHORIZED", message: "Authentication required to access commerce features." } }, { status: 401 })
+    }
+  }
+
+  // Protect admin panel routes
+  if (path.startsWith("/admin")) {
+    if (!token) {
+      const url = new URL("/login", req.url)
+      url.searchParams.set("callbackUrl", req.nextUrl.pathname + req.nextUrl.search)
+      return NextResponse.redirect(url)
+    }
+    if (role !== Role.SUPER_ADMIN && role !== Role.SUB_ADMIN) {
+      return NextResponse.redirect(new URL("/unauthorized", req.url))
+    }
+  }
 
   return NextResponse.next()
 }
@@ -68,6 +94,8 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/admin/:path*",
+    "/checkout/:path*",
+    "/cart/:path*",
     "/login",
     "/register",
     "/api/:path*",

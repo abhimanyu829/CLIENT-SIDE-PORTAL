@@ -16,10 +16,27 @@ export default async function ProfilePage() {
       phone: true,
       timezone: true,
       notifPrefs: true,
-    }
+      isVerified: true,
+      emailVerified: true,
+      phoneVerified: true,
+    },
   })
 
   if (!user) redirect("/login")
 
-  return <ProfileClient user={user as any} />
+  return (
+    <ProfileClient
+      user={{
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone ?? "",
+        timezone: user.timezone,
+        notifPrefs: user.notifPrefs as any,
+        isVerified: user.isVerified,
+        emailVerified: user.emailVerified?.toISOString() ?? null,
+        phoneVerified: user.phoneVerified?.toISOString() ?? null,
+      }}
+    />
+  )
 }

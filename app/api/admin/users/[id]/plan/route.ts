@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { z } from "zod"
 import { logger } from "@/lib/logger"
-import { auditLog } from "@/lib/audit"
+import { changePlan } from "@/lib/services/subscription-service"
 
 function isAdmin(session: any) {
   const role = session?.user?.role
@@ -39,27 +39,9 @@ export async function POST(
       return NextResponse.json({ success: false, error: { code: "NOT_FOUND", message: "Subscription not found" } }, { status: 404 })
     }
 
-    const newTier = await db.productTier.findUnique({ where: { id: newTierId } })
-    if (!newTier) {
-      return NextResponse.json({ success: false, error: { code: "NOT_FOUND", message: "Tier not found" } }, { status: 404 })
-    }
+    const result = await changePlan(subscriptionId, newTierId, session.user.id, reason ?? "Admin user plan change")
 
-    const updated = await db.subscription.update({
-      where: { id: subscriptionId },
-      data: { tierId: newTierId, status: "ACTIVE" },
-      include: { tier: true },
-    })
-
-    await auditLog({
-      userId: session.user.id,
-      action: "admin.plan_change",
-      entity: "Subscription",
-      entityId: subscriptionId,
-      before: { tierId: subscription.tierId, tierName: subscription.tier.name },
-      after: { tierId: newTierId, tierName: newTier.name, reason },
-    })
-
-    return NextResponse.json({ success: true, data: updated })
+    return NextResponse.json({ success: true, data: result.subscription })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ success: false, error: { code: "VALIDATION_ERROR", message: "Invalid input" } }, { status: 422 })

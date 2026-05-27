@@ -1,11 +1,26 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { BadgeCheck, BadgeX, RefreshCw, Smartphone } from "lucide-react"
 
-export default function ProfileClient({ user }: { user: any }) {
+interface ProfileUser {
+  id: string
+  name: string | null
+  email: string
+  phone: string
+  timezone: string
+  notifPrefs: any
+  isVerified: boolean
+  emailVerified: string | null
+  phoneVerified: string | null
+}
+
+export default function ProfileClient({ user }: { user: ProfileUser }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  
+  const [resendingVerification, setResendingVerification] = useState(false)
+  const [resendMessage, setResendMessage] = useState("")
+
   const [formData, setFormData] = useState({
     name: user.name || "",
     phone: user.phone || "",
@@ -14,7 +29,7 @@ export default function ProfileClient({ user }: { user: any }) {
       email: user.notifPrefs?.email ?? true,
       sms: user.notifPrefs?.sms ?? false,
       slack: user.notifPrefs?.slack ?? false,
-    }
+    },
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,7 +39,7 @@ export default function ProfileClient({ user }: { user: any }) {
       const res = await fetch("/api/users/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       })
       if (res.ok) {
         alert("Profile updated successfully")
@@ -39,6 +54,24 @@ export default function ProfileClient({ user }: { user: any }) {
     }
   }
 
+  const handleResendVerification = async () => {
+    setResendingVerification(true)
+    setResendMessage("")
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
+      })
+      const data = await res.json()
+      setResendMessage(data.message || "Verification email sent.")
+    } catch {
+      setResendMessage("Failed to resend. Please try again.")
+    } finally {
+      setResendingVerification(false)
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -47,40 +80,99 @@ export default function ProfileClient({ user }: { user: any }) {
       </div>
 
       <div className="dash-glass p-6 rounded-2xl border-white/5">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          
+        <div className="space-y-4 pb-6 border-b border-white/5">
+          <h3 className="text-lg font-semibold">Account Verification</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
+              {user.isVerified ? (
+                <BadgeCheck className="h-6 w-6 text-emerald-400 shrink-0" />
+              ) : (
+                <BadgeX className="h-6 w-6 text-amber-400 shrink-0" />
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-medium">
+                  Email {user.isVerified ? "Verified" : "Not Verified"}
+                </p>
+                {user.emailVerified && (
+                  <p className="text-xs text-zinc-500">
+                    Verified {new Date(user.emailVerified).toLocaleDateString()}
+                  </p>
+                )}
+                {!user.isVerified && (
+                  <button
+                    onClick={handleResendVerification}
+                    disabled={resendingVerification}
+                    className="mt-2 flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    {resendingVerification ? "Sending..." : "Resend verification email"}
+                  </button>
+                )}
+                {resendMessage && (
+                  <p className="text-xs text-emerald-400 mt-1">{resendMessage}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
+              {user.phoneVerified ? (
+                <Smartphone className="h-6 w-6 text-emerald-400 shrink-0" />
+              ) : (
+                <Smartphone className="h-6 w-6 text-zinc-500 shrink-0" />
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-medium">
+                  Phone {user.phoneVerified ? "Verified" : "Not Verified"}
+                </p>
+                {user.phoneVerified ? (
+                  <p className="text-xs text-zinc-500">
+                    Verified {new Date(user.phoneVerified).toLocaleDateString()}
+                  </p>
+                ) : user.phone ? (
+                  <p className="text-xs text-zinc-500">
+                    Phone saved: {user.phone}. Verify via Settings.
+                  </p>
+                ) : (
+                  <p className="text-xs text-zinc-500">Add your phone number below.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6 pt-4">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold border-b border-white/5 pb-2">Personal Info</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-zinc-400 mb-1.5 block">Full Name</label>
-                <input 
+                <input
                   value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500" 
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500"
                 />
               </div>
               <div>
                 <label className="text-xs text-zinc-400 mb-1.5 block">Email Address (Read Only)</label>
-                <input 
+                <input
                   value={user.email}
                   disabled
-                  className="w-full bg-black/30 border border-white/5 rounded-lg px-3 py-2 text-sm outline-none text-zinc-500 cursor-not-allowed" 
+                  className="w-full bg-black/30 border border-white/5 rounded-lg px-3 py-2 text-sm outline-none text-zinc-500 cursor-not-allowed"
                 />
               </div>
               <div>
                 <label className="text-xs text-zinc-400 mb-1.5 block">Phone Number</label>
-                <input 
+                <input
                   value={formData.phone}
-                  onChange={e => setFormData({...formData, phone: e.target.value})}
-                  className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500" 
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500"
                 />
               </div>
               <div>
                 <label className="text-xs text-zinc-400 mb-1.5 block">Timezone</label>
-                <select 
+                <select
                   value={formData.timezone}
-                  onChange={e => setFormData({...formData, timezone: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
                   className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500"
                 >
                   <option value="UTC">UTC</option>
@@ -96,15 +188,20 @@ export default function ProfileClient({ user }: { user: any }) {
           <div className="space-y-4 pt-4">
             <h3 className="text-lg font-semibold border-b border-white/5 pb-2">Notifications</h3>
             <div className="space-y-3">
-              {['email', 'sms', 'slack'].map(key => (
+              {["email", "sms", "slack"].map((key) => (
                 <label key={key} className="flex items-center gap-3 cursor-pointer">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={formData.notifPrefs[key as keyof typeof formData.notifPrefs]}
-                    onChange={e => setFormData({
-                      ...formData, 
-                      notifPrefs: { ...formData.notifPrefs, [key]: e.target.checked }
-                    })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        notifPrefs: {
+                          ...formData.notifPrefs,
+                          [key]: e.target.checked,
+                        },
+                      })
+                    }
                     className="w-4 h-4 rounded border-white/20 bg-black/50 text-purple-500 focus:ring-purple-500 focus:ring-offset-black"
                   />
                   <span className="text-sm capitalize">{key} Notifications</span>
@@ -114,15 +211,14 @@ export default function ProfileClient({ user }: { user: any }) {
           </div>
 
           <div className="pt-6 border-t border-white/5 flex justify-end">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="dash-btn px-6 py-2.5 rounded-lg text-sm font-medium transition-transform active:scale-95 disabled:opacity-50"
             >
               {loading ? "Saving..." : "Save Changes"}
             </button>
           </div>
-
         </form>
       </div>
     </div>

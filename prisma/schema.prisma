@@ -281,6 +281,14 @@ model User {
   department       Department?
   avatarUrl        String?
   phone            String?
+  emailVerified    DateTime?
+  phoneVerified    DateTime?
+  verificationToken    String?                      @unique
+  verificationTokenExp DateTime?
+  resetToken           String?                      @unique
+  resetTokenExp        DateTime?
+  otpCode              String?
+  otpExpiresAt         DateTime?
   timezone         String                       @default("Asia/Kolkata")
   isVerified       Boolean                      @default(false)
   twoFactorEnabled Boolean                      @default(false)

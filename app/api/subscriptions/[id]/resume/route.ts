@@ -4,9 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { stripe } from "@/lib/stripe"
 import { logger } from "@/lib/logger"
-import { auditLog } from "@/lib/audit"
-import { createNotification } from "@/lib/notifications"
-import { SubStatus } from "@prisma/client"
+import { reactivateSubscription } from "@/lib/services/subscription-service"
 
 // POST /api/subscriptions/[id]/resume
 export async function POST(
@@ -55,26 +53,8 @@ export async function POST(
       })
     }
 
-    const updated = await db.subscription.update({
-      where: { id },
-      data: { status: SubStatus.ACTIVE },
-    })
-
-    await auditLog({
-      userId: session.user.id,
-      action: "subscription.resume",
-      entity: "Subscription",
-      entityId: id,
-      after: { status: "ACTIVE" },
-    })
-
-    await createNotification({
-      userId: subscription.userId,
-      type: "SUBSCRIPTION",
-      title: "Subscription Resumed",
-      body: "Your subscription is active again. Welcome back!",
-      actionUrl: "/dashboard/subscriptions",
-    })
+    await reactivateSubscription(id, session.user.id)
+    const updated = await db.subscription.findUnique({ where: { id }, include: { tier: true, product: true } })
 
     return NextResponse.json({ success: true, data: updated })
   } catch (error) {

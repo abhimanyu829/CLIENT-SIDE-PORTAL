@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { pusherClient } from "@/lib/pusher"
+import { pusherClient } from "@/lib/pusher-client"
 
 interface Message {
   id: string

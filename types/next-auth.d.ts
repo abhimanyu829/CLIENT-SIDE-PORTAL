@@ -10,6 +10,7 @@ declare module "next-auth" {
       image?: string | null
       role: string
       permissions: string[]
+      isVerified?: boolean
       avatarUrl?: string | null
     }
   }
@@ -18,6 +19,7 @@ declare module "next-auth" {
     id: string
     role: string
     permissions?: string[]
+    isVerified?: boolean
     avatarUrl?: string | null
   }
 }
@@ -27,6 +29,7 @@ declare module "next-auth/jwt" {
     id: string
     role: string
     permissions: string[]
+    isVerified?: boolean
     avatarUrl?: string | null
   }
 }

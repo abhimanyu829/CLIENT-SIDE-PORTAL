@@ -10,7 +10,7 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: `
       default-src 'self';
-      script-src 'self' 'unsafe-eval' 'unsafe-inline' *.googletagmanager.com;
+      script-src 'self' 'unsafe-eval' 'unsafe-inline' *.googletagmanager.com https://checkout.razorpay.com;
       child-src 'self';
       style-src 'self' 'unsafe-inline' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=';
       img-src 'self' blob: data: https: ${r2Hostname ? r2Hostname : ''};
@@ -19,6 +19,7 @@ const securityHeaders = [
       base-uri 'self';
       form-action 'self';
       frame-ancestors 'none';
+      frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com;
       connect-src *;
     `.replace(/\s{2,}/g, ' ').trim(),
   },

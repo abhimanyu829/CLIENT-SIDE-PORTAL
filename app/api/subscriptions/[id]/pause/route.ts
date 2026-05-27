@@ -5,8 +5,7 @@ import { db } from "@/lib/db"
 import { stripe } from "@/lib/stripe"
 import { z } from "zod"
 import { logger } from "@/lib/logger"
-import { auditLog } from "@/lib/audit"
-import { createNotification } from "@/lib/notifications"
+import { pauseSubscription } from "@/lib/services/subscription-service"
 
 const pauseSchema = z.object({
   // Optional: ISO date string for when to auto-resume
@@ -80,30 +79,8 @@ export async function POST(
       })
     }
 
-    const updated = await db.subscription.update({
-      where: { id },
-      data: {
-        status: "PAUSED",
-      },
-    })
-
-    await auditLog({
-      userId: session.user.id,
-      action: "subscription.pause",
-      entity: "Subscription",
-      entityId: id,
-      after: { resumeAt },
-    })
-
-    await createNotification({
-      userId: subscription.userId,
-      type: "SUBSCRIPTION",
-      title: "Subscription Paused",
-      body: resumeAt
-        ? `Your subscription has been paused and will resume on ${new Date(resumeAt).toLocaleDateString()}.`
-        : "Your subscription has been paused. You can resume it at any time.",
-      actionUrl: "/dashboard/subscriptions",
-    })
+    await pauseSubscription(id, session.user.id, resumeAt ? `Paused until ${resumeAt}` : "Subscription paused")
+    const updated = await db.subscription.findUnique({ where: { id }, include: { tier: true, product: true } })
 
     return NextResponse.json({ success: true, data: updated })
   } catch (error) {

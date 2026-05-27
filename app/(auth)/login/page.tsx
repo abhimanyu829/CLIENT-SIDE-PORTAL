@@ -4,8 +4,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
@@ -18,7 +18,21 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [isUnverified, setIsUnverified] = useState(false)
+  const [isBanned, setIsBanned] = useState(false)
+
+  useEffect(() => {
+    if (searchParams.get("verified") === "true") {
+      setSuccess("Email verified successfully! You can now log in.")
+    }
+    if (searchParams.get("registered") === "true") {
+      setSuccess("Registration successful! Check your email to verify your account.")
+    }
+  }, [searchParams])
+
   const {
     register,
     handleSubmit,
@@ -29,6 +43,9 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setError(null)
+    setIsUnverified(false)
+    setIsBanned(false)
+
     const result = await signIn("credentials", {
       redirect: false,
       email: data.email,
@@ -36,7 +53,17 @@ export default function LoginPage() {
     })
 
     if (result?.error) {
-      setError("Invalid email or password")
+      if (result.error.includes("verify your email")) {
+        setIsUnverified(true)
+        setError("Please verify your email before logging in.")
+      }
+      else if (result.error.includes("suspended")) {
+        setIsBanned(true)
+        setError("Your account has been suspended. Please contact support.")
+      }
+      else {
+        setError("Invalid email or password")
+      }
     } else {
       router.push("/dashboard")
       router.refresh()
@@ -51,6 +78,22 @@ export default function LoginPage() {
     signIn("github", { callbackUrl: "/dashboard" })
   }
 
+  const handleResendVerification = async () => {
+    const email = (document.querySelector("input[type='email']") as HTMLInputElement)?.value
+    if (!email) return
+    try {
+      await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+      setError(null)
+      setSuccess("Verification email sent! Check your inbox.")
+    } catch {
+      setError("Failed to resend. Please try again.")
+    }
+  }
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg border border-gray-100">
@@ -59,9 +102,23 @@ export default function LoginPage() {
           <p className="text-sm text-gray-500">Enter your credentials to access your account</p>
         </div>
 
+        {success && (
+          <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md">
+            {success}
+          </div>
+        )}
+
         {error && (
           <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-md">
-            {error}
+            <p>{error}</p>
+            {isUnverified && (
+              <button
+                onClick={handleResendVerification}
+                className="mt-2 text-indigo-600 hover:underline font-medium text-sm"
+              >
+                Resend verification email →
+              </button>
+            )}
           </div>
         )}
 
@@ -86,6 +143,12 @@ export default function LoginPage() {
               {...register("password")} 
             />
             {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+          </div>
+
+          <div className="flex justify-end">
+            <Link href="/forgot-password" className="text-sm text-gray-500 hover:text-gray-900">
+              Forgot password?
+            </Link>
           </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>

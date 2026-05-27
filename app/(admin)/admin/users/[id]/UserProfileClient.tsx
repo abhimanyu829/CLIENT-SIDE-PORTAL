@@ -102,6 +102,7 @@ export default function UserProfileClient({ user, isSuperAdmin, adminUserId }: P
   const [dialog, setDialog] = useState<{ type: string; title: string; desc: string } | null>(null)
   const [issueCoupon, setIssueCoupon] = useState("")
   const [loading, setLoading] = useState(false)
+  const [verifyLoading, setVerifyLoading] = useState(false)
 
   const fraudScore = Math.min(
     (!user.isVerified ? 20 : 0) + (!user.twoFactorEnabled ? 10 : 0) + (user.payments.length > 15 ? 15 : 0) + (user.id.charCodeAt(0) % 30),
@@ -140,6 +141,25 @@ export default function UserProfileClient({ user, isSuperAdmin, adminUserId }: P
     if (ua.includes("Firefox")) return "Firefox"
     if (ua.includes("Safari")) return "Safari"
     return "Browser"
+  }
+
+  const handleVerifyAction = async (action: "verify" | "resend" | "unverify") => {
+    setVerifyLoading(true)
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/verify`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Action failed")
+      toast({ title: "Done", description: data.message })
+      router.refresh()
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed", variant: "destructive" })
+    } finally {
+      setVerifyLoading(false)
+    }
   }
 
   const gdprExport = () => {
@@ -354,6 +374,51 @@ export default function UserProfileClient({ user, isSuperAdmin, adminUserId }: P
 
         {/* Actions Sidebar */}
         <div className="space-y-3">
+          {/* Verification Status */}
+          <div className="rounded-xl border p-4 bg-card space-y-2">
+            <h3 className="font-semibold text-sm">Email Verification</h3>
+            <div className="flex items-center gap-2">
+              {user.isVerified ? (
+                <span className="flex items-center gap-1.5 text-sm text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+                  <CheckCircle className="h-3.5 w-3.5" /> Verified
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-sm text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
+                  <XCircle className="h-3.5 w-3.5" /> Unverified
+                </span>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              {!user.isVerified && (
+                <>
+                  <Button
+                    variant="outline" size="sm" className="w-full justify-start"
+                    disabled={verifyLoading}
+                    onClick={() => handleVerifyAction("verify")}
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4 text-emerald-500" /> Manually Verify
+                  </Button>
+                  <Button
+                    variant="outline" size="sm" className="w-full justify-start"
+                    disabled={verifyLoading}
+                    onClick={() => handleVerifyAction("resend")}
+                  >
+                    <Smartphone className="mr-2 h-4 w-4 text-blue-500" /> Resend Verification
+                  </Button>
+                </>
+              )}
+              {user.isVerified && (
+                <Button
+                  variant="outline" size="sm" className="w-full justify-start"
+                  disabled={verifyLoading}
+                  onClick={() => handleVerifyAction("unverify")}
+                >
+                  <XCircle className="mr-2 h-4 w-4 text-red-500" /> Revoke Verification
+                </Button>
+              )}
+            </div>
+          </div>
+
           <div className="rounded-xl border p-4 bg-card space-y-2">
             <h3 className="font-semibold text-sm">Actions</h3>
             <Button

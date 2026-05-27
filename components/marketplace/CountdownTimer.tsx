@@ -31,20 +31,29 @@ interface Props {
 
 export default function CountdownTimer({ endDate, className = "", variant = "default", onExpire }: Props) {
   const end = new Date(endDate)
-  const [t, setT] = useState<TimeLeft>(calc(end))
+  const [t, setT] = useState<TimeLeft | null>(null)
 
   useEffect(() => {
-    const id = setInterval(() => {
+    const update = () => {
       const next = calc(end)
       setT(next)
+      if (next.expired) onExpire?.()
+      return next
+    }
+
+    const initial = update()
+    if (initial.expired) return
+
+    const id = setInterval(() => {
+      const next = update()
       if (next.expired) {
         clearInterval(id)
-        onExpire?.()
       }
     }, 1000)
     return () => clearInterval(id)
   }, [endDate])
 
+  if (!t) return null
   if (t.expired) return null
 
   if (variant === "badge") {

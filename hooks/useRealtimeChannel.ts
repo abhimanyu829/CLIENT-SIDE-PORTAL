@@ -85,6 +85,15 @@ export function useRealtimeChannel(
             .then(({ data }) => data && setStats(data))
             .catch(() => {})
         })
+
+        channel.bind("billing.refresh", () => {
+          if (!mounted) return
+          fetch("/api/dashboard/stats")
+            .then((r) => r.json())
+            .then(({ data }) => data && setStats(data))
+            .catch(() => {})
+          fetch("/api/notifications").catch(() => {})
+        })
       }
     })
 

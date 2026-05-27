@@ -1,10 +1,11 @@
 import { requireAdmin } from "@/lib/admin-auth"
 import { db } from "@/lib/db"
-import { redis } from "@/lib/redis"
-import RevenueDashboardClient from "./RevenueDashboardClient"
+import { cacheGet, cacheSet, CACHE_KEYS } from "@/lib/services/cache-service"
+import RevenueDashboardClient, { type DashboardData } from "./RevenueDashboardClient"
 
-const CACHE_KEY = "admin:revenue:dashboard:v2"
 const CACHE_TTL = 300 // 5 minutes
+
+export const dynamic = "force-dynamic"
 
 function linearRegression(data: number[]): { slope: number; intercept: number } {
   const n = data.length
@@ -24,13 +25,9 @@ function linearRegression(data: number[]): { slope: number; intercept: number } 
 export default async function AdminOverviewPage() {
   await requireAdmin()
 
-  // Try Redis cache
-  let cached: string | null = null
-  if (redis) {
-    try { cached = await redis.get(CACHE_KEY) } catch { /* ignore */ }
-  }
+  const cached = await cacheGet<DashboardData>(CACHE_KEYS.ADMIN_REVENUE_DASHBOARD)
   if (cached) {
-    return <RevenueDashboardClient data={JSON.parse(cached)} />
+    return <RevenueDashboardClient data={cached} />
   }
 
   // --- Compute metrics ---
@@ -143,7 +140,7 @@ export default async function AdminOverviewPage() {
     contraction: Math.round(mrr * (0.01 + Math.random() * 0.05)),
   }))
 
-  const data = {
+  const data: DashboardData = {
     mrr: Math.round(mrr),
     arr: Math.round(arr),
     aov: Math.round(aov * 100) / 100,
@@ -162,10 +159,7 @@ export default async function AdminOverviewPage() {
     forecast90: Math.round(forecast90),
   }
 
-  // Cache it
-  if (redis) {
-    try { await redis.set(CACHE_KEY, JSON.stringify(data), { ex: CACHE_TTL }) } catch { /* ignore */ }
-  }
+  await cacheSet(CACHE_KEYS.ADMIN_REVENUE_DASHBOARD, data, CACHE_TTL)
 
   return <RevenueDashboardClient data={data} />
 }

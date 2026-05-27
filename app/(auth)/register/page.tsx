@@ -6,13 +6,13 @@ import * as z from "zod"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import Link from "next/link"
-import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 
 const registerSchema = z
   .object({
     name: z.string().min(2, { message: "Name must be at least 2 characters" }),
     email: z.string().email({ message: "Please enter a valid email address" }),
+    phone: z.string().optional(),
     password: z.string().min(8, { message: "Password must be at least 8 characters" }),
     confirmPassword: z.string(),
   })
@@ -26,6 +26,8 @@ type RegisterFormValues = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [registered, setRegistered] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState("")
   const {
     register,
     handleSubmit,
@@ -43,35 +45,96 @@ export default function RegisterPage() {
         body: JSON.stringify(data),
       })
 
+      const result = await response.json()
+
       if (!response.ok) {
-        const result = await response.json()
         setError(result.error || "Registration failed")
       } else {
-        // Auto-login after registration
-        const result = await signIn("credentials", {
-          redirect: false,
-          email: data.email,
-          password: data.password,
-        })
-
-        if (result?.error) {
-          setError(result.error)
-        } else {
-          router.push("/dashboard")
-          router.refresh()
-        }
+        setRegisteredEmail(data.email)
+        setRegistered(true)
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred")
     }
   }
 
   const handleGoogleSignIn = () => {
-    signIn("google", { callbackUrl: "/dashboard" })
+    window.location.href = "/api/auth/signin/google?callbackUrl=/dashboard"
   }
 
   const handleGithubSignIn = () => {
-    signIn("github", { callbackUrl: "/dashboard" })
+    window.location.href = "/api/auth/signin/github?callbackUrl=/dashboard"
+  }
+
+  // Show success state after registration
+  if (registered) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+        <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg border border-gray-100 text-center">
+          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Verification email sent!
+          </h1>
+          <p className="text-sm text-gray-500">
+            We&apos;ve sent a verification link to{" "}
+            <span className="font-medium text-gray-700">{registeredEmail}</span>.
+            Please check your inbox and click the link to activate your account.
+          </p>
+
+          {/* Spam/Promotions notice */}
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
+            <p className="text-xs font-medium text-blue-800">
+              Not seeing the email?
+            </p>
+            <p className="text-xs text-blue-700 mt-1">
+              Check your <strong>Spam</strong>, <strong>Promotions</strong>, or{" "}
+              <strong>Updates</strong> folders. Email delivery may take a few minutes.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Link
+              href="/login"
+              className="block w-full text-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors font-medium"
+            >
+              Go to Login
+            </Link>
+            <button
+              onClick={async () => {
+                try {
+                  const response = await fetch("/api/auth/resend-verification", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: registeredEmail }),
+                  })
+                  const data = await response.json()
+                  alert(data.message || data.error || "Request processed")
+                } catch {
+                  alert("Failed to resend. Please try again.")
+                }
+              }}
+              className="block w-full text-center text-sm text-indigo-600 hover:underline"
+            >
+              Resend verification email
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -91,44 +154,55 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Name</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
               placeholder="John Doe"
-              {...register("name")} 
+              {...register("name")}
             />
             {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
           </div>
 
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Email</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
               placeholder="name@example.com"
-              {...register("email")} 
+              {...register("email")}
             />
             {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
           </div>
-          
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">Phone (optional)</label>
+            <input
+              type="tel"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+              placeholder="+91 9876543210"
+              {...register("phone")}
+            />
+            {errors.phone && <p className="text-sm text-red-500">{errors.phone.message}</p>}
+          </div>
+
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Password</label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
               placeholder="••••••••"
-              {...register("password")} 
+              {...register("password")}
             />
             {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
           </div>
 
           <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Confirm Password</label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
               placeholder="••••••••"
-              {...register("confirmPassword")} 
+              {...register("confirmPassword")}
             />
             {errors.confirmPassword && (
               <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
@@ -136,7 +210,7 @@ export default function RegisterPage() {
           </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Registering..." : "Register"}
+            {isSubmitting ? "Creating account..." : "Create account"}
           </Button>
         </form>
 

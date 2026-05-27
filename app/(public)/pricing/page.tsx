@@ -1,12 +1,13 @@
 import { db } from "@/lib/db"
 import { ProductStatus } from "@prisma/client"
 import { unstable_cache } from "next/cache"
+import type { Metadata } from "next"
 import Link from "next/link"
 import CountdownTimer from "@/components/marketplace/CountdownTimer"
 
 export const revalidate = 30
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Pricing — NexusAI | Transparent, Flexible Pricing for Every Team",
   description: "Choose the right plan for your team. Flexible monthly and yearly pricing for all NexusAI products. Start free, scale when you're ready.",
 }

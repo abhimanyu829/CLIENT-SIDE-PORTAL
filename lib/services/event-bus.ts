@@ -10,7 +10,7 @@
  *  3. Logs to structured logger
  */
 
-import { pusherServer } from "@/lib/pusher"
+import { getPusherServer } from "@/lib/pusher"
 import { redis } from "@/lib/redis"
 import { logger } from "@/lib/logger"
 import { CACHE_KEYS } from "@/lib/services/cache-service"
@@ -65,6 +65,7 @@ export const EVENTS = {
   ENTITLEMENT_GRANTED:      "ENTITLEMENT_GRANTED",
   SERVICE_ENGAGEMENT_CREATED: "SERVICE_ENGAGEMENT_CREATED",
   AGENT_DEPLOYED:           "AGENT_DEPLOYED",
+  USER_VERIFIED:            "USER_VERIFIED",
 } as const
 
 export type EventType = (typeof EVENTS)[keyof typeof EVENTS]
@@ -117,12 +118,27 @@ export async function emitEvent(event: PlatformEvent): Promise<void> {
 
   // 1. Pusher real-time broadcast to admin channel
   try {
-    await pusherServer.trigger("admin-dashboard", type, {
+    const pusher = await getPusherServer()
+    await pusher.trigger("admin-dashboard", type, {
       type,
       timestamp,
       payload,
       actorId,
     })
+    const userId = typeof payload.userId === "string" ? payload.userId : undefined
+    if (userId) {
+      await pusher.trigger(`private-user-${userId}`, "billing.refresh", {
+        type,
+        timestamp,
+        payload,
+        actorId,
+      })
+      await pusher.trigger(`private-user-${userId}`, "stats.refresh", {
+        type,
+        timestamp,
+        payload,
+      })
+    }
   } catch (err) {
     logger.warn({ err, type }, "emitEvent: Pusher trigger failed (non-fatal)")
   }

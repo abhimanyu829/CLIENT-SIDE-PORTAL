@@ -6,6 +6,8 @@ import AiMonitoringClient from "./AiMonitoringClient"
 
 const CACHE_TTL = 120 // 2 minutes
 
+export const dynamic = "force-dynamic"
+
 export default async function AiMonitoringPage() {
   await requireAdmin()
 

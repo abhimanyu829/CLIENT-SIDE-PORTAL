@@ -3,7 +3,7 @@
 import { ReactNode, useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { useNotifications } from "@/hooks/useNotifications"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 
@@ -212,11 +212,12 @@ function NotificationDropdown({ onClose }: { onClose: () => void }) {
   )
 }
 
-export default function DashboardLayout({ children, userId, userName }: { children: ReactNode; userId: string; userName: string }) {
+export default function DashboardLayout({ children, userId, userName, isVerified }: { children: ReactNode; userId: string; userName: string; isVerified?: boolean }) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [cmdOpen, setCmdOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
+  const [userOpen, setUserOpen] = useState(false)
   const { data: session } = useSession()
 
   // Real notifications
@@ -231,7 +232,7 @@ export default function DashboardLayout({ children, userId, userName }: { childr
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setCmdOpen((o) => !o) }
-      if (e.key === "Escape") { setCmdOpen(false); setNotifOpen(false) }
+      if (e.key === "Escape") { setCmdOpen(false); setNotifOpen(false); setUserOpen(false) }
     }
     window.addEventListener("keydown", h)
     return () => window.removeEventListener("keydown", h)
@@ -304,6 +305,13 @@ export default function DashboardLayout({ children, userId, userName }: { childr
               </div>
             </Link>
           ))}
+          <button 
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer border border-transparent hover:bg-red-500/10 hover:border-red-500/20 transition-all text-left text-red-400 group"
+          >
+            <span className="text-base text-red-400/70 group-hover:text-red-400 shrink-0">↪</span>
+            {!collapsed && <span className="text-sm font-medium">Log out</span>}
+          </button>
         </div>
       </aside>
 
@@ -353,17 +361,57 @@ export default function DashboardLayout({ children, userId, userName }: { childr
             </div>
 
             {/* User */}
-            <Link href="/dashboard/profile">
-              <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2.5 py-1.5 cursor-pointer hover:border-white/[0.12] transition-all">
+            <div className="relative">
+              <div 
+                onClick={() => setUserOpen(!userOpen)}
+                className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] rounded-xl px-2.5 py-1.5 cursor-pointer hover:border-white/[0.12] transition-all"
+              >
                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center text-xs font-black">
                   {initials}
                 </div>
                 <span className="text-sm font-medium text-zinc-300 hidden sm:block truncate max-w-24">{displayName}</span>
                 <span className="text-xs text-zinc-600">▾</span>
               </div>
-            </Link>
+              
+              {userOpen && (
+                <div className="absolute right-0 top-12 w-48 bg-[#0e0e0e] border border-white/10 rounded-2xl z-50 overflow-hidden shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="p-1.5">
+                    <Link href="/dashboard/profile" onClick={() => setUserOpen(false)}>
+                      <div className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-white/5 rounded-lg transition-colors">
+                        Profile Settings
+                      </div>
+                    </Link>
+                    <button 
+                      onClick={() => signOut({ callbackUrl: '/' })} 
+                      className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors mt-0.5"
+                    >
+                      Log Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
+
+        {/* Verification Banner */}
+        {isVerified === false && (
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-amber-400 text-lg">⚠️</span>
+              <div>
+                <p className="text-sm font-medium text-amber-200">Email not verified</p>
+                <p className="text-xs text-amber-400/70">Verify your email to unlock subscriptions, AI tools, and premium features.</p>
+              </div>
+            </div>
+            <Link
+              href="/verify-required"
+              className="shrink-0 text-xs font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg border border-amber-500/30 transition-colors"
+            >
+              Verify Now
+            </Link>
+          </div>
+        )}
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto bg-[#080808] p-4 sm:p-6">

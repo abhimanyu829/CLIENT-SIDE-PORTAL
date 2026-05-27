@@ -9,10 +9,48 @@ import { SubStatus, PaymentStatus } from "@prisma/client"
 import { emailQueue, invoiceQueue, notifQueue } from "@/lib/queue"
 import { createNotification } from "@/lib/notifications"
 import { auditLog } from "@/lib/audit"
+import { markOrderPaid } from "@/lib/services/enterprise-commerce-service"
+import { cancelSubscription, changePlan, markSubscriptionPastDue, revokeUserAccessForOrder, syncSubscriptionAccessState } from "@/lib/services/subscription-service"
 
 // ── Handler: checkout.session.completed ──────────────────────────────────────
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   if (!stripe) return
+  const orderId = session.metadata?.orderId
+  if (orderId) {
+    const paymentId = typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.id
+    await markOrderPaid(orderId, paymentId, session.id)
+    if (session.subscription) {
+      const order = await db.order.findUnique({
+        where: { id: orderId },
+        include: { items: { include: { tier: true } } },
+      })
+      const recurringItem = order?.items.find((item) =>
+        item.tier && !["ONE_TIME", "LIFETIME"].includes(item.tier.interval)
+      )
+      if (order && recurringItem?.tierId) {
+        const localSub = await db.subscription.findFirst({
+          where: {
+            userId: order.userId,
+            productId: recurringItem.productId,
+            tierId: recurringItem.tierId,
+            stripeSubId: null,
+            status: "ACTIVE",
+          },
+          orderBy: { createdAt: "desc" },
+        })
+        if (localSub) {
+          await db.subscription.update({
+            where: { id: localSub.id },
+            data: { stripeSubId: session.subscription as string },
+          })
+        }
+      }
+    }
+    return
+  }
+
   const { userId, tierId } = session.metadata ?? {}
   if (!userId || !tierId) {
     logger.warn({ session }, "Missing metadata on checkout session")
@@ -49,6 +87,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     },
   })
+  await syncSubscriptionAccessState(sub.id)
 
   // Queue invoice PDF generation
   if (session.payment_intent) {
@@ -92,6 +131,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
       currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
     },
   })
+  await syncSubscriptionAccessState(localSub.id)
 
   await emailQueue.add("send.renewal", {
     email: invoice.customer_email,
@@ -108,10 +148,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   if (!localSub) return
 
   // Mark subscription as past_due
-  await db.subscription.update({
-    where: { id: localSub.id },
-    data: { status: SubStatus.PAST_DUE },
-  })
+  await markSubscriptionPastDue(localSub.id, localSub.userId, "Stripe invoice payment failed")
 
   // Record failed payment
   await db.payment.create({
@@ -194,16 +231,19 @@ async function handleSubscriptionUpdated(stripeSub: Stripe.Subscription) {
     if (matchingTier) tierId = matchingTier.id
   }
 
+  if (tierId !== localSub.tierId) {
+    await changePlan(localSub.id, tierId, localSub.userId, "Stripe subscription plan synchronized")
+  }
   await db.subscription.update({
     where: { id: localSub.id },
     data: {
       status: newStatus,
-      tierId,
       cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
       currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
       currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
     },
   })
+  await syncSubscriptionAccessState(localSub.id)
 }
 
 // ── Handler: customer.subscription.deleted ───────────────────────────────────
@@ -211,10 +251,7 @@ async function handleSubscriptionDeleted(stripeSub: Stripe.Subscription) {
   const localSub = await db.subscription.findUnique({ where: { stripeSubId: stripeSub.id } })
   if (!localSub) return
 
-  await db.subscription.update({
-    where: { id: localSub.id },
-    data: { status: SubStatus.CANCELLED, cancelledAt: new Date() },
-  })
+  await cancelSubscription(localSub.id, localSub.userId, "Stripe subscription deleted")
 
   await createNotification({
     userId: localSub.userId,
@@ -260,6 +297,9 @@ async function handleDisputeCreated(dispute: Stripe.Dispute) {
 
   if (payment) {
     await db.payment.update({ where: { id: payment.id }, data: { status: PaymentStatus.FAILED } })
+    if (payment.orderId) {
+      await revokeUserAccessForOrder(payment.orderId, payment.userId, "Stripe chargeback dispute")
+    }
   }
 }
 
@@ -369,4 +409,3 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ received: true })
 }
-

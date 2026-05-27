@@ -19,16 +19,33 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // ApiKey is looked up by keyHash (prefix match) — 'key' field doesn't exist in schema
     const apiKey = await db.apiKey.findFirst({
       where: { keyHash: keyString, isActive: true },
-      include: { user: { include: { subscriptions: true } } }
+      include: {
+        user: {
+          include: {
+            subscriptions: true,
+            entitlements: true,
+          },
+        },
+      }
     })
 
     if (!apiKey) {
       return NextResponse.json({ error: "Unauthorized: Invalid API Key" }, { status: 401 })
     }
 
-    const activeSub = apiKey.user.subscriptions.find((s) => s.status === "ACTIVE" || s.status === "TRIALING")
+    if (apiKey.user.isBanned || !apiKey.user.isVerified) {
+      return NextResponse.json({ error: "Forbidden: Account is not eligible for AI access" }, { status: 403 })
+    }
+
+    const now = new Date()
+    const activeSub = apiKey.user.subscriptions.find((s) =>
+      (s.status === "ACTIVE" || s.status === "TRIALING") && s.currentPeriodEnd > now
+    )
+    const activeEntitlement = apiKey.user.entitlements.find((entitlement) =>
+      entitlement.status === "ACTIVE" && (!entitlement.expiresAt || entitlement.expiresAt > now)
+    )
     
-    if (!activeSub) {
+    if (!activeSub && !activeEntitlement) {
       return NextResponse.json({ error: "Payment Required: Upgrade your plan to use this agent" }, { status: 402 })
     }
 

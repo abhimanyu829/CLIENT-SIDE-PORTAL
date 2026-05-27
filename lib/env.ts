@@ -41,7 +41,7 @@ const envSchema = z.object({
 
   // Email
   RESEND_API_KEY: optStr,
-  EMAIL_FROM: z.string().email().optional().or(z.literal('').transform(() => undefined)).default('noreply@example.com'),
+  EMAIL_FROM: optStr,
 
   // AI
   OPENAI_API_KEY: optStr,
@@ -54,10 +54,18 @@ const envSchema = z.object({
   NEXT_PUBLIC_PUSHER_KEY: optStr,
   NEXT_PUBLIC_PUSHER_CLUSTER: optStr,
 
-  // Twilio / WhatsApp
+  // Twilio / WhatsApp / MSG91
   TWILIO_ACCOUNT_SID: optStr,
   TWILIO_AUTH_TOKEN: optStr,
   TWILIO_WHATSAPP_FROM: optStr,
+  TWILIO_PHONE_NUMBER: optStr,
+  MSG91_AUTH_KEY: optStr,
+  MSG91_SENDER_ID: optStr,
+  MSG91_DLT_TEMPLATE_ID: optStr,
+
+  // Verification
+  VERIFICATION_TOKEN_EXPIRY_MINUTES: z.coerce.number().optional().default(60),
+  OTP_EXPIRY_MINUTES: z.coerce.number().optional().default(10),
 
   // Encryption (64 hex chars = 32 bytes)
   ENCRYPTION_KEY: z.string().length(64).optional().or(z.literal('').transform(() => undefined)),

@@ -89,6 +89,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: product.id, tierId, quantity: 1 }),
       })
+      if (res.status === 401) {
+        window.location.href = `/login?callbackUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`
+        return
+      }
       setCartState(res.ok ? "added" : "error")
     } catch {
       setCartState("error")
@@ -603,7 +607,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
                 {/* Trust signals */}
                 <div className="border-t border-white/5 pt-4 space-y-2">
-                  {["14-day money-back guarantee", "Cancel anytime, no lock-in", "Secure checkout via Stripe", "Instant access after purchase"].map(s => (
+                  {["14-day money-back guarantee", "Cancel anytime, no lock-in", "Secure checkout via Razorpay", "Instant access after purchase"].map(s => (
                     <div key={s} className="flex items-center gap-2 text-xs text-zinc-600">
                       <span className="text-emerald-400">✓</span>{s}
                     </div>

@@ -14,7 +14,7 @@ import {
   RefreshCw, Download, FileText, ArrowUpRight, ArrowDownRight
 } from "lucide-react"
 
-interface DashboardData {
+export interface DashboardData {
   mrr: number
   arr: number
   aov: number

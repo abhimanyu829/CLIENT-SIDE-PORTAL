@@ -55,8 +55,23 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        // Cast to any so NextAuth's internal User type doesn't conflict
-        // with our custom fields (role, permissions)
+        if (!user.isVerified) {
+          throw new Error(
+            "Please verify your email before logging in. Check your inbox for the verification link."
+          )
+        }
+
+        if (user.isBanned) {
+          throw new Error(
+            "Your account has been suspended. Please contact support for assistance."
+          )
+        }
+
+        await db.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        })
+
         return {
           id: user.id,
           email: user.email,
@@ -71,6 +86,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.role = (user as any).role as Role
+        token.isVerified = (user as any).isVerified as boolean
 
         const userPermissions = await db.userPermission.findMany({
           where: { userId: user.id },
@@ -86,6 +102,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string
         session.user.role = token.role as string
         session.user.permissions = token.permissions as string[]
+        session.user.isVerified = token.isVerified as boolean
       }
       return session
     },
