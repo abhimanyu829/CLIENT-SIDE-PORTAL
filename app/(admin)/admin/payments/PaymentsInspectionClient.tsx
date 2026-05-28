@@ -67,6 +67,19 @@ interface PaymentRecord {
   order?: { id: string; orderNumber: string; grandTotal: string; currency: string } | null
 }
 
+interface RefundRequestRow {
+  id: string
+  status: string
+  reason: string
+  refundAmount: string | null
+  currency: string | null
+  gateway: string | null
+  gatewayRefundId: string | null
+  resolvedAt: string | null
+  createdAt: string
+  user: { id: string; name: string; email: string }
+}
+
 interface Counts {
   successCount: number
   failedCount: number
@@ -86,6 +99,7 @@ interface Props {
   recentSuccessful: PaymentRecord[]
   pendingPayments: PaymentRecord[]
   failedPayments: PaymentRecord[]
+  refundRequests: RefundRequestRow[]
   counts: Counts
 }
 
@@ -396,6 +410,114 @@ function PaymentsList({ payments, emptyMsg }: { payments: PaymentRecord[]; empty
   )
 }
 
+// ── Refund Requests Tab ───────────────────────────────────────────────────────
+
+const REFUND_STATUS_STYLE: Record<string, string> = {
+  PENDING:   "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  PROCESSED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  DENIED:    "bg-red-500/10 text-red-400 border-red-500/20",
+  FAILED:    "bg-red-500/10 text-red-400 border-red-500/20",
+}
+
+function RefundRequestsTab({ refunds }: { refunds: RefundRequestRow[] }) {
+  const [actionId, setActionId] = useState<string | null>(null)
+
+  const handleAction = async (refundId: string, action: "approve" | "deny") => {
+    setActionId(refundId)
+    try {
+      const res = await fetch(`/api/admin/refunds/${refundId}/${action}`, { method: "POST" })
+      if (res.ok) {
+        window.location.reload()
+      } else {
+        const json = await res.json()
+        alert(`Failed: ${json.error ?? "Unknown error"}`)
+      }
+    } catch (err) {
+      alert("Network error")
+    } finally {
+      setActionId(null)
+    }
+  }
+
+  if (refunds.length === 0) {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-12 text-center">
+        <RotateCcw className="h-8 w-8 text-zinc-600 mx-auto mb-3" />
+        <p className="text-zinc-400 font-semibold">No refund requests</p>
+        <p className="text-zinc-600 text-sm mt-1">Refund requests will appear here when customers submit them.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-xl border border-zinc-800 overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-zinc-800 bg-zinc-900/80">
+            {["Request ID", "Customer", "Amount", "Gateway", "Reason", "Status", "Submitted", "Actions"].map(h => (
+              <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-800">
+          {refunds.map(r => (
+            <tr key={r.id} className="hover:bg-zinc-900/60 transition-colors">
+              <td className="px-4 py-3">
+                <p className="font-mono text-[10px] text-zinc-400">{r.id.slice(0, 8)}…</p>
+                {r.gatewayRefundId && (
+                  <p className="font-mono text-[10px] text-zinc-600">{r.gatewayRefundId.slice(0, 16)}…</p>
+                )}
+              </td>
+              <td className="px-4 py-3">
+                <p className="text-sm font-medium text-zinc-200">{r.user.name}</p>
+                <p className="text-xs text-zinc-500">{r.user.email}</p>
+              </td>
+              <td className="px-4 py-3 font-bold text-white">
+                {r.refundAmount ? fmtMoney(r.refundAmount, r.currency ?? "USD") : "—"}
+              </td>
+              <td className="px-4 py-3 text-zinc-400 text-xs">{r.gateway ?? "—"}</td>
+              <td className="px-4 py-3">
+                <p className="text-xs text-zinc-400 max-w-[180px] line-clamp-2">{r.reason}</p>
+              </td>
+              <td className="px-4 py-3">
+                <span className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                  REFUND_STATUS_STYLE[r.status] ?? REFUND_STATUS_STYLE.PENDING
+                }`}>{r.status}</span>
+              </td>
+              <td className="px-4 py-3 text-xs text-zinc-500">{fmtDate(r.createdAt)}</td>
+              <td className="px-4 py-3">
+                {r.status === "PENDING" && (
+                  <div className="flex gap-2">
+                    <button
+                      disabled={actionId === r.id}
+                      onClick={() => handleAction(r.id, "approve")}
+                      className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 disabled:opacity-50"
+                    >
+                      ✓ Approve
+                    </button>
+                    <button
+                      disabled={actionId === r.id}
+                      onClick={() => handleAction(r.id, "deny")}
+                      className="text-xs font-semibold text-red-400 hover:text-red-300 disabled:opacity-50"
+                    >
+                      ✗ Deny
+                    </button>
+                  </div>
+                )}
+                {r.status !== "PENDING" && (
+                  <span className="text-xs text-zinc-600">
+                    {r.resolvedAt ? fmtDate(r.resolvedAt) : "—"}
+                  </span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 const TABS = [
@@ -403,6 +525,7 @@ const TABS = [
   { id: "pending",   label: "Pending Payments",     icon: <Clock className="h-4 w-4" /> },
   { id: "failed",    label: "Failed Payments",      icon: <XCircle className="h-4 w-4" /> },
   { id: "success",   label: "Recent Successful",    icon: <CheckCircle2 className="h-4 w-4" /> },
+  { id: "refunds",   label: "Refund Requests",      icon: <RotateCcw className="h-4 w-4" /> },
 ]
 
 export default function PaymentsInspectionClient({
@@ -415,6 +538,7 @@ export default function PaymentsInspectionClient({
   recentSuccessful,
   pendingPayments,
   failedPayments,
+  refundRequests,
   counts,
 }: Props) {
   const router = useRouter()
@@ -561,6 +685,9 @@ export default function PaymentsInspectionClient({
             payments={recentSuccessful}
             emptyMsg="No successful payments yet."
           />
+        )}
+        {tab === "refunds" && (
+          <RefundRequestsTab refunds={refundRequests} />
         )}
       </div>
     </div>

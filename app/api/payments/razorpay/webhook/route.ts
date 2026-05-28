@@ -9,7 +9,7 @@ import { invoiceQueue, notifQueue, emailQueue, EMAIL_JOBS } from "@/lib/queue"
 import { createNotification } from "@/lib/notifications"
 import { emitEvent, EVENTS } from "@/lib/services/event-bus"
 import { auditLog } from "@/lib/audit"
-import { markOrderPaid, markOrderPaymentFailed } from "@/lib/services/enterprise-commerce-service"
+import { markOrderPaid, markOrderPaymentFailed, fulfillOrder } from "@/lib/services/enterprise-commerce-service"
 import { markSubscriptionPastDue, revokeUserAccessForOrder, syncSubscriptionAccessState, cancelSubscription } from "@/lib/services/subscription-service"
 
 function intervalEnd(interval: BillingInterval | string): Date {
@@ -40,6 +40,8 @@ async function handlePaymentCaptured(payload: any) {
 
   if (orderId) {
     await markOrderPaid(orderId, gatewayPaymentId, order_id)
+    // Enterprise fulfillment: decrypt deliveryConfig, store credentials, send delivery email
+    await fulfillOrder(orderId).catch((err) => logger.error({ err, orderId }, "fulfillOrder failed after markOrderPaid"))
     return
   }
 

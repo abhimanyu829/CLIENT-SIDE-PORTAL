@@ -21,6 +21,7 @@ const NAV = [
     items: [
       { href:"/dashboard",               icon:"◈", label:"Overview" },
       { href:"/dashboard/subscriptions", icon:"⬡", label:"Subscriptions" },
+      { href:"/dashboard/my-products",   icon:"📦", label:"My Products" },
     ]
   },
   {

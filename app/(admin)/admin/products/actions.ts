@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/admin-auth"
 import { revalidatePath, revalidateTag } from "next/cache"
 import { ProductStatus, ProductType, BillingInterval } from "@prisma/client"
 import { emitEvent, EVENTS } from "@/lib/services/event-bus"
+import { encrypt } from "@/lib/encryption"
 
 // ─── ISR Revalidation Helper ─────────────────────────────────────────────────────
 
@@ -743,4 +744,132 @@ export async function deleteTier(tierId: string) {
   await revalidateProductCaches()
   revalidateTag("pricing", REVALIDATE_PROFILE)
   return { success: true }
+}
+
+// ─── Update Product Delivery Config (Enterprise) ─────────────────────────────────
+// Encrypts sensitive credentials before storing them in the DB.
+
+export async function updateProductDeliveryConfig(
+  productId: string,
+  deliveryConfig: {
+    saasUrl?: string
+    username?: string
+    password?: string
+    apiKeys?: string
+    onboardingInstructions?: string
+    accessDocUrl?: string
+    deliveryType?: string
+  }
+) {
+  const admin = await requireAdmin()
+
+  // Encrypt the entire deliveryConfig JSON
+  const encryptedConfig = encrypt(JSON.stringify(deliveryConfig))
+
+  await db.product.update({
+    where: { id: productId },
+    data: {
+      deliveryConfig: encryptedConfig,
+      lastEditedBy: admin.userId,
+    },
+  })
+
+  await db.auditLog.create({
+    data: {
+      userId: admin.userId,
+      action: "PRODUCT_DELIVERY_CONFIG_UPDATED",
+      entity: "Product",
+      entityId: productId,
+      afterJson: {
+        // Never log the actual credentials — only metadata
+        hasDeliveryConfig: true,
+        deliveryType: deliveryConfig.deliveryType,
+        hasSaasUrl: !!deliveryConfig.saasUrl,
+        hasCredentials: !!(deliveryConfig.username || deliveryConfig.apiKeys),
+        updatedAt: new Date().toISOString(),
+      },
+    },
+  })
+
+  await revalidateProductCaches()
+  return { success: true }
+}
+
+// ─── Update Product Preview Config (Enterprise) ──────────────────────────────────
+
+export async function updateProductPreviewConfig(
+  productId: string,
+  previewConfig: {
+    allowPreview?: boolean
+    previewDurationMinutes?: number
+    maxPreviewsPerUser?: number
+    previewCooldownHours?: number
+    previewPageUrl?: string
+    previewDescription?: string
+  }
+) {
+  const admin = await requireAdmin()
+
+  await db.product.update({
+    where: { id: productId },
+    data: {
+      previewConfig: previewConfig as any,
+      lastEditedBy: admin.userId,
+    },
+  })
+
+  await db.auditLog.create({
+    data: {
+      userId: admin.userId,
+      action: "PRODUCT_PREVIEW_CONFIG_UPDATED",
+      entity: "Product",
+      entityId: productId,
+      afterJson: { productId, previewConfig, updatedAt: new Date().toISOString() },
+    },
+  })
+
+  await revalidateProductCaches()
+  return { success: true }
+}
+
+// ─── Update Product Inventory (Enterprise) ───────────────────────────────────────
+
+export async function updateProductInventory(
+  productId: string,
+  inventory: {
+    inventoryEnabled: boolean
+    inventoryCount?: number
+    lowStockThreshold?: number
+  }
+) {
+  const admin = await requireAdmin()
+
+  const before = await db.product.findUnique({
+    where: { id: productId },
+    select: { inventoryCount: true, inventoryEnabled: true },
+  })
+
+  const product = await db.product.update({
+    where: { id: productId },
+    data: {
+      inventoryEnabled: inventory.inventoryEnabled,
+      inventoryCount: inventory.inventoryCount ?? null,
+      lowStockThreshold: inventory.lowStockThreshold ?? null,
+      lastEditedBy: admin.userId,
+    },
+  })
+
+  await db.auditLog.create({
+    data: {
+      userId: admin.userId,
+      action: "PRODUCT_INVENTORY_UPDATED",
+      entity: "Product",
+      entityId: productId,
+      beforeJson: { inventoryCount: String(before?.inventoryCount ?? "null"), inventoryEnabled: before?.inventoryEnabled },
+      afterJson: { inventoryCount: String(inventory.inventoryCount ?? "null"), inventoryEnabled: inventory.inventoryEnabled },
+    },
+  })
+
+  await revalidateProductCaches()
+  return product
 }

@@ -29,7 +29,7 @@ export default async function AdminPaymentsPage({
   const [checkoutFailures, failuresTotal] = await Promise.all([
     db.order.findMany({
       where: {
-        status: { in: ["PENDING", "FAILED"] },
+        status: { in: ["PENDING", "CANCELLED"] },
         ...(gateway ? { gateway: gateway as any } : {}),
       },
       orderBy: { createdAt: "desc" },
@@ -52,7 +52,7 @@ export default async function AdminPaymentsPage({
     }),
     db.order.count({
       where: {
-        status: { in: ["PENDING", "FAILED"] },
+        status: { in: ["PENDING", "CANCELLED"] },
         ...(gateway ? { gateway: gateway as any } : {}),
       },
     }),
@@ -108,11 +108,20 @@ export default async function AdminPaymentsPage({
     },
   })
 
+  // Refund requests (new enterprise feature)
+  const refundRequests = await db.refundRequest.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+    },
+  }).catch(() => [])
+
   const serialize = (obj: any): any => {
     if (obj === null || obj === undefined) return obj
     if (obj instanceof Date) return obj.toISOString()
     if (typeof obj === "bigint") return String(obj)
-    if (obj?.constructor?.name === "Decimal") return String(obj)
+    if (obj?.constructor?.name === "Decimal" || (obj && typeof obj === "object" && "s" in obj && "e" in obj && "d" in obj)) return String(obj)
     if (Array.isArray(obj)) return obj.map(serialize)
     if (typeof obj === "object") {
       return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, serialize(v)]))
@@ -131,6 +140,7 @@ export default async function AdminPaymentsPage({
       recentSuccessful={serialize(recentSuccessful)}
       pendingPayments={serialize(pendingPayments)}
       failedPayments={serialize(failedPayments)}
+      refundRequests={serialize(refundRequests)}
       counts={{ successCount, failedCount, pendingCount, refundedCount, disputedCount, webhookFailures }}
     />
   )

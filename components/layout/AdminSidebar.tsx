@@ -15,6 +15,10 @@ import {
   ShieldCheck,
   FileText,
   GitBranch,
+  PlaySquare,
+  CreditCard,
+  ShoppingCart,
+  RotateCcw,
 } from "lucide-react"
 
 const links = [
@@ -22,6 +26,9 @@ const links = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/subscriptions", label: "Subscriptions", icon: GitBranch },
+  { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
+  { href: "/admin/payments", label: "Payments", icon: CreditCard },
+  { href: "/admin/previews", label: "Previews", icon: PlaySquare },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/tickets", label: "Tickets", icon: Ticket },
   { href: "/admin/projects", label: "Projects", icon: FolderKanban },

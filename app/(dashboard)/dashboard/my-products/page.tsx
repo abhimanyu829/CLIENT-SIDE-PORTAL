@@ -1,0 +1,52 @@
+import { db } from "@/lib/db"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { redirect } from "next/navigation"
+import MyProductsClient from "./MyProductsClient"
+
+export const metadata = { title: "My Products — NexusAI" }
+
+export default async function MyProductsPage() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) redirect("/login")
+
+  const userId = session.user.id
+
+  const entitlements = await db.customerEntitlement.findMany({
+    where: { userId },
+    include: {
+      product: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          thumbnailUrl: true,
+          description: true,
+          category: true,
+        },
+      },
+    },
+    orderBy: { grantedAt: "desc" },
+  })
+
+  const serialized = entitlements.map((e) => ({
+    id: e.id,
+    productId: e.productId,
+    productName: e.product.name,
+    productSlug: e.product.slug,
+    productThumbnail: e.product.thumbnailUrl,
+    productDescription: e.product.description,
+    productCategory: e.product.category?.toString() ?? null,
+    status: e.status,
+    type: e.type,
+    grantedAt: e.grantedAt.toISOString(),
+    expiresAt: e.expiresAt?.toISOString() ?? null,
+    accessRevokedAt: e.accessRevokedAt?.toISOString() ?? null,
+    refundEligibleUntil: e.refundEligibleUntil?.toISOString() ?? null,
+    refundRequested: e.refundRequested,
+    hasCredentials: !!e.credentialSnapshot,
+    orderId: e.orderId,
+  }))
+
+  return <MyProductsClient entitlements={serialized} />
+}

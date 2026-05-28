@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/auth"
 import { env } from "@/lib/env"
 import { db } from "@/lib/db"
 import { logger } from "@/lib/logger"
-import { markOrderPaid } from "@/lib/services/enterprise-commerce-service"
+import { markOrderPaid, fulfillOrder } from "@/lib/services/enterprise-commerce-service"
 
 const verifySchema = z.object({
   orderId: z.string(),
@@ -68,6 +68,8 @@ export async function POST(req: NextRequest) {
     console.log(`[RAZORPAY VERIFY] 💰 Marking order ${order.orderNumber} as paid`)
     const paid = await markOrderPaid(order.id, body.razorpay_payment_id, body.razorpay_order_id)
     console.log(`[RAZORPAY VERIFY] ✅ Order ${order.orderNumber} marked as paid, status: ${paid.status}`)
+    // Enterprise fulfillment: deliver credentials, set refund window, emit events
+    fulfillOrder(order.id).catch((err) => logger.error({ err, orderId: order.id }, "fulfillOrder failed in verify route"))
 
     return NextResponse.json({
       success: true,

@@ -300,6 +300,10 @@ model User {
   isBanned         Boolean                      @default(false)
   bannedAt         DateTime?
   banReason        String?
+  // Preview abuse tracking
+  previewCount     Int                          @default(0)
+  suspiciousScore  Int                          @default(0)
+  lastPreviewAt    DateTime?
   createdAt        DateTime                     @default(now())
   updatedAt        DateTime                     @updatedAt
 
@@ -327,6 +331,8 @@ model User {
   carts           Cart[]
   orders          Order[]
   entitlements    CustomerEntitlement[]
+  refundRequests  RefundRequest[]
+  demoSessions    DemoSession[]
   serviceRequests ServiceEngagement[]   @relation("ClientServiceEngagements")
   metricEvents    PlatformMetricEvent[]
 
@@ -481,6 +487,23 @@ model Product {
   bundleOffers       Json                         @default("[]")
   commerceConfig     Json                         @default("{}")
   aiConfig           Json                         @default("{}")
+  // Preview configuration (admin-controlled per product)
+  previewEnabled     Boolean                      @default(false)
+  previewConfig      Json                         @default("{}")
+  // previewConfig shape: { url, domain, durationMinutes, maxPreviewsPerUser,
+  //   sessionQuota, ipRestrictions, allowedDevices, rateLimit,
+  //   analyticsEnabled, requireLogin }
+  // Delivery config (ALL sensitive values AES-256-GCM encrypted — never returned to frontend)
+  deliveryConfig     Json                         @default("{}")
+  // deliveryConfig shape: { saasUrl_enc, deploymentUrl_enc, aiDashboardUrl_enc,
+  //   cloudInstanceUrl_enc, username_enc, password_enc, apiKeys_enc,
+  //   trialCredentials_enc, onboardingInstructions, accessDocUrl, renewalBehavior }
+  // Inventory control
+  inventoryEnabled   Boolean                      @default(false)
+  inventoryCount     Int?
+  inventoryHoldCount Int                          @default(0)
+  soldOutBehavior    String                       @default("HIDE")
+  // HIDE | SHOW_SOLDOUT | SHOW_WAITLIST
   techStack          String[]
   tags               String[]
   // SEO
@@ -599,20 +622,45 @@ model ProductReview {
 }
 
 model DemoSession {
-  id           String    @id @default(cuid())
-  productId    String
-  userId       String?
-  templateId   String
-  sessionToken String    @unique
-  mockDataJson Json
-  isExpired    Boolean   @default(false)
-  convertedAt  DateTime?
-  startedAt    DateTime  @default(now())
-  expiresAt    DateTime
-  product      Product   @relation(fields: [productId], references: [id])
+  id                String    @id @default(cuid())
+  productId         String
+  userId            String?
+  templateId        String
+  // Original token fields
+  sessionToken      String    @unique
+  mockDataJson      Json      @default("{}")
+  isExpired         Boolean   @default(false)
+  convertedAt       DateTime?
+  startedAt         DateTime  @default(now())
+  expiresAt         DateTime
+  // Enterprise preview session fields
+  signedToken       String?   @unique
+  previewUrl        String?
+  durationMinutes   Int       @default(10)
+  // Auth + tracking
+  ipAddress         String?
+  userAgent         String?
+  deviceFingerprint String?
+  referrer          String?
+  // State
+  isRevoked         Boolean   @default(false)
+  revokedAt         DateTime?
+  revokedReason     String?
+  // Analytics
+  viewedPages       Int       @default(0)
+  lastActivityAt    DateTime?
+  convertedToOrder  Boolean   @default(false)
+  abuseFlag         Boolean   @default(false)
+  abuseFlagReason   String?
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([sessionToken])
+  @@index([signedToken])
   @@index([expiresAt])
+  @@index([userId])
+  @@index([isRevoked, isExpired])
 }
 
 model Subscription {
@@ -810,30 +858,75 @@ model OrderItem {
 }
 
 model CustomerEntitlement {
-  id             String          @id @default(cuid())
-  userId         String
-  productId      String
-  orderId        String?
-  subscriptionId String?
-  status         String          @default("ACTIVE")
-  accessType     FulfillmentType
-  quota          Json            @default("{}")
-  usage          Json            @default("{}")
-  apiKeyPrefix   String?
-  startsAt       DateTime        @default(now())
-  expiresAt      DateTime?
-  metadata       Json            @default("{}")
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id                   String          @id @default(cuid())
+  userId               String
+  productId            String
+  orderId              String?
+  subscriptionId       String?
+  status               String          @default("ACTIVE")
+  accessType           FulfillmentType
+  quota                Json            @default("{}")
+  usage                Json            @default("{}")
+  apiKeyPrefix         String?
+  startsAt             DateTime        @default(now())
+  expiresAt            DateTime?
+  metadata             Json            @default("{}")
+  // Encrypted credential snapshot — AES-256-GCM encrypted JSON
+  // Decrypted ONLY server-side for verified owners via /api/entitlements/[id]/credentials
+  credentialSnapshot   String?         @db.Text
+  // 3-hour refund eligibility window
+  refundEligibleUntil  DateTime?
+  refundRequested      Boolean         @default(false)
+  refundRequestedAt    DateTime?
+  refundRequestReason  String?
+  // Subscription lifecycle
+  gracePeriodEndsAt    DateTime?
+  accessRevokedAt      DateTime?
+  revocationReason     String?
+  previewAccessRevoked Boolean         @default(false)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
-  order   Order?  @relation(fields: [orderId], references: [id])
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product        Product         @relation(fields: [productId], references: [id])
+  order          Order?          @relation(fields: [orderId], references: [id])
+  refundRequests RefundRequest[]
 
   @@index([userId, status])
   @@index([productId])
   @@index([orderId])
   @@index([subscriptionId])
+  @@index([refundEligibleUntil])
+}
+
+model RefundRequest {
+  id              String    @id @default(cuid())
+  userId          String
+  paymentId       String
+  orderId         String?
+  entitlementId   String?
+  reason          String    @db.Text
+  status          String    @default("PENDING")
+  // PENDING | APPROVED | REJECTED | PROCESSED | CANCELLED
+  gateway         String?
+  gatewayRefundId String?
+  refundAmount    Decimal   @db.Decimal(12, 2)
+  requestedAt     DateTime  @default(now())
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  adminNotes      String?
+  auditTrail      Json      @default("[]")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user        User                 @relation(fields: [userId], references: [id])
+  entitlement CustomerEntitlement? @relation(fields: [entitlementId], references: [id])
+
+  @@index([userId, status])
+  @@index([paymentId])
+  @@index([status])
+  @@index([requestedAt])
+  @@index([entitlementId])
 }
 
 model VendorPayout {

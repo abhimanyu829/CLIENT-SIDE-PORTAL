@@ -80,6 +80,7 @@ export const subscriptionQueue = createLazyQueue("subscription", {
   },
 })
 export const analyticsQueue = createLazyQueue("analytics")
+export const previewQueue   = createLazyQueue("preview")
 
 export const auditQueue = createLazyQueue("audit", {
   defaultJobOptions: {
@@ -90,12 +91,29 @@ export const auditQueue = createLazyQueue("audit", {
 })
 
 export const EMAIL_JOBS = {
-  SEND_WELCOME: "send-welcome",
-  SEND_INVOICE: "send-invoice",
-  SEND_RESET: "send-password-reset",
-  SEND_RENEWAL: "send-subscription-renewal",
-  SEND_PAYMENT_FAILED: "send-payment-failed",
-  SEND_TICKET_REPLY: "send-ticket-reply",
+  SEND_WELCOME:              "send-welcome",
+  SEND_INVOICE:              "send-invoice",
+  SEND_RESET:                "send-password-reset",
+  SEND_RENEWAL:              "send-subscription-renewal",
+  SEND_PAYMENT_FAILED:       "send-payment-failed",
+  SEND_TICKET_REPLY:         "send-ticket-reply",
+  // Enterprise additions
+  SEND_PRODUCT_DELIVERY:     "send-product-delivery",
+  SEND_PREVIEW_STARTED:      "send-preview-started",
+  SEND_PREVIEW_EXPIRED:      "send-preview-expired",
+  SEND_EXPIRY_WARNING:       "send-subscription-expiry-warning",
+  SEND_SUBSCRIPTION_EXPIRED: "send-subscription-expired",
+  SEND_REFUND_CONFIRMATION:  "send-refund-confirmation",
+  SEND_ADMIN_REFUND_ALERT:   "send-admin-refund-alert",
+  SEND_LOGIN_ALERT:          "send-login-alert",
+  SEND_SUSPICIOUS_ACTIVITY:  "send-suspicious-activity",
+  SEND_INVOICE_READY:        "send-invoice-ready",
+} as const
+
+export const PREVIEW_JOBS = {
+  EXPIRE_SESSION:   "preview.expire-session",
+  NOTIFY_EXPIRY:    "preview.notify-expiry",
+  RECORD_ANALYTICS: "preview.record-analytics",
 } as const
 
 export const AI_JOBS = {
@@ -117,7 +135,10 @@ export const INVOICE_JOBS = {
 } as const
 
 export const SUBSCRIPTION_JOBS = {
-  EXPIRE_OVERDUE: "subscription.expire-overdue",
-  RECONCILE: "subscription.reconcile",
-  DUNNING_STEP: "dunning.step",
+  EXPIRE_OVERDUE:      "subscription.expire-overdue",
+  RECONCILE:           "subscription.reconcile",
+  DUNNING_STEP:        "dunning.step",
+  SEND_EXPIRY_WARNING: "subscription.send-expiry-warning",
+  REVOKE_ENTITLEMENTS: "subscription.revoke-entitlements",
+  FULFILL_ORDER:       "subscription.fulfill-order",
 } as const

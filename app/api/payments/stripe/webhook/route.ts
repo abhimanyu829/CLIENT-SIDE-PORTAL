@@ -9,7 +9,7 @@ import { SubStatus, PaymentStatus } from "@prisma/client"
 import { emailQueue, invoiceQueue, notifQueue } from "@/lib/queue"
 import { createNotification } from "@/lib/notifications"
 import { auditLog } from "@/lib/audit"
-import { markOrderPaid } from "@/lib/services/enterprise-commerce-service"
+import { markOrderPaid, fulfillOrder } from "@/lib/services/enterprise-commerce-service"
 import { cancelSubscription, changePlan, markSubscriptionPastDue, revokeUserAccessForOrder, syncSubscriptionAccessState } from "@/lib/services/subscription-service"
 
 // ── Handler: checkout.session.completed ──────────────────────────────────────
@@ -21,6 +21,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       ? session.payment_intent
       : session.id
     await markOrderPaid(orderId, paymentId, session.id)
+    // Enterprise fulfillment: decrypt deliveryConfig, store credentials, send delivery email
+    await fulfillOrder(orderId).catch((err) => logger.error({ err, orderId }, "fulfillOrder failed after markOrderPaid"))
     if (session.subscription) {
       const order = await db.order.findUnique({
         where: { id: orderId },

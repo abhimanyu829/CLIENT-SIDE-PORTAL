@@ -66,6 +66,17 @@ export const EVENTS = {
   SERVICE_ENGAGEMENT_CREATED: "SERVICE_ENGAGEMENT_CREATED",
   AGENT_DEPLOYED:           "AGENT_DEPLOYED",
   USER_VERIFIED:            "USER_VERIFIED",
+
+  // Enterprise preview / delivery / inventory / refund events
+  PREVIEW_STARTED:          "PREVIEW_STARTED",
+  PREVIEW_EXPIRED:          "PREVIEW_EXPIRED",
+  PREVIEW_REVOKED:          "PREVIEW_REVOKED",
+  ORDER_FULFILLED:          "ORDER_FULFILLED",
+  CREDENTIAL_DELIVERED:     "CREDENTIAL_DELIVERED",
+  ENTITLEMENT_REVOKED:      "ENTITLEMENT_REVOKED",
+  INVENTORY_UPDATED:        "INVENTORY_UPDATED",
+  PRODUCT_SOLD_OUT:         "PRODUCT_SOLD_OUT",
+  REFUND_REQUESTED:         "REFUND_REQUESTED",
 } as const
 
 export type EventType = (typeof EVENTS)[keyof typeof EVENTS]
@@ -105,6 +116,14 @@ const EVENT_CACHE_INVALIDATION: Partial<Record<EventType, string[]>> = {
   WEBHOOK_RECEIVED:         [CACHE_KEYS.ADMIN_WEBHOOKS],
   WEBHOOK_REPLAYED:         [CACHE_KEYS.ADMIN_WEBHOOKS],
   WEBHOOK_DEAD:             [CACHE_KEYS.ADMIN_WEBHOOKS],
+  // Enterprise events
+  PREVIEW_STARTED:          ["admin:preview-sessions", CACHE_KEYS.ADMIN_ANALYTICS],
+  PREVIEW_EXPIRED:          ["admin:preview-sessions", CACHE_KEYS.ADMIN_ANALYTICS],
+  PREVIEW_REVOKED:          ["admin:preview-sessions"],
+  ORDER_FULFILLED:          [CACHE_KEYS.ADMIN_ORDERS, CACHE_KEYS.ADMIN_REVENUE_DASHBOARD],
+  INVENTORY_UPDATED:        [CACHE_KEYS.ADMIN_PRODUCTS],
+  PRODUCT_SOLD_OUT:         [CACHE_KEYS.ADMIN_PRODUCTS],
+  REFUND_REQUESTED:         [CACHE_KEYS.ADMIN_ORDERS],
 }
 
 /**
@@ -138,6 +157,26 @@ export async function emitEvent(event: PlatformEvent): Promise<void> {
         timestamp,
         payload,
       })
+    }
+
+    // Product-specific channel for inventory/product realtime sync
+    const productId = typeof payload.productId === "string" ? payload.productId : undefined
+    if (productId) {
+      try {
+        await pusher.trigger(`product-${productId}`, type, { type, timestamp, payload })
+      } catch (err) {
+        logger.warn({ err, type }, "emitEvent: product channel trigger failed (non-fatal)")
+      }
+    }
+
+    // Preview-specific channel for per-session realtime sync
+    const sessionId = typeof payload.sessionId === "string" ? payload.sessionId : undefined
+    if (sessionId) {
+      try {
+        await pusher.trigger(`preview-${sessionId}`, "preview.status", { type, timestamp, payload })
+      } catch (err) {
+        logger.warn({ err, type }, "emitEvent: preview channel trigger failed (non-fatal)")
+      }
     }
   } catch (err) {
     logger.warn({ err, type }, "emitEvent: Pusher trigger failed (non-fatal)")
@@ -186,12 +225,16 @@ const ACTIVITY_EMOJIS: Partial<Record<EventType, string>> = {
   PAYMENT_SUCCESS:        "💳",
   USER_CREATED:           "👋",
   PLAN_CHANGED:           "⬆️",
-  CART_UPDATED:           "Cart",
-  ORDER_CREATED:          "Order",
-  ORDER_PAID:             "Paid",
-  VENDOR_CREATED:         "Vendor",
-  SERVICE_ENGAGEMENT_CREATED: "Service",
-  AGENT_DEPLOYED:         "Agent",
+  CART_UPDATED:           "🛒",
+  ORDER_CREATED:          "📦",
+  ORDER_PAID:             "✅",
+  ORDER_FULFILLED:        "🎁",
+  VENDOR_CREATED:         "🏪",
+  SERVICE_ENGAGEMENT_CREATED: "⚙️",
+  AGENT_DEPLOYED:         "🤖",
+  PREVIEW_STARTED:        "⚡",
+  REFUND_REQUESTED:       "↩️",
+  PRODUCT_SOLD_OUT:       "🚫",
 }
 
 function buildActivityMessage(type: EventType, payload: Record<string, unknown>): string | null {
@@ -250,6 +293,22 @@ function buildActivityMessage(type: EventType, payload: Record<string, unknown>)
     case "AGENT_DEPLOYED": {
       const productName = (payload.productName as string) || "An AI agent"
       return `${emoji} ${productName} deployment is live`
+    }
+    case "ORDER_FULFILLED": {
+      const productName = (payload.productName as string) || "a product"
+      return `${emoji} Order fulfilled — ${productName} delivered`
+    }
+    case "PREVIEW_STARTED": {
+      const productName = (payload.productName as string) || "a product"
+      return `${emoji} Preview started for ${productName}`
+    }
+    case "REFUND_REQUESTED": {
+      const amount = (payload.refundAmount as number) || 0
+      return `${emoji} Refund of $${amount} requested`
+    }
+    case "PRODUCT_SOLD_OUT": {
+      const productName = (payload.productName as string) || "a product"
+      return `${emoji} ${productName} is now sold out`
     }
     default:
       return null

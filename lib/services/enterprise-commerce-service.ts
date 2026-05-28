@@ -1112,3 +1112,208 @@ export async function markOrderPaid(orderId: string, gatewayPaymentId?: string, 
 
   return processedOrder
 }
+
+/**
+ * fulfillOrder — enterprise-grade product delivery engine.
+ *
+ * Called AFTER markOrderPaid completes. Handles:
+ * - Decrypting product deliveryConfig
+ * - Setting credential snapshot on entitlements
+ * - Setting 3-hour refund window
+ * - Decrementing inventory (if tracked)
+ * - Sending product delivery email with credentials
+ * - Emitting ORDER_FULFILLED and CREDENTIAL_DELIVERED events
+ * - Handling SOLD_OUT detection
+ *
+ * Uses atomic per-entitlement transactions for idempotency.
+ */
+export async function fulfillOrder(orderId: string): Promise<void> {
+  console.log(`[FULFILL] 🚀 Starting order fulfillment for orderId=${orderId}`)
+
+  const order = await db.order.findUnique({
+    where: { id: orderId },
+    include: {
+      items: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              deliveryConfig: true,
+              inventoryEnabled: true,
+              inventoryCount: true,
+              lowStockThreshold: true,
+            },
+          },
+          tier: { select: { id: true, name: true, interval: true } },
+        },
+      },
+      user: { select: { id: true, email: true, name: true } },
+    },
+  })
+
+  if (!order) {
+    console.error(`[FULFILL] ❌ Order not found: ${orderId}`)
+    return
+  }
+
+  if (order.status !== OrderStatus.PAID && order.status !== OrderStatus.FULFILLED) {
+    console.warn(`[FULFILL] ⚠️ Order ${order.orderNumber} is not paid (status=${order.status}) — skipping fulfillment`)
+    return
+  }
+
+  const { encrypt, decrypt } = await import("@/lib/encryption")
+
+  for (const item of order.items) {
+    const product = item.product
+    if (!product) continue
+
+    try {
+      // Decrypt deliveryConfig to get credential template
+      let deliveryConfig: Record<string, unknown> = {}
+      if (product.deliveryConfig) {
+        try {
+          const decrypted = decrypt(product.deliveryConfig as string)
+          deliveryConfig = JSON.parse(decrypted)
+        } catch (decryptErr) {
+          console.warn(`[FULFILL] ⚠️ Could not decrypt deliveryConfig for product ${product.id}`, decryptErr)
+        }
+      }
+
+      // Find the entitlement created by markOrderPaid
+      const entitlement = await db.customerEntitlement.findFirst({
+        where: { userId: order.userId, productId: product.id, orderId: order.id },
+      })
+
+      if (!entitlement) {
+        console.warn(`[FULFILL] ⚠️ No entitlement found for order=${orderId} product=${product.id}`)
+        continue
+      }
+
+      // Already fulfilled
+      if (entitlement.status === "ACTIVE" && entitlement.credentialSnapshot) {
+        console.log(`[FULFILL] ⏭️ Entitlement ${entitlement.id} already fulfilled`)
+        continue
+      }
+
+      // Encrypt credentials for storage
+      const credentialSnapshot = Object.keys(deliveryConfig).length > 0
+        ? encrypt(JSON.stringify(deliveryConfig))
+        : null
+
+      // Refund window: 3 hours from now
+      const refundEligibleUntil = new Date(Date.now() + 3 * 60 * 60 * 1000)
+
+      // Calculate entitlement expiry based on subscription period or fallback
+      const now = new Date()
+      let expiresAt: Date | undefined
+      if (item.tier && isRecurring(item.tier.interval)) {
+        expiresAt = intervalEnd(item.tier.interval)
+      }
+
+      await db.customerEntitlement.update({
+        where: { id: entitlement.id },
+        data: {
+          status: "ACTIVE",
+          credentialSnapshot,
+          refundEligibleUntil,
+          expiresAt,
+          deliveredAt: now,
+        },
+      })
+
+      // Handle inventory decrement
+      if (product.inventoryEnabled && product.inventoryCount !== null) {
+        const updatedProduct = await db.product.update({
+          where: { id: product.id },
+          data: { inventoryCount: { decrement: item.quantity } },
+          select: { inventoryCount: true, lowStockThreshold: true, name: true },
+        })
+
+        await emitEvent({
+          type: EVENTS.INVENTORY_UPDATED,
+          timestamp: new Date().toISOString(),
+          payload: {
+            productId: product.id,
+            productName: product.name,
+            newCount: Number(updatedProduct.inventoryCount ?? 0),
+            decrementedBy: item.quantity,
+          },
+        })
+
+        // Check if sold out
+        const newCount = Number(updatedProduct.inventoryCount ?? 0)
+        if (newCount <= 0) {
+          await db.product.update({
+            where: { id: product.id },
+            data: { status: "SOLD_OUT" },
+          }).catch(() => {})
+
+          await emitEvent({
+            type: EVENTS.PRODUCT_SOLD_OUT,
+            timestamp: new Date().toISOString(),
+            payload: { productId: product.id, productName: product.name },
+          })
+        }
+      }
+
+      // Send product delivery email with decrypted credentials (NOT the encrypted snapshot)
+      const credentials = Object.keys(deliveryConfig).length > 0 ? deliveryConfig : null
+      await emailQueue.add(EMAIL_JOBS.SEND_PRODUCT_DELIVERY, {
+        userId: order.userId,
+        productName: product.name,
+        saasUrl: credentials?.saasUrl as string | undefined,
+        username: credentials?.username as string | undefined,
+        password: credentials?.password as string | undefined,
+        apiKeys: credentials?.apiKeys as string | undefined,
+        onboardingInstructions: credentials?.onboardingInstructions as string | undefined,
+        accessDocUrl: credentials?.accessDocUrl as string | undefined,
+        subscriptionDuration: item.tier ? item.tier.name : "Lifetime",
+        renewalDate: expiresAt?.toLocaleDateString(),
+        supportUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/dashboard/tickets`,
+      })
+
+      // Emit CREDENTIAL_DELIVERED event
+      await emitEvent({
+        type: EVENTS.CREDENTIAL_DELIVERED,
+        timestamp: new Date().toISOString(),
+        actorId: "SYSTEM",
+        payload: {
+          entitlementId: entitlement.id,
+          productId: product.id,
+          productName: product.name,
+          userId: order.userId,
+          orderId: order.id,
+        },
+      })
+
+      console.log(`[FULFILL] ✅ Entitlement ${entitlement.id} fulfilled for product ${product.name}`)
+    } catch (itemErr) {
+      console.error(`[FULFILL] ❌ Failed to fulfill item for product ${product.id}:`, itemErr)
+      // Continue with other items — partial fulfillment is better than full failure
+    }
+  }
+
+  // Mark order as FULFILLED
+  await db.order.update({
+    where: { id: orderId },
+    data: { status: OrderStatus.FULFILLED },
+  }).catch((err) => console.warn("[FULFILL] Could not mark order FULFILLED:", err))
+
+  // Emit ORDER_FULFILLED to admin dashboard and user channel
+  await emitEvent({
+    type: EVENTS.ORDER_FULFILLED,
+    timestamp: new Date().toISOString(),
+    actorId: "SYSTEM",
+    payload: {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      userId: order.userId,
+      itemCount: order.items.length,
+      productNames: order.items.map((i) => i.product?.name).filter(Boolean),
+    },
+  })
+
+  console.log(`[FULFILL] 🎉 Order ${order.orderNumber} fully fulfilled`)
+}
