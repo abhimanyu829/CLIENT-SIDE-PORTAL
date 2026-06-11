@@ -15,7 +15,7 @@ export interface CouponValidationResult {
   coupon?: {
     id: string
     code: string
-    type: "PERCENTAGE" | "FLAT"
+    type: import("@prisma/client").CouponType
     discountValue: number
     currency: string | null
   }

@@ -1,11 +1,11 @@
 import { db } from "@/lib/db"
-import { auth } from "@/lib/auth"
+import { requireAdmin } from "@/lib/admin-auth"
 import { redirect } from "next/navigation"
 import AdminCRMClient from "./AdminCRMClient"
 
 export default async function AdminCRMPage() {
-  const session = await auth()
-  if (!session?.user?.id || session.user.role !== "ADMIN") redirect("/dashboard")
+  // Zero-trust: requireAdmin enforces SUPER_ADMIN | SUB_ADMIN from DB
+  await requireAdmin()
 
   const [leads, sequences] = await Promise.all([
     db.lead.findMany({

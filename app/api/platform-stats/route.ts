@@ -8,8 +8,8 @@ export const dynamic = "force-dynamic"
 export async function GET() {
   try {
     const [products, agents, users, subscriptions, reviews] = await Promise.all([
-      db.product.count({ where: { status: ProductStatus.PUBLISHED } }),
-      db.product.count({ where: { status: ProductStatus.PUBLISHED, type: "AI_AGENT" as any } }),
+      db.product.count({ where: { status: ProductStatus.AVAILABLE } }),
+      db.product.count({ where: { status: ProductStatus.AVAILABLE, type: "AI_AGENT" as any } }),
       db.user.count(),
       db.subscription.count({ where: { status: { in: [SubStatus.ACTIVE, SubStatus.TRIALING] } } }),
       db.productReview.count(),

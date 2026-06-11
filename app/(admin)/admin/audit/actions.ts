@@ -110,7 +110,6 @@ export async function updateAdminRole(data: {
 
 export async function createApiKey(data: {
   name: string
-  rateLimit: number
   expiresAt: string | null
 }) {
   const session = await auth()
@@ -123,10 +122,9 @@ export async function createApiKey(data: {
   const apiKey = await db.apiKey.create({
     data: {
       userId: session.user.id,
-      key: rawKey,
+      keyHash: crypto.createHash("sha256").update(rawKey).digest("hex"),
       prefix,
       name: data.name,
-      rateLimit: data.rateLimit,
       expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
       isActive: true,
     },
@@ -141,7 +139,7 @@ export async function createApiKey(data: {
   })
 
   revalidatePath("/admin/audit")
-  return apiKey
+  return { ...apiKey, key: rawKey }
 }
 
 export async function revokeApiKey(keyId: string) {

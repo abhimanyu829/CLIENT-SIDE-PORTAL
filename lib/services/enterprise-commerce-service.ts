@@ -195,7 +195,7 @@ export async function recalculateCart(cartId: string, couponCode?: string | null
 
   const metadata = {
     ...((cart.metadata as Record<string, unknown>) ?? {}),
-    coupon: couponSnapshot,
+    coupon: couponSnapshot as Record<string, unknown> | null,
     totalsCalculatedAt: new Date().toISOString(),
   }
   const totals = calculateCartAmounts(cart.items, discount)
@@ -208,7 +208,7 @@ export async function recalculateCart(cartId: string, couponCode?: string | null
       taxTotal: money(totals.taxTotal),
       discountTotal: money(totals.discountTotal),
       grandTotal: money(totals.grandTotal),
-      metadata,
+      metadata: metadata as any,
     },
     include: { items: { include: { product: true, tier: true }, orderBy: { createdAt: "asc" } } },
   })
@@ -234,7 +234,7 @@ export async function getEnterpriseCommandCenter() {
   ] = await Promise.all([
     db.vendorProfile.count(),
     db.vendorProfile.count({ where: { status: "PENDING" } }),
-    db.product.count({ where: { status: "PUBLISHED" } }),
+    db.product.count({ where: { status: "AVAILABLE" } }),
     db.order.count(),
     db.order.aggregate({ where: { status: { in: [OrderStatus.PAID, OrderStatus.FULFILLED] } }, _sum: { grandTotal: true, platformFee: true, vendorNetTotal: true } }),
     db.serviceEngagement.count({ where: { status: { in: ["PROPOSED", "ACCEPTED", "ACTIVE", "IN_REVIEW"] } } }),
@@ -338,7 +338,28 @@ export async function addMarketplaceItemToCart(input: {
   })
   const tier = product.tiers[0]
   if (!tier) throw new Error("Product does not have an active pricing tier")
-  if (product.status !== "PUBLISHED") throw new Error("Product is not available for purchase")
+  if (product.status !== "AVAILABLE") throw new Error("Product is not available for purchase")
+
+  // ── Ownership check: prevent adding already-owned products ────────────────
+  if (input.userId) {
+    const existingEntitlement = await db.customerEntitlement.findFirst({
+      where: {
+        userId: input.userId,
+        productId: product.id,
+        status: "ACTIVE",
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
+      },
+      select: { id: true },
+    })
+    if (existingEntitlement) throw new Error("ALREADY_OWNED")
+  }
+
+  // ── Inventory check: prevent adding sold-out products ─────────────────────
+  if (product.inventoryEnabled && (product.inventoryCount ?? 0) <= 0) throw new Error("SOLD_OUT")
+
   const unitPrice = effectiveTierPrice(tier, input.region)
 
   const cart = await db.$transaction(async (tx) => {
@@ -374,41 +395,41 @@ export async function addMarketplaceItemToCart(input: {
           source: "marketplace",
           pricingSnapshot: {
             productVersion: product.version,
-            tierName: tier.name,
-            listPrice: Number(tier.price),
+            tierName: tier?.name ?? "Default",
+            listPrice: tier ? Number(tier.price) : unitPrice,
             effectivePrice: unitPrice,
-            setupFee: Number(tier.setupFee ?? 0),
-            interval: tier.interval,
+            setupFee: tier ? Number(tier.setupFee ?? 0) : 0,
+            interval: tier?.interval ?? "ONE_TIME",
             region: input.region ?? null,
           },
-          selectedPlan: { tierId: tier.id, name: tier.name, interval: tier.interval },
-          subscriptionType: tier.interval,
+          selectedPlan: tier ? { tierId: tier.id, name: tier.name, interval: tier.interval } : null,
+          subscriptionType: tier?.interval ?? "ONE_TIME",
           vendorInfo: product.vendorId ? { vendorId: product.vendorId } : null,
-          aiQuota: tier.aiQuota ?? {},
-          taxData: { rate: getTaxRate({ tier }) },
+          aiQuota: tier?.aiQuota ?? {},
+          taxData: { rate: getTaxRate({ tier: tier ?? undefined }) },
         },
       },
       update: {
         quantity: { increment: quantity },
         unitPrice: money(unitPrice),
         vendorId: product.vendorId,
-        currency: tier.currency,
+        currency: tier?.currency ?? "USD",
         metadata: {
           source: "marketplace",
           pricingSnapshot: {
             productVersion: product.version,
-            tierName: tier.name,
-            listPrice: Number(tier.price),
+            tierName: tier?.name ?? "Default",
+            listPrice: tier ? Number(tier.price) : unitPrice,
             effectivePrice: unitPrice,
-            setupFee: Number(tier.setupFee ?? 0),
-            interval: tier.interval,
+            setupFee: tier ? Number(tier.setupFee ?? 0) : 0,
+            interval: tier?.interval ?? "ONE_TIME",
             region: input.region ?? null,
           },
-          selectedPlan: { tierId: tier.id, name: tier.name, interval: tier.interval },
-          subscriptionType: tier.interval,
+          selectedPlan: tier ? { tierId: tier.id, name: tier.name, interval: tier.interval } : null,
+          subscriptionType: tier?.interval ?? "ONE_TIME",
           vendorInfo: product.vendorId ? { vendorId: product.vendorId } : null,
-          aiQuota: tier.aiQuota ?? {},
-          taxData: { rate: getTaxRate({ tier }) },
+          aiQuota: tier?.aiQuota ?? {},
+          taxData: { rate: getTaxRate({ tier: tier ?? undefined }) },
         },
       },
     })
@@ -422,7 +443,7 @@ export async function addMarketplaceItemToCart(input: {
     type: EVENTS.CART_UPDATED,
     timestamp: new Date().toISOString(),
     actorId: input.userId,
-    payload: { cartId: recalculated.id, productId: product.id, productName: product.name },
+    payload: { cartId: recalculated.id, productId: product.id, productName: product.name, userId: input.userId },
   })
 
   return recalculated
@@ -446,7 +467,16 @@ export async function updateCartItemQuantity(input: {
     await db.cartItem.update({ where: { id: input.itemId }, data: { quantity: Math.min(999, input.quantity) } })
   }
 
-  return recalculateCart(cart.id)
+  const result = await recalculateCart(cart.id)
+
+  await emitEvent({
+    type: EVENTS.CART_UPDATED,
+    timestamp: new Date().toISOString(),
+    actorId: input.userId,
+    payload: { cartId: cart.id, action: "update_quantity", userId: input.userId },
+  })
+
+  return result
 }
 
 export async function applyCouponToActiveCart(input: {
@@ -461,6 +491,14 @@ export async function applyCouponToActiveCart(input: {
   if (normalizedCoupon && updated.couponCode !== normalizedCoupon) {
     throw new Error("Coupon is invalid, expired, or not eligible for this cart")
   }
+
+  await emitEvent({
+    type: EVENTS.CART_UPDATED,
+    timestamp: new Date().toISOString(),
+    actorId: input.userId,
+    payload: { cartId: cart.id, action: "apply_coupon", couponCode: normalizedCoupon, userId: input.userId },
+  })
+
   return updated
 }
 
@@ -468,7 +506,17 @@ export async function clearActiveCart(input: { userId?: string }) {
   if (!input.userId) throw new Error("UNAUTHORIZED")
   const cart = await getActiveCart(input)
   if (!cart) return null
-  return db.cart.update({ where: { id: cart.id }, data: { status: CartStatus.EXPIRED } })
+
+  const result = await db.cart.update({ where: { id: cart.id }, data: { status: CartStatus.EXPIRED } })
+
+  await emitEvent({
+    type: EVENTS.CART_UPDATED,
+    timestamp: new Date().toISOString(),
+    actorId: input.userId,
+    payload: { cartId: cart.id, action: "clear", userId: input.userId },
+  })
+
+  return result
 }
 
 export async function createBuyNowCart(input: {
@@ -490,10 +538,35 @@ export async function createBuyNowCart(input: {
     console.error(`[COMMERCE] ❌ No active tier found for product: ${product.name} (id=${input.productId})`)
     throw new Error("Product does not have an active pricing tier")
   }
-  if (product.status !== "PUBLISHED") {
+  if (product.status !== "AVAILABLE") {
     console.error(`[COMMERCE] ❌ Product not published: ${product.name} (status=${product.status})`)
     throw new Error("Product is not available for purchase")
   }
+
+  // ── Ownership check: prevent duplicate purchases ──────────────────────────
+  const existingEntitlement = await db.customerEntitlement.findFirst({
+    where: {
+      userId: input.userId,
+      productId: product.id,
+      status: "ACTIVE",
+      OR: [
+        { expiresAt: null },
+        { expiresAt: { gt: new Date() } },
+      ],
+    },
+    select: { id: true },
+  })
+  if (existingEntitlement) {
+    console.error(`[COMMERCE] ❌ User ${input.userId} already owns product: ${product.name}`)
+    throw new Error("ALREADY_OWNED")
+  }
+
+  // ── Inventory check: prevent purchasing sold-out products ───────────────────
+  if (product.inventoryEnabled && (product.inventoryCount ?? 0) <= 0) {
+    console.error(`[COMMERCE] ❌ Product sold out: ${product.name} (inventory: ${product.inventoryCount})`)
+    throw new Error("SOLD_OUT")
+  }
+
   const unitPrice = effectiveTierPrice(tier, input.region)
   console.log(`[COMMERCE] Product: ${product.name}, Tier: ${tier.name}, Price: ${unitPrice} ${tier.currency}`)
 
@@ -558,6 +631,12 @@ export async function createOrderFromActiveCart(input: {
       orderBy: { updatedAt: "desc" },
     })
     if (cart.items.length === 0) throw new Error("Cart is empty")
+
+    for (const item of cart.items) {
+      if (item.product.status !== "AVAILABLE") {
+        throw new Error(`Product ${item.product.name} is no longer available.`)
+      }
+    }
 
     const totals = calculateCartAmounts(cart.items, Number(cart.discountTotal))
     const subtotal = totals.subtotal
@@ -1067,7 +1146,7 @@ export async function markOrderPaid(orderId: string, gatewayPaymentId?: string, 
     })
   } catch {}
 
-  for (const item of processedOrder.items ?? []) {
+  for (const item of (processedOrder as any).items ?? []) {
     if (item.tier && isRecurring(item.tier.interval)) {
       try {
         await emitEvent({
@@ -1143,7 +1222,6 @@ export async function fulfillOrder(orderId: string): Promise<void> {
               deliveryConfig: true,
               inventoryEnabled: true,
               inventoryCount: true,
-              lowStockThreshold: true,
             },
           },
           tier: { select: { id: true, name: true, interval: true } },
@@ -1219,7 +1297,7 @@ export async function fulfillOrder(orderId: string): Promise<void> {
           credentialSnapshot,
           refundEligibleUntil,
           expiresAt,
-          deliveredAt: now,
+          // deliveredAt is tracked via updatedAt — field was removed from schema
         },
       })
 
@@ -1228,8 +1306,23 @@ export async function fulfillOrder(orderId: string): Promise<void> {
         const updatedProduct = await db.product.update({
           where: { id: product.id },
           data: { inventoryCount: { decrement: item.quantity } },
-          select: { inventoryCount: true, lowStockThreshold: true, name: true },
+          select: { inventoryCount: true, name: true },
         })
+
+        await db.product.update({
+          where: { id: product.id },
+          data: {
+            status: "RESERVED",
+            assignedUserId: order.userId,
+            assignedEmail: order.user?.email ?? null,
+            reservedUntil: expiresAt ?? null,
+          },
+        })
+
+        // Purge this product from any active carts
+        await db.cartItem.deleteMany({
+          where: { productId: product.id, cart: { status: "ACTIVE" } }
+        }).catch(() => {})
 
         await emitEvent({
           type: EVENTS.INVENTORY_UPDATED,
@@ -1247,7 +1340,7 @@ export async function fulfillOrder(orderId: string): Promise<void> {
         if (newCount <= 0) {
           await db.product.update({
             where: { id: product.id },
-            data: { status: "SOLD_OUT" },
+            data: { status: "HIDDEN" },
           }).catch(() => {})
 
           await emitEvent({
@@ -1302,6 +1395,7 @@ export async function fulfillOrder(orderId: string): Promise<void> {
   }).catch((err) => console.warn("[FULFILL] Could not mark order FULFILLED:", err))
 
   // Emit ORDER_FULFILLED to admin dashboard and user channel
+  const orderAny = order as any
   await emitEvent({
     type: EVENTS.ORDER_FULFILLED,
     timestamp: new Date().toISOString(),
@@ -1310,8 +1404,8 @@ export async function fulfillOrder(orderId: string): Promise<void> {
       orderId: order.id,
       orderNumber: order.orderNumber,
       userId: order.userId,
-      itemCount: order.items.length,
-      productNames: order.items.map((i) => i.product?.name).filter(Boolean),
+      itemCount: (orderAny.items ?? []).length,
+      productNames: (orderAny.items ?? []).map((i: any) => i.product?.name).filter(Boolean),
     },
   })
 

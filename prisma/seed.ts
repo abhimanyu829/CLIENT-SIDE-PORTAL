@@ -81,7 +81,7 @@ async function main() {
       tagline: 'The best SaaS for being awesome.',
       description: 'A very detailed description of why this SaaS is so awesome.',
       type: ProductType.SAAS,
-      status: ProductStatus.PUBLISHED,
+      status: ProductStatus.AVAILABLE,
       features: ['Feature A', 'Feature B', 'Feature C'],
       createdBy: superAdmin.id,
       tiers: {
@@ -101,7 +101,7 @@ async function main() {
       tagline: 'A service that is very cool.',
       description: 'A detailed description of this very cool service.',
       type: ProductType.SERVICE,
-      status: ProductStatus.PUBLISHED,
+      status: ProductStatus.AVAILABLE,
       features: ['Consultation', 'Implementation'],
       createdBy: superAdmin.id,
       tiers: {
@@ -120,7 +120,7 @@ async function main() {
       tagline: 'An AI that is very smart.',
       description: 'A detailed description of this very smart AI agent.',
       type: ProductType.AI_AGENT,
-      status: ProductStatus.PUBLISHED,
+      status: ProductStatus.AVAILABLE,
       features: ['1000 calls/mo', '5000 calls/mo'],
       createdBy: superAdmin.id,
       tiers: {

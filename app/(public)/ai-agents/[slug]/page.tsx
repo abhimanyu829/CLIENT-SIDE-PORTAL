@@ -9,7 +9,7 @@ interface Props { params: Promise<{ slug: string }> }
 
 async function getAgent(slug: string) {
   return db.product.findFirst({
-    where: { slug, status: ProductStatus.PUBLISHED, type: ProductType.AI_AGENT },
+    where: { slug, status: ProductStatus.AVAILABLE, type: ProductType.AI_AGENT },
     include: {
       tiers: { orderBy: { price: "asc" } },
       reviews: {

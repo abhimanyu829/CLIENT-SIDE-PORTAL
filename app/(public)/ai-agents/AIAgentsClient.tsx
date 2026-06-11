@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo, useTransition } from "react"
+import { useState, useMemo, useCallback, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import ProductCard, { type ProductCardProps } from "@/components/marketplace/ProductCard"
 
 const CATEGORIES = [
@@ -37,6 +38,37 @@ export default function AIAgentsClient({ agents }: { agents: AgentCardData[] }) 
   const [search, setSearch] = useState("")
   const [sortBy, setSortBy] = useState("popular")
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
+
+  const handlePreview = useCallback(async (productId: string) => {
+    try {
+      const res = await fetch("/api/demos/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId }),
+      })
+      if (res.status === 401) {
+        router.push(`/login?callbackUrl=/ai-agents?preview=${productId}`)
+        return
+      }
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || "Preview unavailable"); return }
+      router.push(`/demo/${data.sessionId}?token=${data.sessionToken}`)
+    } catch { alert("Failed to start preview.") }
+  }, [router])
+
+  const handleAddToCart = useCallback(async (productId: string, tierId?: string) => {
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, tierId, quantity: 1 }),
+      })
+      if (res.status === 401) { router.push("/login?callbackUrl=/ai-agents"); return }
+      if (!res.ok) { const d = await res.json(); alert(d.error || "Failed to add to cart"); return }
+      router.refresh()
+    } catch { alert("Failed to add to cart.") }
+  }, [router])
 
   const filtered = useMemo(() => {
     let list = [...agents]
@@ -115,7 +147,7 @@ export default function AIAgentsClient({ agents }: { agents: AgentCardData[] }) 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filtered.map(agent => (
               <div key={agent.id} className="relative">
-                <ProductCard {...agent} variant="grid" />
+                <ProductCard {...agent} variant="grid" previewEnabled={!!agent.demoUrl} onPreview={() => handlePreview(agent.id)} onAddToCart={() => handleAddToCart(agent.id, agent.tierId)} />
                 {/* Agent-specific overlay info */}
                 {(agent.techStack?.length || 0) > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2 px-1">

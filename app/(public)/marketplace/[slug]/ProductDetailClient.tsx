@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import CountdownTimer from "@/components/marketplace/CountdownTimer"
 import ProductCard from "@/components/marketplace/ProductCard"
+import { useCart } from "@/providers/CartProvider"
 
 const TYPE_ICONS: Record<string, string> = {
   AI_AGENT: "🤖", SAAS: "⚡", API: "🔗", AUTOMATION: "⚙️",
@@ -36,6 +37,7 @@ interface Product {
   longDescription?: string | null; type: string; category?: string | null; subcategory?: string | null
   thumbnailUrl?: string | null; iconUrl?: string | null; bannerUrl?: string | null
   screenshotUrls: string[]; videoUrls: string[]; demoUrl?: string | null; documentationUrl?: string | null
+  previewEnabled: boolean; previewConfig?: any; inventoryEnabled?: boolean; inventoryCount?: number
   features: any; techStack: string[]; tags: string[]; isPremium: boolean
   faqs?: any; documentation?: any; setupGuide?: any; integrationCatalog?: any
   roadmap?: any; supportPlans?: any; bundleOffers?: any; commerceConfig?: any; aiConfig?: any
@@ -56,6 +58,8 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const [activeTab, setActiveTab] = useState<"overview" | "pricing" | "reviews" | "changelog">("overview")
   const [wishlisted, setWishlisted] = useState(false)
   const [cartState, setCartState] = useState<"idle" | "adding" | "added" | "error">("idle")
+  const [cartError, setCartError] = useState<string | null>(null)
+  const { addItem } = useCart()
 
   const features: string[] = Array.isArray(product.features) ? product.features as string[] : []
   const integrations = Array.isArray(product.integrationCatalog) ? product.integrationCatalog as any[] : []
@@ -63,6 +67,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const faqs = Array.isArray(product.faqs) ? product.faqs as any[] : []
   const cheapestTier = product.tiers[0]
   const hasFlash = !!(cheapestTier?.flashSalePrice && cheapestTier.flashSaleEndsAt && new Date(cheapestTier.flashSaleEndsAt) > new Date())
+  const isSoldOut = product.inventoryEnabled && (product.inventoryCount ?? 0) <= 0
   const allScreenshots = [
     ...(product.thumbnailUrl ? [product.thumbnailUrl] : []),
     ...product.screenshotUrls,
@@ -83,18 +88,59 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
   const addToCart = async (tierId?: string) => {
     setCartState("adding")
+    setCartError(null)
     try {
-      const res = await fetch("/api/cart", {
+      // Pre-validate purchase
+      const validateRes = await fetch("/api/products/validate-purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: product.id, tierId, quantity: 1 }),
+        body: JSON.stringify({ productId: product.id, tierId }),
       })
-      if (res.status === 401) {
+      const validateData = await validateRes.json()
+
+      if (validateRes.status === 401) {
         window.location.href = `/login?callbackUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`
         return
       }
-      setCartState(res.ok ? "added" : "error")
+
+      if (!validateData.valid) {
+        const reason = validateData.reasons?.[0]
+        if (reason === "ALREADY_OWNED") {
+          setCartError("You already own this product")
+          setCartState("error")
+          return
+        }
+        if (reason === "SOLD_OUT") {
+          setCartError("This product is currently sold out")
+          setCartState("error")
+          return
+        }
+        if (reason === "EMAIL_NOT_VERIFIED") {
+          setCartError("Please verify your email before purchasing")
+          setCartState("error")
+          return
+        }
+        setCartError(validateData.reasons?.join(", ") || "Cannot add to cart")
+        setCartState("error")
+        return
+      }
+
+      const result = await addItem(product.id, tierId, 1)
+      if (result.success) {
+        setCartState("added")
+        setTimeout(() => setCartState("idle"), 3000)
+      } else {
+        if (result.code === "ALREADY_OWNED") {
+          setCartError("You already own this product")
+        } else if (result.code === "SOLD_OUT") {
+          setCartError("This product is sold out")
+        } else {
+          setCartError(result.error || "Failed to add to cart")
+        }
+        setCartState("error")
+      }
     } catch {
+      setCartError("Something went wrong")
       setCartState("error")
     }
   }
@@ -572,22 +618,31 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
                 {/* CTA Buttons */}
                 <div className="space-y-2.5">
-                  <Link href={`/checkout?tierId=${cheapestTier.id}&product=${product.slug}`}>
-                    <button className="btn-primary w-full py-4 rounded-xl text-white font-bold text-base">
-                      {cheapestTier.trialDays > 0 ? `Start ${cheapestTier.trialDays}-day Free Trial` : "Get Started →"}
-                    </button>
-                  </Link>
+                  {isSoldOut ? (
+                    <div className="w-full py-4 rounded-xl text-center font-bold text-base bg-red-500/10 border border-red-500/30 text-red-400">
+                      Sold Out — Currently Unavailable
+                    </div>
+                  ) : (
+                    <Link href={`/checkout?tierId=${cheapestTier.id}&product=${product.slug}`}>
+                      <button className="btn-primary w-full py-4 rounded-xl text-white font-bold text-base">
+                        {cheapestTier.trialDays > 0 ? `Start ${cheapestTier.trialDays}-day Free Trial` : "Get Started →"}
+                      </button>
+                    </Link>
+                  )}
                   <button
                     onClick={() => addToCart(cheapestTier.id)}
-                    disabled={cartState === "adding"}
+                    disabled={cartState === "adding" || isSoldOut}
                     className="w-full glass py-3.5 rounded-xl text-zinc-300 font-semibold text-sm hover:border-purple-500/50 transition-all disabled:opacity-60"
                   >
                     {cartState === "adding" ? "Adding..." : cartState === "added" ? "Added to enterprise cart" : "Add to cart"}
                   </button>
-                  {product.demoUrl && (
-                    <Link href={`/demo?product=${product.slug}`}>
+                  {cartError && (
+                    <p className="text-xs text-red-400 text-center mt-1">{cartError}</p>
+                  )}
+                  {product.previewEnabled && (
+                    <Link href={`/preview/${product.id}`}>
                       <button className="w-full glass py-3.5 rounded-xl text-zinc-300 font-semibold text-sm hover:border-purple-500/50 transition-all">
-                        ▶ Try Live Demo
+                        ▶ Try Live Preview
                       </button>
                     </Link>
                   )}

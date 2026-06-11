@@ -20,7 +20,7 @@ export const metadata = {
 const getAgentData = unstable_cache(async () => {
   const [featured, allAgents, newThisWeek, agentCount] = await Promise.all([
     db.product.findFirst({
-      where: { status: ProductStatus.PUBLISHED, type: ProductType.AI_AGENT, isFeatured: true },
+      where: { status: ProductStatus.AVAILABLE, type: ProductType.AI_AGENT, isFeatured: true },
       include: {
         tiers: { orderBy: { price: "asc" }, take: 1 },
         _count: { select: { subscriptions: true, reviews: true } },
@@ -28,7 +28,7 @@ const getAgentData = unstable_cache(async () => {
       orderBy: { viewCount: "desc" },
     }),
     db.product.findMany({
-      where: { status: ProductStatus.PUBLISHED, type: ProductType.AI_AGENT },
+      where: { status: ProductStatus.AVAILABLE, type: ProductType.AI_AGENT },
       include: {
         tiers: { orderBy: { price: "asc" }, take: 1 },
         _count: { select: { subscriptions: true } },
@@ -37,12 +37,12 @@ const getAgentData = unstable_cache(async () => {
       take: 50,
     }),
     db.product.findMany({
-      where: { status: ProductStatus.PUBLISHED, type: ProductType.AI_AGENT },
+      where: { status: ProductStatus.AVAILABLE, type: ProductType.AI_AGENT },
       include: { tiers: { orderBy: { price: "asc" }, take: 1 }, _count: { select: { subscriptions: true } } },
       orderBy: { createdAt: "desc" },
       take: 4,
     }),
-    db.product.count({ where: { status: ProductStatus.PUBLISHED, type: ProductType.AI_AGENT } }),
+    db.product.count({ where: { status: ProductStatus.AVAILABLE, type: ProductType.AI_AGENT } }),
   ])
 
   return { featured, allAgents, newThisWeek, agentCount }

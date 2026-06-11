@@ -36,7 +36,7 @@ export default async function VendorStudioPage() {
     )
   }
 
-  const activeProducts = vendor.products.filter((product) => product.status === "PUBLISHED")
+  const activeProducts = vendor.products.filter((product) => product.status === "AVAILABLE")
 
   return (
     <div className="space-y-6">

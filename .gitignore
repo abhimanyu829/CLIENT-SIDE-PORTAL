@@ -61,3 +61,6 @@ upgraded_efficient_architecture.md
 
 # Turborepo
 .turbo/
+
+# Sentry Config File
+.env.sentry-build-plugin

@@ -9,7 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let productSlugs: { slug: string; updatedAt: Date }[] = []
   try {
     productSlugs = await db.product.findMany({
-      where: { status: ProductStatus.PUBLISHED },
+      where: { status: ProductStatus.AVAILABLE },
       select: { slug: true, updatedAt: true },
     })
   } catch {}

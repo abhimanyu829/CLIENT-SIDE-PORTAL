@@ -34,6 +34,7 @@ export async function POST(req: Request) {
         description,
         priority: priority ?? "MEDIUM",
         status: "OPEN",
+        category: "GENERAL",
       },
     })
 

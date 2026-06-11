@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 const getPricingData = unstable_cache(async () => {
   return db.product.findMany({
-    where: { status: ProductStatus.PUBLISHED },
+    where: { status: ProductStatus.AVAILABLE },
     include: { tiers: { where: { isActive: true }, orderBy: { price: "asc" } } },
     orderBy: [{ isFeatured: "desc" }, { viewCount: "desc" }],
     take: 10,

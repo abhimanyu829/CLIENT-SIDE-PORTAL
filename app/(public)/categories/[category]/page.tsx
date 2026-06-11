@@ -54,7 +54,7 @@ export default async function CategoryPage({ params }: Props) {
 
   const filter = categoryToDbFilter(category)
   const products = await db.product.findMany({
-    where: { status: ProductStatus.PUBLISHED, ...filter },
+    where: { status: ProductStatus.AVAILABLE, ...filter },
     include: { tiers: { orderBy: { price: "asc" }, take: 1 }, _count: { select: { subscriptions: true } } },
     orderBy: [{ isFeatured: "desc" }, { isTrending: "desc" }, { viewCount: "desc" }],
     take: 48,

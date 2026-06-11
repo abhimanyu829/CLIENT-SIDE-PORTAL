@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import React, { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog"
@@ -41,7 +41,12 @@ interface Subscription {
   cancelledAt: string | null
   createdAt: string
   user: { id: string; name: string; email: string }
-  product: { id: string; name: string; type: string }
+  product: { 
+    id: string; 
+    name: string; 
+    type: string;
+    tiers?: Array<{ id: string; name: string; price: string; interval: string; currency: string }>
+  }
   tier: { name: string; price: string; interval: string }
   payments: Array<{ id: string; amount: string; status: string; createdAt: string }>
 }
@@ -69,10 +74,11 @@ export default function SubscriptionsClient({
   const router = useRouter()
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
-  const [dialog, setDialog] = useState<{ subId: string; action: string; title: string; desc: string } | null>(null)
+  const [dialog, setDialog] = useState<{ subId: string; action: string; title: string; desc: string; tiers?: any[]; currentTierName?: string } | null>(null)
   const [expandedTimeline, setExpandedTimeline] = useState<string | null>(null)
   const [renewalWindow, setRenewalWindow] = useState(7)
   const [extendDays, setExtendDays] = useState("14")
+  const [selectedTierId, setSelectedTierId] = useState("")
   const totalPages = Math.ceil(total / limit)
 
   const navigateStatus = (s: string) => {
@@ -87,7 +93,7 @@ export default function SubscriptionsClient({
     const res = await fetch(`/api/admin/subscriptions/${dialog.subId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: dialog.action, reason, extendDays: Number(extendDays) }),
+      body: JSON.stringify({ action: dialog.action, reason, extendDays: Number(extendDays), newTierId: selectedTierId }),
     })
     if (!res.ok) throw new Error(await res.text())
     toast({ title: "Done", description: `${dialog.action} completed` })
@@ -169,8 +175,8 @@ export default function SubscriptionsClient({
               {subscriptions.length === 0 ? (
                 <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No subscriptions</td></tr>
               ) : subscriptions.map((sub) => (
-                <>
-                  <tr key={sub.id} className="hover:bg-muted/20 transition-colors">
+                <React.Fragment key={sub.id}>
+                  <tr className="hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-3">
                       <p className="font-medium">{sub.user.name}</p>
                       <p className="text-xs text-muted-foreground">{sub.user.email}</p>
@@ -210,6 +216,11 @@ export default function SubscriptionsClient({
                           <button onClick={() => setDialog({ subId: sub.id, action: "extend-trial", title: "Extend Trial", desc: `Extend trial by ${extendDays} days.` })}
                             className="text-[10px] px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200">+Trial</button>
                         )}
+                        <button onClick={() => {
+                            setDialog({ subId: sub.id, action: "migrate-plan", title: "Change Subscription Plan", desc: "Select a new pricing plan. Billing will be pro-rated on the next cycle.", tiers: sub.product.tiers, currentTierName: sub.tier.name });
+                            setSelectedTierId("");
+                          }}
+                          className="text-[10px] px-2 py-1 rounded bg-violet-100 text-violet-700 hover:bg-violet-200">Change Plan</button>
                       </div>
                     </td>
                   </tr>
@@ -253,7 +264,7 @@ export default function SubscriptionsClient({
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </tbody>
           </table>
@@ -358,8 +369,26 @@ export default function SubscriptionsClient({
         onConfirm={handleAction}
         title={dialog?.title ?? ""}
         description={dialog?.desc ?? ""}
-        destructive={dialog?.action !== "resume" && dialog?.action !== "extend-trial"}
-      />
+        destructive={dialog?.action !== "resume" && dialog?.action !== "extend-trial" && dialog?.action !== "migrate-plan"}
+      >
+        {dialog?.action === "migrate-plan" && dialog.tiers && (
+          <div className="mt-4 mb-2">
+            <label className="text-sm font-semibold text-muted-foreground uppercase">Select New Plan</label>
+            <select
+              className="w-full mt-1 border border-input rounded-lg px-3 py-2 text-sm bg-background"
+              value={selectedTierId}
+              onChange={(e) => setSelectedTierId(e.target.value)}
+            >
+              <option value="" disabled>Select a plan...</option>
+              {dialog.tiers.map((t) => (
+                <option key={t.id} value={t.id} disabled={t.name === dialog.currentTierName}>
+                  {t.name} — {t.currency} {t.price} / {t.interval.toLowerCase()} {t.name === dialog.currentTierName ? "(Current)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </ConfirmDialog>
     </div>
   )
 }

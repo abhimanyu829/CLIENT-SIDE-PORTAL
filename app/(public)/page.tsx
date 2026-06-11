@@ -10,7 +10,7 @@ export const revalidate = 60
 
 // Dynamic metadata with live stats (revalidated every 60s)
 export async function generateMetadata() {
-  const count = await db.product.count({ where: { status: ProductStatus.PUBLISHED } }).catch(() => 0)
+  const count = await db.product.count({ where: { status: ProductStatus.AVAILABLE } }).catch(() => 0)
   return {
     title: "NexusAI — The World's Best AI SaaS Marketplace",
     description: `Deploy ${count}+ AI agents, SaaS tools, automation workflows, and APIs. The most advanced AI marketplace platform, trusted by developers and enterprises worldwide.`,
@@ -26,8 +26,8 @@ export async function generateMetadata() {
 
 const getPlatformStats = unstable_cache(async () => {
   const [products, agents, users, subscriptions, reviews] = await Promise.allSettled([
-    db.product.count({ where: { status: ProductStatus.PUBLISHED } }),
-    db.product.count({ where: { status: ProductStatus.PUBLISHED, type: ProductType.AI_AGENT } }),
+    db.product.count({ where: { status: ProductStatus.AVAILABLE } }),
+    db.product.count({ where: { status: ProductStatus.AVAILABLE, type: ProductType.AI_AGENT } }),
     db.user.count(),
     db.subscription.count({ where: { status: { in: [SubStatus.ACTIVE, SubStatus.TRIALING] } } }),
     db.productReview.count(),
@@ -43,7 +43,7 @@ const getPlatformStats = unstable_cache(async () => {
 
 const getFeaturedProducts = unstable_cache(async () => {
   return db.product.findMany({
-    where: { status: ProductStatus.PUBLISHED, isFeatured: true },
+    where: { status: ProductStatus.AVAILABLE, isFeatured: true },
     include: { tiers: { orderBy: { price: "asc" }, take: 1 } },
     orderBy: { viewCount: "desc" },
     take: 6,
@@ -52,7 +52,7 @@ const getFeaturedProducts = unstable_cache(async () => {
 
 const getTrendingProducts = unstable_cache(async () => {
   return db.product.findMany({
-    where: { status: ProductStatus.PUBLISHED, isTrending: true },
+    where: { status: ProductStatus.AVAILABLE, isTrending: true },
     include: { tiers: { orderBy: { price: "asc" }, take: 1 } },
     orderBy: { viewCount: "desc" },
     take: 8,
@@ -61,7 +61,7 @@ const getTrendingProducts = unstable_cache(async () => {
 
 const getTopSellers = unstable_cache(async () => {
   return db.product.findMany({
-    where: { status: ProductStatus.PUBLISHED, isBestSeller: true },
+    where: { status: ProductStatus.AVAILABLE, isBestSeller: true },
     include: { tiers: { orderBy: { price: "asc" }, take: 1 } },
     orderBy: [{ reviewCount: "desc" }, { averageRating: "desc" }],
     take: 6,
@@ -70,7 +70,7 @@ const getTopSellers = unstable_cache(async () => {
 
 const getNewLaunches = unstable_cache(async () => {
   return db.product.findMany({
-    where: { status: ProductStatus.PUBLISHED },
+    where: { status: ProductStatus.AVAILABLE },
     include: { tiers: { orderBy: { price: "asc" }, take: 1 } },
     orderBy: { createdAt: "desc" },
     take: 4,
@@ -79,7 +79,7 @@ const getNewLaunches = unstable_cache(async () => {
 
 const getTopAgents = unstable_cache(async () => {
   return db.product.findMany({
-    where: { status: ProductStatus.PUBLISHED, type: ProductType.AI_AGENT },
+    where: { status: ProductStatus.AVAILABLE, type: ProductType.AI_AGENT },
     include: { tiers: { orderBy: { price: "asc" }, take: 1 } },
     orderBy: { viewCount: "desc" },
     take: 4,

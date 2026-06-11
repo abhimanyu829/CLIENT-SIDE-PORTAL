@@ -3,9 +3,17 @@
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 
 export default function VerifyRequiredPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyRequiredContent />
+    </Suspense>
+  )
+}
+
+function VerifyRequiredContent() {
   const searchParams = useSearchParams()
   const redirect = searchParams.get("redirect") || "/dashboard"
   const [resending, setResending] = useState(false)

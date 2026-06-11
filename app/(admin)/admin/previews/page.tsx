@@ -44,7 +44,6 @@ export default async function AdminPreviewsPage() {
   const productStats = await db.demoSession.groupBy({
     by: ["productId"],
     _count: { id: true },
-    _sum: { convertedToOrder: true },
   }).catch(() => [])
 
   const serialized = {
@@ -75,5 +74,5 @@ export default async function AdminPreviewsPage() {
     productStats,
   }
 
-  return <AdminPreviewsClient data={serialized} />
+  return <AdminPreviewsClient data={serialized as any} />
 }

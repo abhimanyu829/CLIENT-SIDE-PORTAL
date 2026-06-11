@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     // Fetch product with preview config
     const product = await db.product.findUnique({
-      where: { id: productId, status: "PUBLISHED" },
+      where: { id: productId, status: "AVAILABLE" },
       select: {
         id: true,
         name: true,

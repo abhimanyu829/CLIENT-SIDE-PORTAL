@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     const sortBy = searchParams.get("sort") ?? "createdAt"
 
     const where: any = {
-      status: "PUBLISHED" as const,
+      status: "AVAILABLE" as const,
       ...(type ? { type: type as any } : {}),
       ...(search
         ? {

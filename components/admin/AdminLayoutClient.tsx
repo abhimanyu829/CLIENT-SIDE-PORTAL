@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { signOut } from "next-auth/react"
+import { useClerk } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -20,7 +21,7 @@ import {
   LayoutDashboard, Users, CreditCard, ShoppingCart, Package,
   Tag, BarChart3, Bot, ShieldCheck, Settings, LogOut,
   ChevronLeft, ChevronRight, Menu, Bell, Sun, Moon, User,
-  ExternalLink, Webhook, Store, ScanSearch
+  ExternalLink, Webhook, Store, ScanSearch, Eye, WalletCards
 } from "lucide-react"
 import { Toaster } from "@/components/ui/toaster"
 import RealtimeAdminProvider from "@/components/admin/RealtimeAdminProvider"
@@ -32,7 +33,9 @@ const NAV_ITEMS = [
   { name: "Subscriptions",       path: "/admin/subscriptions", icon: CreditCard },
   { name: "Orders & Payments",  path: "/admin/orders",      icon: ShoppingCart },
   { name: "Payment Inspection",  path: "/admin/payments",    icon: ScanSearch },
+  { name: "Manual Verifications", path: "/admin/payments/verifications", icon: WalletCards },
   { name: "Products & Plans",   path: "/admin/products",    icon: Package },
+  { name: "Preview Center",    path: "/admin/previews",     icon: Eye },
   { name: "Offers & Coupons",   path: "/admin/coupons",     icon: Tag },
   { name: "Analytics",           path: "/admin/analytics",   icon: BarChart3 },
   { name: "AI Monitoring",       path: "/admin/ai-monitoring", icon: Bot },
@@ -46,12 +49,13 @@ const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes
 interface AdminSidebarProps {
   collapsed: boolean
   onToggle: () => void
+  onSignOut: (url?: string) => void
   isSuperAdmin?: boolean
   userName?: string
   userEmail?: string
 }
 
-function AdminSidebar({ collapsed, onToggle, isSuperAdmin, userName, userEmail }: AdminSidebarProps) {
+function AdminSidebar({ collapsed, onToggle, onSignOut, isSuperAdmin, userName, userEmail }: AdminSidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -143,7 +147,7 @@ function AdminSidebar({ collapsed, onToggle, isSuperAdmin, userName, userEmail }
           {!collapsed && "View Site"}
         </Link>
         <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={() => onSignOut("/login")}
           className={cn(
             "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-red-900/30 hover:text-red-400 transition-colors",
             collapsed && "justify-center px-2"
@@ -172,14 +176,25 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
   const pathname = usePathname()
   const router = useRouter()
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const { signOut: clerkSignOut } = useClerk()
+
+  // Unified logout: clears both Clerk and NextAuth sessions
+  const handleSignOut = useCallback(async (callbackUrl = "/login") => {
+    try {
+      await clerkSignOut({ redirectUrl: callbackUrl })
+    } catch {
+      // Clerk not applicable for this user
+    }
+    await signOut({ callbackUrl })
+  }, [clerkSignOut])
 
   // Session timeout: 30 min inactivity
   const resetTimer = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
     timeoutRef.current = setTimeout(() => {
-      signOut({ callbackUrl: "/login?reason=timeout" })
+      handleSignOut("/login?reason=timeout")
     }, INACTIVITY_TIMEOUT_MS)
-  }, [])
+  }, [handleSignOut])
 
   useEffect(() => {
     const events = ["mousedown", "keydown", "scroll", "touchstart"]
@@ -202,6 +217,7 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
       <AdminSidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed((v) => !v)}
+        onSignOut={handleSignOut}
         isSuperAdmin={isSuperAdmin}
         userName={userName}
         userEmail={userEmail}
@@ -241,7 +257,7 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
             </nav>
             <div className="border-t border-zinc-800 p-3">
               <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={() => handleSignOut("/login")}
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:bg-red-900/30 hover:text-red-400 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
@@ -323,7 +339,7 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-red-600 focus:text-red-600"
-                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  onClick={() => handleSignOut("/login")}
                 >
                   <LogOut className="mr-2 h-4 w-4" /> Sign Out
                 </DropdownMenuItem>

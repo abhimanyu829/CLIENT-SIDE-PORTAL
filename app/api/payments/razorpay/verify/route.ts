@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import crypto from "crypto"
 import { z } from "zod"
+import { OrderStatus } from "@prisma/client"
 import { authOptions } from "@/lib/auth"
 import { env } from "@/lib/env"
 import { db } from "@/lib/db"
@@ -23,11 +24,19 @@ function verifySignature(orderId: string, paymentId: string, signature: string) 
     return false
   }
   const expected = crypto.createHmac("sha256", secret).update(`${orderId}|${paymentId}`).digest("hex")
+  // IMPORTANT: Both buffers must use "hex" encoding so we compare the 32 raw bytes,
+  // not the 64-character hex string encoded as UTF-8 (which would be 64 bytes instead of 32).
   if (expected.length !== signature.length) {
     console.error("[RAZORPAY VERIFY] ❌ Signature length mismatch")
     return false
   }
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signature, "hex"))
+  } catch {
+    // If signature is not valid hex, timingSafeEqual throws — treat as mismatch
+    console.error("[RAZORPAY VERIFY] ❌ Signature is not valid hex")
+    return false
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -43,14 +52,7 @@ export async function POST(req: NextRequest) {
     const body = verifySchema.parse(await req.json())
     console.log(`[RAZORPAY VERIFY] Verifying payment: order=${body.orderId}, razorpay_order=${body.razorpay_order_id}, payment=${body.razorpay_payment_id}`)
 
-    // ── 1. Verify Razorpay signature ──────────────────────────────────────
-    if (!verifySignature(body.razorpay_order_id, body.razorpay_payment_id, body.razorpay_signature)) {
-      console.error("[RAZORPAY VERIFY] ❌ Signature verification FAILED — possible tampering")
-      return NextResponse.json({ success: false, error: { code: "BAD_SIGNATURE", message: "Payment signature verification failed. This may indicate tampering — please contact support." } }, { status: 400 })
-    }
-    console.log("[RAZORPAY VERIFY] ✅ Signature verified successfully")
-
-    // ── 2. Find the order ──────────────────────────────────────────────────
+    // ── 1. Find the order first (for idempotency check) ──────────────────
     const order = await db.order.findFirst({
       where: {
         id: body.orderId,
@@ -64,11 +66,54 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: { code: "ORDER_NOT_FOUND", message: "Checkout session not found." } }, { status: 404 })
     }
 
-    // ── 3. Mark order as paid (idempotent) ─────────────────────────────────
+    // ── 2. Idempotency: if order is already PAID/FULFILLED, return success immediately ──
+    if (order.status === "PAID" || order.status === "FULFILLED") {
+      console.log(`[RAZORPAY VERIFY] ✅ Order ${order.orderNumber} already ${order.status} — returning idempotent success`)
+      return NextResponse.json({
+        success: true,
+        data: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          redirectUrl: `/checkout/success?orderId=${order.id}`,
+        },
+      })
+    }
+
+    // ── 3. Verify Razorpay signature ──────────────────────────────────────
+    if (!verifySignature(body.razorpay_order_id, body.razorpay_payment_id, body.razorpay_signature)) {
+      console.error("[RAZORPAY VERIFY] ❌ Signature verification FAILED — possible tampering")
+      return NextResponse.json({ success: false, error: { code: "BAD_SIGNATURE", message: "Payment signature verification failed. This may indicate tampering — please contact support." } }, { status: 400 })
+    }
+    console.log("[RAZORPAY VERIFY] ✅ Signature verified successfully")
+
+    // ── 4. Duplicate payment detection ──────────────────────────────────────
+    const existingPayment = await db.payment.findFirst({
+      where: {
+        gatewayPaymentId: body.razorpay_payment_id,
+        status: "SUCCESS",
+      },
+    })
+    if (existingPayment) {
+      console.log(`[RAZORPAY VERIFY] ✅ Payment ${body.razorpay_payment_id} already processed — returning idempotent success`)
+      return NextResponse.json({
+        success: true,
+        data: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          redirectUrl: `/checkout/success?orderId=${order.id}`,
+        },
+      })
+    }
+
+    // ── 5. Mark order as paid (idempotent) ─────────────────────────────────
     console.log(`[RAZORPAY VERIFY] 💰 Marking order ${order.orderNumber} as paid`)
     const paid = await markOrderPaid(order.id, body.razorpay_payment_id, body.razorpay_order_id)
     console.log(`[RAZORPAY VERIFY] ✅ Order ${order.orderNumber} marked as paid, status: ${paid.status}`)
-    // Enterprise fulfillment: deliver credentials, set refund window, emit events
+
+    // ── 6. Fire-and-forget fulfillment ──────────────────────────────────────
+    // If fulfillment fails, the webhook will reconcile
     fulfillOrder(order.id).catch((err) => logger.error({ err, orderId: order.id }, "fulfillOrder failed in verify route"))
 
     return NextResponse.json({

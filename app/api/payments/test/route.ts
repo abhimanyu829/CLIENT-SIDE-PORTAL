@@ -70,7 +70,7 @@ export async function GET() {
   // ── 3. Database Connectivity ──────────────────────────────────────────────
   try {
     const userCount = await db.user.count()
-    const productCount = await db.product.count({ where: { status: "PUBLISHED" } })
+    const productCount = await db.product.count({ where: { status: "AVAILABLE" } })
     const orderCount = await db.order.count()
     diagnostics.database = {
       status: "✅ CONNECTED",

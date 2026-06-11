@@ -179,7 +179,7 @@ export async function recordUsage(record: UsageRecord): Promise<void> {
         latencyMs: record.latencyMs,
         status: record.status,
         errorMessage: record.errorMessage ?? null,
-        metadata: record.metadata ?? null,
+        metadata: (record.metadata as any) ?? null,
       },
     })
 

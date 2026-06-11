@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { useSession, signOut } from "next-auth/react"
+import { useClerk, useUser } from "@clerk/nextjs"
 
 const S = `
 .ds-glass{background:rgba(8,8,12,.95);backdrop-filter:blur(24px);border-right:1px solid rgba(255,255,255,.06)}
@@ -49,7 +50,24 @@ const NAV = [
 export default function DashboardSidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
+  const { user: clerkUser } = useUser()
+  const { signOut: clerkSignOut } = useClerk()
   const [collapsed, setCollapsed] = useState(false)
+
+  // Prefer Clerk user data, fall back to NextAuth session
+  const displayName = clerkUser?.firstName || clerkUser?.fullName || session?.user?.name || "User"
+  const displayEmail = clerkUser?.primaryEmailAddress?.emailAddress || session?.user?.email || ""
+  const displayInitial = displayName[0]?.toUpperCase() ?? "U"
+
+  // Unified logout
+  const handleSignOut = async () => {
+    try {
+      await clerkSignOut({ redirectUrl: '/' })
+    } catch {
+      // Clerk not applicable
+    }
+    await signOut({ callbackUrl: '/' })
+  }
 
   const isActive = (href: string) => href === "/dashboard" ? pathname === href : pathname.startsWith(href)
 
@@ -106,15 +124,15 @@ export default function DashboardSidebar() {
             style={{background:"linear-gradient(135deg,#6366f1,#8b5cf6)"}}>
             {session?.user?.name?.[0]?.toUpperCase() ?? "U"}
           </div>
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-zinc-300 truncate">{session?.user?.name ?? "User"}</p>
-              <p className="text-[10px] text-zinc-700 truncate">{session?.user?.email ?? ""}</p>
-            </div>
-          )}
+            {(clerkUser?.firstName || session?.user?.name) && (
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-zinc-300 truncate">{displayName}</p>
+                <p className="text-[10px] text-zinc-700 truncate">{displayEmail}</p>
+              </div>
+            )}
         </div>
         {!collapsed && (
-          <button onClick={() => signOut()}
+          <button onClick={handleSignOut}
             className="ds-item w-full text-zinc-700 hover:text-red-400 hover:bg-red-500/5 mt-1 text-xs">
             <span>→</span>
             <span>Sign out</span>

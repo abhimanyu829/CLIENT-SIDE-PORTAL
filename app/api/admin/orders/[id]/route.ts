@@ -43,7 +43,7 @@ export async function PATCH(
         userId: admin.userId,
         action: "INVOICE_RESENT",
         entity: "Invoice",
-        entityId: payment.invoice?.id || null,
+        entityId: payment.invoice?.id ?? undefined,
         after: { recipient: payment.user.email },
       })
       return NextResponse.json({ success: true, message: "Invoice resent successfully" })

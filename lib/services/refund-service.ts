@@ -9,6 +9,7 @@ import { revokeUserAccessForOrder } from "@/lib/services/subscription-service"
 export interface RefundResult {
   success: boolean
   refundId?: string
+  gatewayRefundId?: string
   amount: number
   error?: string
 }

@@ -55,7 +55,6 @@ export async function GET(
       payment: {
         ...payment,
         amount: Number(payment.amount),
-        refundAmount: payment.refundAmount ? Number(payment.refundAmount) : null,
         createdAt: payment.createdAt.toISOString(),
         paidAt: payment.paidAt?.toISOString() ?? null,
       },
@@ -111,11 +110,26 @@ export async function POST(
         where: { id },
         data: {
           status: "REFUNDED",
-          refundAmount: amount,
-          refundReason: reason,
-          refundId: refund.id,
         },
       })
+
+      // Also create a RefundRequest record to store details
+      await db.refundRequest.create({
+        data: {
+          userId: payment.userId,
+          paymentId: payment.id,
+          orderId: payment.orderId,
+          subscriptionId: payment.subscriptionId,
+          reason,
+          status: "PROCESSED",
+          gateway: payment.gateway,
+          gatewayRefundId: refund.id,
+          refundAmount: amount,
+          resolvedAt: new Date(),
+          resolvedBy: admin.userId,
+          adminNotes: "Refunded via admin payments panel",
+        } as any,
+      }).catch(() => {})
 
       console.log(`[ADMIN PAYMENTS] ✅ Refund processed: ${refund.id} for payment ${id}`)
       return NextResponse.json({ success: true, data: { refundId: refund.id, amount } })

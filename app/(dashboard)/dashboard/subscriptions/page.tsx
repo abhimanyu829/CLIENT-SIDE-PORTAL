@@ -22,7 +22,7 @@ export default async function SubscriptionsPage() {
     }),
     // Fetch available products with their active tiers for checkout
     db.product.findMany({
-      where: { status: "PUBLISHED" },
+      where: { status: "AVAILABLE" },
       include: {
         tiers: {
           where: { isActive: true },

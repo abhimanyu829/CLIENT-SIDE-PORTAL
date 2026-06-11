@@ -26,7 +26,7 @@ export default async function MyProductsPage() {
         },
       },
     },
-    orderBy: { grantedAt: "desc" },
+    orderBy: { createdAt: "desc" },
   })
 
   const serialized = entitlements.map((e) => ({
@@ -38,8 +38,8 @@ export default async function MyProductsPage() {
     productDescription: e.product.description,
     productCategory: e.product.category?.toString() ?? null,
     status: e.status,
-    type: e.type,
-    grantedAt: e.grantedAt.toISOString(),
+    type: e.accessType,
+    grantedAt: e.createdAt.toISOString(),
     expiresAt: e.expiresAt?.toISOString() ?? null,
     accessRevokedAt: e.accessRevokedAt?.toISOString() ?? null,
     refundEligibleUntil: e.refundEligibleUntil?.toISOString() ?? null,

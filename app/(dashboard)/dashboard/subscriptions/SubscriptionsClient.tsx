@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import Link from "next/link"
 
 const S = `
@@ -20,8 +20,41 @@ const TIERS = [
 export default function SubscriptionsClient({ subscriptions, invoices }: { subscriptions: any[], invoices: any[] }) {
   const [tab, setTab] = useState<"plans"|"billing"|"usage">("plans")
   const [billingCycle, setBillingCycle] = useState<"monthly"|"yearly">("monthly")
+  const [cancelling, setCancelling] = useState(false)
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [cancelReason, setCancelReason] = useState("")
 
   const activeSub = subscriptions.find((s:any) => s.status === "ACTIVE")
+  const cancellingSub = subscriptions.find((s:any) => s.status === "CANCELLING")
+  const pastDueSub = subscriptions.find((s:any) => s.status === "PAST_DUE" || s.status === "PAST_DUE_GRACE")
+
+  // Expiry warning: show if subscription ends within 7 days
+  const expiryWarning = activeSub?.currentPeriodEnd
+    ? (() => {
+        const daysLeft = Math.ceil((new Date(activeSub.currentPeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        return daysLeft <= 7 ? daysLeft : null
+      })()
+    : null
+
+  const handleCancel = useCallback(async () => {
+    if (!activeSub) return
+    setCancelling(true)
+    try {
+      const res = await fetch(`/api/subscriptions/${activeSub.id}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: cancelReason || "User cancellation" }),
+      })
+      if (!res.ok) throw new Error("Cancel failed")
+      window.location.reload()
+    } catch (err) {
+      console.error("[Cancel subscription]", err)
+      alert("Failed to cancel subscription. Please try again.")
+    } finally {
+      setCancelling(false)
+      setShowCancelDialog(false)
+    }
+  }, [activeSub, cancelReason])
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -38,6 +71,63 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
           <p className="font-black text-blue-400">{activeSub?.tier?.name ?? "Free"}</p>
         </div>
       </div>
+
+      {/* Grace period / Expiry warnings */}
+      {pastDueSub && (
+        <div className="d-glass rounded-2xl p-4 border border-amber-500/30 bg-amber-500/5">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">⚠️</span>
+            <div className="flex-1">
+              <p className="font-bold text-amber-400 text-sm">Payment Overdue</p>
+              <p className="text-xs text-zinc-400 mt-1">
+                Your subscription to <span className="text-white">{pastDueSub.product?.name ?? "this product"}</span> has a past-due payment.
+                You have a grace period to update your payment method before access is revoked.
+              </p>
+              <Link href="/dashboard/subscriptions?tab=billing" className="inline-block mt-2 text-xs font-bold text-amber-400 hover:underline">
+                Update Payment Method →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+      {cancellingSub && (
+        <div className="d-glass rounded-2xl p-4 border border-orange-500/30 bg-orange-500/5">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">⏳</span>
+            <div className="flex-1">
+              <p className="font-bold text-orange-400 text-sm">Subscription Cancelling</p>
+              <p className="text-xs text-zinc-400 mt-1">
+                Your subscription to <span className="text-white">{cancellingSub.product?.name ?? "this product"}</span> is scheduled for cancellation.
+                You can continue using it until <span className="text-white">{cancellingSub.currentPeriodEnd ? new Date(cancellingSub.currentPeriodEnd).toLocaleDateString() : "the end of the billing period"}</span>.
+              </p>
+              <button onClick={async () => {
+                const res = await fetch(`/api/subscriptions/${cancellingSub.id}/resume`, { method: "POST" })
+                if (res.ok) window.location.reload()
+                else alert("Failed to resume subscription")
+              }} className="mt-2 text-xs font-bold text-orange-400 hover:underline">
+                Resume Subscription →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {activeSub && expiryWarning && !cancellingSub && (
+        <div className="d-glass rounded-2xl p-4 border border-purple-500/30 bg-purple-500/5">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">⏰</span>
+            <div className="flex-1">
+              <p className="font-bold text-purple-400 text-sm">Renewal Coming Up</p>
+              <p className="text-xs text-zinc-400 mt-1">
+                Your subscription renews in <span className="text-white">{expiryWarning} day{expiryWarning !== 1 ? "s" : ""}</span>.
+                Make sure your payment method is up to date to avoid interruption.
+              </p>
+              <Link href="/dashboard/subscriptions?tab=billing" className="inline-block mt-2 text-xs font-bold text-purple-400 hover:underline">
+                Review Payment Method →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 d-glass rounded-xl p-1 w-fit">
@@ -123,7 +213,7 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
                   <p className="text-sm text-zinc-500">{activeSub.tier?.name} · Renews {activeSub.currentPeriodEnd ? new Date(activeSub.currentPeriodEnd).toLocaleDateString() : "—"}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="d-glass px-4 py-2 rounded-xl text-sm text-red-400 hover:border-red-500/30 transition-all">Cancel</button>
+                  <button onClick={() => setShowCancelDialog(true)} className="d-glass px-4 py-2 rounded-xl text-sm text-red-400 hover:border-red-500/30 transition-all">Cancel</button>
                 </div>
               </div>
             </div>
@@ -203,6 +293,35 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
             <button onClick={()=>setTab("plans")} className="d-btn px-6 py-2.5 rounded-xl text-sm font-bold text-white hover:scale-105 transition-all">
               Upgrade Plan →
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Dialog */}
+      {showCancelDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="d-glass rounded-2xl p-6 max-w-md w-full mx-4 border border-red-500/20">
+            <h3 className="text-lg font-bold text-red-400 mb-2">Cancel Subscription?</h3>
+            <p className="text-sm text-zinc-400 mb-4">
+              Your access to <span className="text-white font-semibold">{activeSub?.product?.name ?? "this product"}</span> will end at the current period.
+              {activeSub?.currentPeriodEnd && (
+                <span> You can continue using it until <span className="text-white">{new Date(activeSub.currentPeriodEnd).toLocaleDateString()}</span>.</span>
+              )}
+            </p>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Reason for cancellation (optional)"
+              className="w-full d-glass rounded-xl p-3 text-sm text-zinc-300 border border-white/5 focus:border-red-500/30 focus:outline-none resize-none h-20 mb-4"
+            />
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => { setShowCancelDialog(false); setCancelReason("") }} className="d-glass px-4 py-2 rounded-xl text-sm text-zinc-400 hover:text-white transition-all" disabled={cancelling}>
+                Keep Subscription
+              </button>
+              <button onClick={handleCancel} disabled={cancelling} className="px-4 py-2 rounded-xl text-sm font-bold bg-red-600 text-white hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                {cancelling ? "Cancelling..." : "Confirm Cancellation"}
+              </button>
+            </div>
           </div>
         </div>
       )}

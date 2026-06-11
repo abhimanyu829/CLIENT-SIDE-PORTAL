@@ -32,6 +32,14 @@ export interface ProductCardProps {
   demoUrl?: string | null
   tags?: string[]
   variant?: "grid" | "featured" | "spotlight" | "compact"
+  previewEnabled?: boolean
+  hasInventory?: boolean
+  inventoryCount?: number
+  soldOut?: boolean
+  onPreview?: () => void
+  onAddToCart?: () => void
+  isAddingToCart?: boolean
+  tierId?: string
 }
 
 const TYPE_ICONS: Record<string, string> = {
@@ -89,6 +97,82 @@ function Stars({ rating, count }: { rating?: number; count?: number }) {
       {count !== undefined && count > 0 && (
         <span className="text-[10px] text-zinc-600">({count})</span>
       )}
+    </div>
+  )
+}
+
+function ActionButtons({ p, layout = "grid" }: { p: ProductCardProps; layout?: "grid" | "row" }) {
+  const isSoldOut = p.soldOut ?? (p.hasInventory && p.inventoryCount !== undefined && p.inventoryCount <= 0)
+  if (layout === "row") {
+    return (
+      <div className="flex items-center gap-2 mt-3">
+        {/* Preview — always visible; disabled with tooltip when not enabled */}
+        <button
+          onClick={p.previewEnabled ? p.onPreview : undefined}
+          disabled={!p.previewEnabled}
+          title={p.previewEnabled ? "Preview product" : "Preview coming soon"}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+            p.previewEnabled
+              ? "bg-gradient-to-r from-violet-600/20 to-purple-600/20 border-purple-500/30 text-purple-300 hover:border-purple-400/60 hover:text-white"
+              : "bg-zinc-900/40 border-white/5 text-zinc-600 cursor-not-allowed"
+          }`}
+        >
+          ⚡ Preview
+        </button>
+        <Link
+          href={`/checkout?product=${p.id}${p.tierId ? `&tier=${p.tierId}` : ""}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold text-center transition-all ${
+            isSoldOut ? "bg-zinc-800 text-zinc-500 cursor-not-allowed" : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-105 shadow-lg shadow-purple-500/20"
+          }`}
+        >
+          {isSoldOut ? "Sold Out" : "Buy Now"}
+        </Link>
+        <button
+          onClick={p.onAddToCart}
+          disabled={isSoldOut || p.isAddingToCart}
+          className="px-3 py-1.5 rounded-lg text-xs font-bold glass text-zinc-300 hover:text-white hover:border-purple-500/50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {p.isAddingToCart ? "Adding…" : "🛒 Cart"}
+        </button>
+        <Link href={`/marketplace/${p.slug}`} className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+          Details →
+        </Link>
+      </div>
+    )
+  }
+  return (
+    <div className="grid grid-cols-2 gap-2 mt-3">
+      {/* Preview — always visible; disabled with tooltip when not enabled */}
+      <button
+        onClick={p.previewEnabled ? p.onPreview : undefined}
+        disabled={!p.previewEnabled}
+        title={p.previewEnabled ? "Preview product" : "Preview coming soon"}
+        className={`col-span-2 py-2 rounded-xl text-xs font-bold border transition-all ${
+          p.previewEnabled
+            ? "bg-gradient-to-r from-violet-600/20 to-purple-600/20 border-purple-500/30 text-purple-300 hover:border-purple-400/60 hover:text-white"
+            : "bg-zinc-900/40 border-white/5 text-zinc-600 cursor-not-allowed"
+        }`}
+      >
+        ⚡ {p.previewEnabled ? "Preview Product" : "Preview Coming Soon"}
+      </button>
+      <Link
+        href={`/checkout?product=${p.id}${p.tierId ? `&tier=${p.tierId}` : ""}`}
+        className={`py-2 rounded-xl text-xs font-bold text-center transition-all ${
+          isSoldOut ? "bg-zinc-800 text-zinc-500 cursor-not-allowed" : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-105 shadow-lg shadow-purple-500/20"
+        }`}
+      >
+        {isSoldOut ? "Sold Out" : "Buy Now"}
+      </Link>
+      <button
+        onClick={p.onAddToCart}
+        disabled={isSoldOut || p.isAddingToCart}
+        className="py-2 rounded-xl text-xs font-bold glass text-zinc-300 hover:text-white hover:border-purple-500/50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {p.isAddingToCart ? "Adding…" : "🛒 Add to Cart"}
+      </button>
+      <Link href={`/marketplace/${p.slug}`} className="col-span-2 py-1.5 rounded-xl text-xs text-zinc-500 hover:text-zinc-300 transition-colors text-center">
+        View Details →
+      </Link>
     </div>
   )
 }
@@ -158,20 +242,10 @@ function GridCard(p: ProductCardProps) {
               <span className="text-[10px] text-zinc-600">{p.activeUsers.toLocaleString()} users</span>
             )}
           </div>
+          <ActionButtons p={p} layout="grid" />
         </div>
 
-        {/* Hover actions */}
-        <div className="absolute inset-x-0 bottom-0 z-20 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-gradient-to-t from-black/90 to-transparent px-4 pb-4 pt-8 flex gap-2">
-          <Link href={`/marketplace/${p.slug}`} className="flex-1 w-full py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-105 transition-all text-center">
-            Buy Now
-          </Link>
-          {p.demoUrl && (
-            <Link href={`/demo?product=${p.slug}`} className="px-3 py-2 rounded-xl text-xs font-bold glass text-zinc-300 hover:text-white transition-all">
-              Demo
-            </Link>
-          )}
-        </div>
-      </article>
+        </article>
   )
 }
 
@@ -214,16 +288,7 @@ function FeaturedCard(p: ProductCardProps) {
               <CountdownTimer endDate={p.flashSaleEndsAt} variant="compact" />
             </div>
           )}
-          <div className="flex gap-2">
-            <Link href={`/marketplace/${p.slug}`} className="relative z-20 flex-1 w-full py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-105 transition-all shadow-lg shadow-purple-500/20 text-center">
-              Get Started
-            </Link>
-            {p.demoUrl && (
-              <Link href={`/demo?product=${p.slug}`} className="relative z-20 px-4 py-2.5 rounded-xl text-sm font-bold glass text-zinc-300 hover:text-white hover:border-purple-500/50 transition-all">
-                ▶
-              </Link>
-            )}
-          </div>
+          <ActionButtons p={p} layout="row" />
         </div>
     </article>
   )
@@ -272,16 +337,7 @@ function SpotlightCard(p: ProductCardProps) {
                 <CountdownTimer endDate={p.flashSaleEndsAt} variant="compact" />
               </div>
             )}
-            <div className="flex gap-2">
-              <Link href={`/marketplace/${p.slug}`} className="relative z-20 flex-1 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-105 transition-all text-center">
-                View Product
-              </Link>
-              {p.demoUrl && (
-                <Link href={`/demo?product=${p.slug}`} className="relative z-20 px-4 py-2.5 rounded-xl text-sm glass text-zinc-300 hover:border-purple-500/50 transition-all">
-                  ▶ Demo
-                </Link>
-              )}
-            </div>
+            <ActionButtons p={p} layout="row" />
           </div>
         </div>
     </article>
@@ -290,10 +346,12 @@ function SpotlightCard(p: ProductCardProps) {
 
 // ── COMPACT VARIANT ──────────────────────────────────────────────────────────
 function CompactCard(p: ProductCardProps) {
+  const isSoldOut = p.soldOut ?? (p.hasInventory && p.inventoryCount !== undefined && p.inventoryCount <= 0)
   return (
-    <Link href={`/marketplace/${p.slug}`}>
-      <article className="group flex items-center gap-3 glass rounded-xl p-3 transition-all hover:border-purple-500/40 cursor-pointer">
-        <div className="w-12 h-12 rounded-xl bg-zinc-900 overflow-hidden flex-shrink-0">
+    <article className="group glass rounded-xl p-3 transition-all hover:border-purple-500/40 cursor-pointer">
+      <div className="flex items-center gap-3">
+        <Link href={`/marketplace/${p.slug}`} className="absolute inset-0 z-10" aria-label={`View ${p.name}`} />
+        <div className="w-12 h-12 rounded-xl bg-zinc-900 overflow-hidden flex-shrink-0 relative">
           {p.thumbnailUrl ? (
             <img src={p.thumbnailUrl} alt={p.name} className="w-full h-full object-cover" />
           ) : (
@@ -310,8 +368,9 @@ function CompactCard(p: ProductCardProps) {
         <div className="flex-shrink-0 text-right">
           <PriceDisplay price={p.startingPrice} discount={p.discountPrice} flash={p.flashSalePrice} flashEnd={p.flashSaleEndsAt} currency={p.currency} interval={p.interval} />
         </div>
-      </article>
-    </Link>
+      </div>
+      <ActionButtons p={p} layout="row" />
+    </article>
   )
 }
 

@@ -48,5 +48,5 @@ export default async function CheckoutSuccessPage({
     invoiceId: order.invoices[0]?.id ?? null,
   }
 
-  return <SuccessClient order={serializedOrder} />
+  return <SuccessClient order={serializedOrder} userId={session.user.id} />
 }

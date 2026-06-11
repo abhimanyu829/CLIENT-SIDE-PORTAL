@@ -1,5 +1,4 @@
 import { Metadata } from "next"
-import { notFound } from "next/navigation"
 import Link from "next/link"
 import { db } from "@/lib/db"
 import { ProductStatus, CampaignStatus } from "@prisma/client"
@@ -8,87 +7,137 @@ import ProductDetailClient from "./ProductDetailClient"
 interface Props { params: Promise<{ slug: string }> }
 
 async function getProduct(slug: string) {
-  const product = await db.product.findFirst({
-    where: { slug, status: ProductStatus.PUBLISHED },
-    include: {
-      tiers: { orderBy: { price: "asc" } },
-      reviews: {
-        where: { status: "APPROVED" as any },
-        orderBy: [{ helpfulCount: "desc" }, { createdAt: "desc" }],
-        take: 10,
-        include: { user: { select: { id: true, name: true, avatarUrl: true } } },
-      },
-      versions: { orderBy: { createdAt: "desc" }, take: 5 },
-      vendor: {
-        select: {
-          id: true,
-          slug: true,
-          displayName: true,
-          status: true,
-          type: true,
-          sellerScore: true,
-          averageRating: true,
-          totalSales: true,
-          badges: true,
-          logoUrl: true,
+  try {
+    const product = await db.product.findFirst({
+      where: { slug, status: ProductStatus.AVAILABLE },
+      include: {
+        tiers: { orderBy: { price: "asc" } },
+        reviews: {
+          where: { status: "APPROVED" as any },
+          orderBy: [{ helpfulCount: "desc" }, { createdAt: "desc" }],
+          take: 10,
+          include: { user: { select: { id: true, name: true, avatarUrl: true } } },
         },
+        versions: { orderBy: { createdAt: "desc" }, take: 5 },
+        vendor: {
+          select: {
+            id: true,
+            slug: true,
+            displayName: true,
+            status: true,
+            type: true,
+            sellerScore: true,
+            averageRating: true,
+            totalSales: true,
+            badges: true,
+            logoUrl: true,
+          },
+        },
+        _count: { select: { reviews: true, subscriptions: true } },
       },
-      _count: { select: { reviews: true, subscriptions: true } },
-    },
-  })
-  if (!product) return null
-
-  // Increment view count async (fire-and-forget)
-  db.product.update({ where: { id: product.id }, data: { viewCount: { increment: 1 } } }).catch(() => {})
-  return product
+    })
+    if (!product) return null
+    // Increment view count async (fire-and-forget)
+    db.product.update({ where: { id: product.id }, data: { viewCount: { increment: 1 } } }).catch(() => {})
+    return product
+  } catch (err: any) {
+    // On cold-start DB errors, return a sentinel so the page renders a retry screen
+    if (
+      err?.code === "P1001" ||
+      err?.constructor?.name === "PrismaClientInitializationError" ||
+      err?.message?.includes("Can't reach database server")
+    ) {
+      console.warn("[marketplace/[slug]] DB not ready yet — returning null")
+      return null
+    }
+    throw err
+  }
 }
 
 async function getRelated(type: string, excludeId: string) {
-  return db.product.findMany({
-    where: { type: type as any, status: ProductStatus.PUBLISHED, id: { not: excludeId } },
-    take: 3,
-    include: { tiers: { take: 1, orderBy: { price: "asc" } } },
-  })
+  try {
+    return db.product.findMany({
+      where: { type: type as any, status: ProductStatus.AVAILABLE, id: { not: excludeId } },
+      take: 3,
+      include: { tiers: { take: 1, orderBy: { price: "asc" } } },
+    })
+  } catch {
+    return []
+  }
 }
 
 async function getActiveCampaignForProduct(productId: string) {
-  const now = new Date()
-  return db.campaign.findFirst({
-    where: {
-      status: CampaignStatus.ACTIVE,
-      startsAt: { lte: now },
-      endsAt: { gte: now },
-      OR: [
-        { applicableProductIds: { has: productId } },
-        { applicableProductIds: { isEmpty: true } },
-      ],
-    },
-    select: { id: true, bannerText: true, ctaText: true, discountPercent: true, endsAt: true, flatDiscount: true },
-  })
+  try {
+    const now = new Date()
+    return db.campaign.findFirst({
+      where: {
+        status: CampaignStatus.ACTIVE,
+        startsAt: { lte: now },
+        endsAt: { gte: now },
+        OR: [
+          { applicableProductIds: { has: productId } },
+          { applicableProductIds: { isEmpty: true } },
+        ],
+      },
+      select: { id: true, bannerText: true, ctaText: true, discountPercent: true, endsAt: true, flatDiscount: true },
+    })
+  } catch {
+    return null
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const product = await db.product.findFirst({
-    where: { slug },
-    select: { name: true, description: true, thumbnailUrl: true, seoTitle: true, seoDescription: true },
-  })
-  if (!product) return { title: "Not Found" }
-  return {
-    title: product.seoTitle || `${product.name} — NexusAI Marketplace`,
-    description: product.seoDescription || product.description,
-    openGraph: {
-      title: product.seoTitle || product.name,
+  try {
+    const product = await db.product.findFirst({
+      where: { slug },
+      select: { name: true, description: true, thumbnailUrl: true, seoTitle: true, seoDescription: true },
+    })
+    if (!product) return { title: "Not Found" }
+    return {
+      title: product.seoTitle || `${product.name} — NexusAI Marketplace`,
       description: product.seoDescription || product.description,
-      images: product.thumbnailUrl ? [{ url: product.thumbnailUrl }] : [],
-    },
+      openGraph: {
+        title: product.seoTitle || product.name,
+        description: product.seoDescription || product.description,
+        images: product.thumbnailUrl ? [{ url: product.thumbnailUrl }] : [],
+      },
+    }
+  } catch {
+    return { title: "NexusAI Marketplace" }
   }
 }
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params
-  const [product, ] = await Promise.all([getProduct(slug)])
-  if (!product) notFound()
+  const product = await getProduct(slug)
+
+  // getProduct returns null both when the product doesn't exist AND on DB cold-start.
+  // We can't distinguish them here, but the retry client in lib/db.ts will have logged
+  // a warning. Show a friendly "service starting" page — the user can refresh.
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-black text-white grid place-items-center px-4">
+        <div className="text-center max-w-md">
+          <div className="text-5xl mb-6">⚡</div>
+          <h1 className="text-2xl font-black mb-3">Just a moment…</h1>
+          <p className="text-zinc-400 mb-6">
+            The marketplace is warming up. This usually takes less than 10 seconds on first load.
+          </p>
+          <a
+            href={`/marketplace/${slug}`}
+            className="inline-block bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold px-8 py-3 rounded-xl hover:scale-105 transition-all"
+          >
+            Refresh page
+          </a>
+          <p className="text-xs text-zinc-600 mt-4">
+            If this persists, the product may not exist or has been removed.{" "}
+            <a href="/marketplace" className="underline hover:text-zinc-400">Back to marketplace</a>
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const [related, campaign] = await Promise.all([
     getRelated(product.type, product.id),
@@ -112,6 +161,10 @@ export default async function ProductDetailPage({ params }: Props) {
     screenshotUrls: product.screenshotUrls,
     videoUrls: product.videoUrls,
     demoUrl: product.demoUrl,
+    previewEnabled: product.previewEnabled ?? false,
+    previewConfig: product.previewConfig ?? {},
+    inventoryEnabled: product.inventoryEnabled ?? false,
+    inventoryCount: product.inventoryCount ?? 0,
     documentationUrl: product.documentationUrl,
     features: product.features,
     faqs: product.faqs,

@@ -1,6 +1,10 @@
-import "next-auth"
-import "next-auth/jwt"
+import NextAuth, { DefaultSession } from "next-auth"
+import { JWT } from "next-auth/jwt"
 
+/**
+ * Legacy NextAuth type augmentations — kept for backward compatibility
+ * during Clerk migration. New code should use AppUser from lib/auth-types.ts.
+ */
 declare module "next-auth" {
   interface Session {
     user: {
@@ -12,13 +16,11 @@ declare module "next-auth" {
       permissions: string[]
       isVerified?: boolean
       avatarUrl?: string | null
-    }
+    } & DefaultSession["user"]
   }
 
   interface User {
-    id: string
-    role: string
-    permissions?: string[]
+    role?: string
     isVerified?: boolean
     avatarUrl?: string | null
   }

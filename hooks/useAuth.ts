@@ -1,60 +1,79 @@
 "use client"
 
-import { useSession, signIn, signOut } from "next-auth/react"
-import { useCallback } from "react"
+import { useUser, useAuth as useClerkAuth } from "@clerk/nextjs"
+import { useCallback, useEffect, useState } from "react"
 
 export interface AuthUser {
+  /** Internal NexusAI DB user ID (UUID) — use for all business logic */
   id: string
-  name: string
   email: string
-  image?: string
+  name: string | null
+  /** DB-sourced role — NEVER from Clerk metadata */
   role: string
+  permissions: string[]
+  isVerified: boolean
+  avatarUrl?: string | null
+  phone?: string | null
+  clerkUserId?: string | null
 }
 
 export function useAuth() {
-  const { data: session, status } = useSession()
+  const { user: clerkUser, isLoaded: clerkLoaded } = useUser()
+  const { signOut, isSignedIn } = useClerkAuth()
+  const [internalUser, setInternalUser] = useState<AuthUser | null>(null)
+  const [isLoadingInternal, setIsLoadingInternal] = useState(true)
 
-  const user: AuthUser | null = session?.user
-    ? {
-        id: session.user.id as string,
-        name: session.user.name ?? "",
-        email: session.user.email ?? "",
-        image: session.user.image ?? undefined,
-        role: (session.user as any).role ?? "CLIENT",
-      }
-    : null
+  useEffect(() => {
+    if (!clerkLoaded) return
 
-  const isAuthenticated = status === "authenticated"
-  const isLoading = status === "loading"
-  const isAdmin = user?.role === "ADMIN"
+    if (!isSignedIn) {
+      setInternalUser(null)
+      setIsLoadingInternal(false)
+      return
+    }
 
-  const login = useCallback(
-    async (provider?: string, credentials?: { email: string; password: string }) => {
-      if (provider) {
-        return signIn(provider, { callbackUrl: "/dashboard" })
-      }
-      if (credentials) {
-        return signIn("credentials", {
-          ...credentials,
-          callbackUrl: "/dashboard",
-        })
-      }
-    },
-    []
-  )
+    // Fetch authoritative user data from DB via /api/auth/me
+    // This is the ONLY source of truth for role and permissions
+    setIsLoadingInternal(true)
+    fetch("/api/auth/me")
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to fetch user")
+        return r.json()
+      })
+      .then((data) => {
+        if (data.user) setInternalUser(data.user)
+      })
+      .catch(() => {
+        // If /api/auth/me fails, try to sync first then retry
+        fetch("/api/auth/clerk-sync", { method: "POST" })
+          .then(() => fetch("/api/auth/me"))
+          .then((r) => r.json())
+          .then((data) => { if (data.user) setInternalUser(data.user) })
+          .catch(console.error)
+      })
+      .finally(() => setIsLoadingInternal(false))
+  }, [clerkUser?.id, isSignedIn, clerkLoaded])
+
+  // isAdmin checks DB role — never Clerk metadata
+  const isAdmin =
+    internalUser?.role === "SUPER_ADMIN" || internalUser?.role === "SUB_ADMIN"
+  const isSuperAdmin = internalUser?.role === "SUPER_ADMIN"
+  const isAuthenticated = isSignedIn ?? false
+  const isLoading = !clerkLoaded || isLoadingInternal
 
   const logout = useCallback(async () => {
-    return signOut({ callbackUrl: "/" })
-  }, [])
+    setInternalUser(null)
+    await signOut({ redirectUrl: "/" })
+  }, [signOut])
 
   return {
-    user,
-    session,
-    status,
+    user: internalUser,
+    clerkUser,
+    isLoaded: clerkLoaded && !isLoadingInternal,
     isAuthenticated,
     isLoading,
     isAdmin,
-    login,
+    isSuperAdmin,
     logout,
   }
 }

@@ -49,7 +49,10 @@ enum ProductType {
 
 enum ProductStatus {
   DRAFT
-  PUBLISHED
+  AVAILABLE
+  RESERVED
+  EXPIRED
+  REPUBLISH_PENDING
   SCHEDULED
   ARCHIVED
   HIDDEN
@@ -88,6 +91,8 @@ enum PaymentStatus {
 enum PaymentGateway {
   STRIPE
   RAZORPAY
+  PAYTM
+  PHONEPE
   PAYPAL
   CRYPTO
   MANUAL
@@ -166,6 +171,7 @@ enum CartStatus {
 enum OrderStatus {
   DRAFT
   PENDING
+  AWAITING_VERIFICATION
   PAID
   PROCESSING
   FULFILLED
@@ -262,6 +268,8 @@ enum AIUsageStatus {
 enum WebhookSource {
   STRIPE
   RAZORPAY
+  PAYTM
+  PHONEPE
   INTERNAL
 }
 
@@ -275,6 +283,7 @@ enum WebhookStatus {
 model User {
   id               String                       @id @default(cuid())
   email            String                       @unique
+  clerkUserId      String?                      @unique
   name             String
   passwordHash     String?
   role             Role                         @default(CLIENT)
@@ -335,6 +344,8 @@ model User {
   demoSessions    DemoSession[]
   serviceRequests ServiceEngagement[]   @relation("ClientServiceEngagements")
   metricEvents    PlatformMetricEvent[]
+  previewSessions PreviewSession[]
+  paymentVerifications PaymentVerification[]
 
   @@index([email])
   @@index([role])
@@ -506,6 +517,10 @@ model Product {
   // HIDE | SHOW_SOLDOUT | SHOW_WAITLIST
   techStack          String[]
   tags               String[]
+  // Reservation Lifecycle
+  assignedUserId     String?
+  assignedEmail      String?
+  reservedUntil      DateTime?
   // SEO
   seoTitle           String?
   seoDescription     String?
@@ -542,6 +557,7 @@ model Product {
   serviceEngagements ServiceEngagement[]
   agentDeployments   AgentDeployment[]
   metricEvents       PlatformMetricEvent[]
+  previewSessions    PreviewSession[]
 
   @@index([slug])
   @@index([vendorId])
@@ -549,6 +565,52 @@ model Product {
   @@index([averageRating])
   @@index([isFeatured])
   @@index([category, type])
+}
+
+// ── Preview Sessions (DB-persisted, user+product scoped) ──────────────────────
+// Sessions survive login/logout and enforce per-product preview quotas.
+// Admin configures duration and quota via Product.previewConfig JSON.
+model PreviewSession {
+  id          String   @id @default(cuid())
+  userId      String
+  productId   String
+  /// ACTIVE | EXPIRED | CONVERTED
+  status      String   @default("ACTIVE")
+  expiresAt   DateTime
+  /// Stores resolved config snapshot at session creation time
+  config      Json     @default("{}")
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([productId])
+  @@index([expiresAt])
+  @@index([userId, productId])
+}
+
+enum VerificationStatus {
+  AWAITING_VERIFICATION
+  APPROVED
+  REJECTED
+}
+
+model PaymentVerification {
+  id                 String             @id @default(cuid())
+  orderId            String             @unique
+  userId             String
+  utrNumber          String             @unique
+  screenshotUrl      String?
+  verificationStatus VerificationStatus @default(AWAITING_VERIFICATION)
+  submittedAt        DateTime           @default(now())
+  verifiedAt         DateTime?
+  verifiedBy         String?            // Admin User ID
+  
+  order              Order              @relation(fields: [orderId], references: [id])
+  user               User               @relation(fields: [userId], references: [id])
 }
 
 model ProductTier {
@@ -676,6 +738,7 @@ model Subscription {
   trialEndsAt        DateTime?
   stripeSubId        String?     @unique
   razorpaySubId      String?     @unique
+  metadata           Json?       @default("{}")
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
   user               User        @relation(fields: [userId], references: [id])
@@ -813,13 +876,14 @@ model Order {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  user         User                  @relation(fields: [userId], references: [id])
-  cart         Cart?                 @relation(fields: [cartId], references: [id])
-  items        OrderItem[]
-  payments     Payment[]
-  invoices     Invoice[]
-  entitlements CustomerEntitlement[]
-  metricEvents PlatformMetricEvent[]
+  user                User                  @relation(fields: [userId], references: [id])
+  cart                Cart?                 @relation(fields: [cartId], references: [id])
+  items               OrderItem[]
+  payments            Payment[]
+  paymentVerification PaymentVerification?
+  invoices            Invoice[]
+  entitlements        CustomerEntitlement[]
+  metricEvents        PlatformMetricEvent[]
 
   @@index([userId])
   @@index([status])

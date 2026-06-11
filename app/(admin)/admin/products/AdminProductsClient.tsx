@@ -11,7 +11,7 @@ import {
   createProduct, updateProduct, createTier, updateTier,
   updateProductStatus, toggleProductBadge, deleteProduct,
   updateProductSEO, restoreProductVersion, addProductVersion,
-  deleteTier, duplicateProduct
+  deleteTier, duplicateProduct, republishProduct
 } from "./actions"
 import {
   Package, Plus, Settings2, Tag, Eye, EyeOff, Edit, X,
@@ -20,7 +20,8 @@ import {
   ChevronDown, ChevronUp, History, Search, Filter, MoreVertical,
   CheckCircle, Clock, Image, Video, FileText, Code2, Shield,
   Users, Database, Cpu, BarChart2, ExternalLink, ArrowUpRight,
-  RefreshCw, Upload, Link, Check, Info, FlameKindling, Award
+  RefreshCw, Upload, Link, Check, Info, FlameKindling, Award,
+  Calendar, CalendarDays, Infinity, CreditCard, Lock, XCircle
 } from "lucide-react"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -89,6 +90,8 @@ interface Product {
   videoUrls?: string[]
   demoUrl?: string | null
   documentationUrl?: string | null
+  previewEnabled: boolean
+  previewConfig?: any
   tags?: string[]
   seoTitle?: string | null
   seoDescription?: string | null
@@ -105,6 +108,9 @@ interface Product {
   version: number
   tiers: Tier[]
   versions?: ProductVersion[]
+  assignedUserId?: string | null
+  assignedEmail?: string | null
+  reservedUntil?: Date | null
 }
 
 interface Props {
@@ -115,7 +121,10 @@ interface Props {
 
 const STATUS_CONFIG: Record<ProductStatus, { label: string; color: string; icon: React.ReactNode }> = {
   DRAFT: { label: "Draft", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400", icon: <Edit className="h-3 w-3" /> },
-  PUBLISHED: { label: "Published", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400", icon: <CheckCircle className="h-3 w-3" /> },
+  AVAILABLE: { label: "Available", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400", icon: <CheckCircle className="h-3 w-3" /> },
+  RESERVED: { label: "Reserved", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400", icon: <Lock className="h-3 w-3" /> },
+  EXPIRED: { label: "Expired", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400", icon: <XCircle className="h-3 w-3" /> },
+  REPUBLISH_PENDING: { label: "Republish Queue", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400", icon: <RefreshCw className="h-3 w-3" /> },
   SCHEDULED: { label: "Scheduled", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400", icon: <Clock className="h-3 w-3" /> },
   ARCHIVED: { label: "Archived", color: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400", icon: <Archive className="h-3 w-3" /> },
   HIDDEN: { label: "Hidden", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400", icon: <EyeOff className="h-3 w-3" /> },
@@ -186,7 +195,7 @@ export default function AdminProductsClient({ initialProducts }: Props) {
   const [historyModal, setHistoryModal] = useState<{ product: Product } | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<{ productId: string; name: string } | null>(null)
   const [activeProduct, setActiveProduct] = useState<Product | null>(null)
-  const [activeTab, setActiveTab] = useState<"basic" | "media" | "features" | "seo">("basic")
+  const [activeTab, setActiveTab] = useState<"basic" | "media" | "pricing" | "features" | "seo">("basic")
 
   // Product form
   const [pName, setPName] = useState("")
@@ -209,6 +218,8 @@ export default function AdminProductsClient({ initialProducts }: Props) {
   const [pVideos, setPVideos] = useState("")
   const [pDemoUrl, setPDemoUrl] = useState("")
   const [pDocUrl, setPDocUrl] = useState("")
+  const [pPreviewEnabled, setPPreviewEnabled] = useState(false)
+  const [pPreviewConfig, setPPreviewConfig] = useState<any>(null)
   const [pSeoTitle, setPSeoTitle] = useState("")
   const [pSeoDesc, setPSeoDesc] = useState("")
   const [pSeoKeywords, setPSeoKeywords] = useState("")
@@ -244,9 +255,12 @@ export default function AdminProductsClient({ initialProducts }: Props) {
   const [tRegEUR, setTRegEUR] = useState("")
   const [tRegGBP, setTRegGBP] = useState("")
   const [tAiModel, setTAiModel] = useState("")
-  const [tAiMult, setTAiMult] = useState("1.0")
+  const [tAiMult, setTAiMult] = useState("1")
   const [tPriceNote, setTPriceNote] = useState("")
   const [tSortOrder, setTSortOrder] = useState("0")
+  const [tStripePriceId, setTStripePriceId] = useState("")
+  const [tStripeProductId, setTStripeProductId] = useState("")
+  const [tRazorpayPlanId, setTRazorpayPlanId] = useState("")
 
   // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -290,6 +304,8 @@ export default function AdminProductsClient({ initialProducts }: Props) {
       setPVideos((product.videoUrls || []).join(", "))
       setPDemoUrl(product.demoUrl || "")
       setPDocUrl(product.documentationUrl || "")
+      setPPreviewEnabled(product.previewEnabled || false)
+      setPPreviewConfig(product.previewConfig || null)
       setPSeoTitle(product.seoTitle || "")
       setPSeoDesc(product.seoDescription || "")
       setPSeoKeywords((product.seoKeywords || []).join(", "))
@@ -301,7 +317,7 @@ export default function AdminProductsClient({ initialProducts }: Props) {
       setPType("SAAS"); setPCategory(""); setPSubcategory(""); setPStatus("DRAFT"); setPScheduledAt("")
       setPIsPremium(false); setPPoints(0); setPTags("")
       setPThumbnail(""); setPIcon(""); setPBanner(""); setPScreenshots(""); setPVideos("")
-      setPDemoUrl(""); setPDocUrl("")
+      setPDemoUrl(""); setPDocUrl(""); setPPreviewEnabled(false); setPPreviewConfig(null)
       setPSeoTitle(""); setPSeoDesc(""); setPSeoKeywords(""); setPBadgeText("")
       setPVersionNote("")
     }
@@ -325,12 +341,15 @@ export default function AdminProductsClient({ initialProducts }: Props) {
       setTSeatLimit(String(tier.limits?.seatLimit || ""))
       setTStorageGB(String(tier.limits?.storageGB || ""))
       setTFlags((tier.limits?.featureFlags || []).join(", "))
-      setTRegINR(String(tier.limits?.regionalPricing?.INR || ""))
-      setTRegEUR(String(tier.limits?.regionalPricing?.EUR || ""))
-      setTRegGBP(String(tier.limits?.regionalPricing?.GBP || ""))
+      setTRegINR(tier.limits?.regionalPricing?.INR?.toString() || "")
+      setTRegEUR(tier.limits?.regionalPricing?.EUR?.toString() || "")
+      setTRegGBP(tier.limits?.regionalPricing?.GBP?.toString() || "")
       setTAiModel(tier.limits?.aiConfig?.model || "")
       setTAiMult(String(tier.limits?.aiConfig?.tokenMultiplier || 1.0))
       setTPriceNote(""); setTSortOrder(String(tier.sortOrder || 0))
+      setTStripePriceId((tier as any).stripePriceId || "")
+      setTStripeProductId((tier as any).stripeProductId || "")
+      setTRazorpayPlanId((tier as any).razorpayPlanId || "")
     } else {
       setTName(""); setTDesc(""); setTPrice(""); setTDiscountPrice("")
       setTCurrency("USD"); setTInterval("MONTHLY"); setTFeatures("")
@@ -338,9 +357,10 @@ export default function AdminProductsClient({ initialProducts }: Props) {
       setTTrialDays("0"); setTIntroPrice(""); setTIntroDays("")
       setTFlashPrice(""); setTFlashEnds(""); setTTaxRate("0"); setTTaxInclusive(false)
       setTSetupFee(""); setTMaxSeats("")
-      setTApiQuota(""); setTTokenLimit(""); setTSeatLimit(""); setTStorageGB("")
-      setTFlags(""); setTRegINR(""); setTRegEUR(""); setTRegGBP("")
+      setTApiQuota(""); setTTokenLimit(""); setTSeatLimit(""); setTStorageGB(""); setTFlags("")
+      setTRegINR(""); setTRegEUR(""); setTRegGBP("")
       setTAiModel(""); setTAiMult("1.0"); setTPriceNote(""); setTSortOrder("0")
+      setTStripePriceId(""); setTStripeProductId(""); setTRazorpayPlanId("")
     }
   }
 
@@ -360,6 +380,7 @@ export default function AdminProductsClient({ initialProducts }: Props) {
         screenshotUrls: pScreenshots.split(",").map(s => s.trim()).filter(Boolean),
         videoUrls: pVideos.split(",").map(v => v.trim()).filter(Boolean),
         demoUrl: pDemoUrl || null, documentationUrl: pDocUrl || null,
+        previewEnabled: pPreviewEnabled, previewConfig: pPreviewConfig,
         seoTitle: pSeoTitle || null, seoDescription: pSeoDesc || null,
         seoKeywords: pSeoKeywords.split(",").map(k => k.trim()).filter(Boolean),
         badgeText: pBadgeText || null,
@@ -416,8 +437,11 @@ export default function AdminProductsClient({ initialProducts }: Props) {
         setupFee: tSetupFee ? Number(tSetupFee) : null,
         maxSeats: tMaxSeats ? Number(tMaxSeats) : null,
         isPopular: tIsPopular, isRecommended: tIsRecommended, isActive: tIsActive,
-        sortOrder: Number(tSortOrder) || 0,
-        priceChangeReason: tPriceNote || "Admin update",
+        sortOrder: Number(tSortOrder),
+        priceChangeReason: tPriceNote,
+        stripePriceId: tStripePriceId || undefined,
+        stripeProductId: tStripeProductId || undefined,
+        razorpayPlanId: tRazorpayPlanId || undefined,
       }
 
       if (tierModal?.mode === "create" && tierModal.productId) {
@@ -435,6 +459,53 @@ export default function AdminProductsClient({ initialProducts }: Props) {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleGatewaySync = async () => {
+    if (!tName || !tPrice) {
+      toast({ title: "Error", description: "Name and Price are required to sync with gateway", variant: "destructive" })
+      return
+    }
+    setLoading(true)
+    try {
+      const res = await fetch("/api/admin/tiers/sync-gateway", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: tName,
+          description: tDesc,
+          price: Number(tPrice),
+          currency: tCurrency,
+          interval: tInterval,
+          productId: tierModal?.productId
+        })
+      })
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(errorText || "Failed to sync with gateway")
+      }
+      const data = await res.json()
+      if (data.stripePriceId) setTStripePriceId(data.stripePriceId)
+      if (data.stripeProductId) setTStripeProductId(data.stripeProductId)
+      if (data.razorpayPlanId) setTRazorpayPlanId(data.razorpayPlanId)
+      toast({ title: "✅ Gateway Sync Success", description: "Successfully created plan in Payment Gateways." })
+    } catch (e: any) {
+      toast({ title: "Sync Failed", description: e.message, variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRepublish = async (productId: string) => {
+    startTransition(async () => {
+      try {
+        const updated = await republishProduct(productId)
+        setProducts(prev => prev.map(p => p.id === productId ? { ...p, status: updated.status, assignedUserId: null, assignedEmail: null, reservedUntil: null } : p))
+        toast({ title: "Republished successfully", description: "Product is now available on the marketplace." })
+      } catch (err: any) {
+        toast({ title: "Republish Failed", description: err.message, variant: "destructive" })
+      }
+    })
   }
 
   const handleStatusChange = async (productId: string, status: ProductStatus) => {
@@ -538,6 +609,20 @@ export default function AdminProductsClient({ initialProducts }: Props) {
               {product.category && <span>• {product.category}</span>}
               <span>• v{product.version}</span>
               <span>• {tiers.length} plan{tiers.length !== 1 ? "s" : ""}</span>
+              {product.assignedUserId && (
+                <div className="w-full text-xs mt-2 p-2 bg-muted rounded-lg flex flex-col gap-1 max-w-sm">
+                  <div className="flex justify-between items-center text-muted-foreground">
+                    <span className="flex items-center gap-1"><Users className="h-3 w-3" /> Customer:</span>
+                    <span className="font-medium text-foreground">{product.assignedEmail ?? "Unknown User"}</span>
+                  </div>
+                  {product.reservedUntil && (
+                    <div className="flex justify-between items-center text-muted-foreground">
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> Reserved Until:</span>
+                      <span className="font-medium text-foreground">{new Date(product.reservedUntil).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -553,6 +638,12 @@ export default function AdminProductsClient({ initialProducts }: Props) {
                 <option key={val} value={val}>{cfg.label}</option>
               ))}
             </select>
+
+            {product.status === "REPUBLISH_PENDING" && (
+              <Button size="sm" variant="secondary" className="bg-purple-100 text-purple-900 hover:bg-purple-200" onClick={() => handleRepublish(product.id)}>
+                <RefreshCw className="h-3.5 w-3.5 mr-1" /> Republish
+              </Button>
+            )}
 
             <Button variant="outline" size="sm" onClick={() => openProductModal("edit", product)}>
               <Edit className="h-3.5 w-3.5 mr-1" /> Edit
@@ -749,7 +840,7 @@ export default function AdminProductsClient({ initialProducts }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: "Total Products", val: products.length, color: "text-violet-600" },
-          { label: "Published", val: products.filter(p => p.status === "PUBLISHED").length, color: "text-emerald-600" },
+          { label: "Published", val: products.filter(p => p.status === "AVAILABLE").length, color: "text-emerald-600" },
           { label: "Draft", val: products.filter(p => p.status === "DRAFT").length, color: "text-amber-600" },
           { label: "Featured", val: products.filter(p => p.isFeatured).length, color: "text-amber-500" },
         ].map(stat => (
@@ -794,7 +885,7 @@ export default function AdminProductsClient({ initialProducts }: Props) {
 
             {/* Tabs */}
             <div className="flex border-b border-border px-6 gap-1">
-              {(["basic", "media", "features", "seo"] as const).map(tab => (
+              {(["basic", "media", "features", "seo", "pricing"] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -804,6 +895,7 @@ export default function AdminProductsClient({ initialProducts }: Props) {
                   {tab === "media" && "🖼️ Media"}
                   {tab === "features" && "⚙️ Features"}
                   {tab === "seo" && "🔍 SEO"}
+                  {tab === "pricing" && "💳 Pricing & Plans"}
                 </button>
               ))}
             </div>
@@ -951,6 +1043,61 @@ export default function AdminProductsClient({ initialProducts }: Props) {
                       <Input value={pDocUrl} onChange={e => setPDocUrl(e.target.value)} placeholder="https://docs.yourproduct.com" className="mt-1 font-mono text-xs" />
                     </div>
                   </div>
+
+                  {/* Preview Configuration */}
+                  <div className="border border-white/10 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                        <Eye className="h-3.5 w-3.5" />Live Preview
+                      </label>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={pPreviewEnabled}
+                        onClick={() => setPPreviewEnabled(!pPreviewEnabled)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${pPreviewEnabled ? "bg-purple-500" : "bg-zinc-700"}`}
+                      >
+                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${pPreviewEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
+                      </button>
+                    </div>
+                    {pPreviewEnabled && (
+                      <div className="space-y-3 pl-1">
+                        <div>
+                          <label className="block text-[10px] text-zinc-500 mb-1">Preview App URL *</label>
+                          <Input
+                            placeholder="https://preview.your-app.com"
+                            value={pPreviewConfig?.url ?? ""}
+                            onChange={e => setPPreviewConfig({ ...(pPreviewConfig || {}), url: e.target.value })}
+                            className="text-xs font-mono"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] text-zinc-500 mb-1">Session Timeout (min)</label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={60}
+                              value={pPreviewConfig?.sessionTimeoutMinutes ?? 5}
+                              onChange={e => setPPreviewConfig({ ...(pPreviewConfig || {}), sessionTimeoutMinutes: Number(e.target.value) })}
+                              className="text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-zinc-500 mb-1">Max Previews/User</label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={50}
+                              value={pPreviewConfig?.maxPreviewsPerUser ?? 5}
+                              onChange={e => setPPreviewConfig({ ...(pPreviewConfig || {}), maxPreviewsPerUser: Number(e.target.value) })}
+                              className="text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1014,6 +1161,63 @@ export default function AdminProductsClient({ initialProducts }: Props) {
                       <p className="text-blue-600 text-sm font-medium">{pSeoTitle || pName}</p>
                       <p className="text-xs text-green-700 dark:text-green-500">yoursite.com/products/{pSlug}</p>
                       <p className="text-xs text-muted-foreground mt-1">{pSeoDesc || pDesc}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ─── Pricing & Plans ─── */}
+              {activeTab === "pricing" && (
+                <div className="space-y-4">
+                  {productModal === "create" ? (
+                    <div className="border-2 border-dashed border-border/60 rounded-2xl py-12 text-center bg-muted/10">
+                      <CreditCard className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                      <p className="text-sm font-medium">Save basic product info first</p>
+                      <p className="text-xs text-muted-foreground mt-1">You can configure pricing plans and gateway settings after the product is created.</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="font-bold text-sm">Pricing Plans</h3>
+                          <p className="text-xs text-muted-foreground">Manage subscription tiers, one-time payments, and usage limits.</p>
+                        </div>
+                        <Button size="sm" onClick={() => openTierModal("create", activeProduct!.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8">
+                          <Plus className="h-3.5 w-3.5 mr-1" /> Add Plan
+                        </Button>
+                      </div>
+                      
+                      {(activeProduct?.tiers || []).length === 0 ? (
+                        <div className="border border-border/60 rounded-xl py-8 text-center bg-muted/10">
+                          <p className="text-sm text-muted-foreground">No pricing plans configured yet.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {(activeProduct?.tiers || []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)).map(tier => (
+                            <div key={tier.id} className="border border-border rounded-xl p-3 flex items-center justify-between bg-card hover:border-border/80 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${tier.isActive ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-900/30'}`}>
+                                  {tier.interval === "MONTHLY" ? <Calendar className="h-4 w-4" /> : tier.interval === "YEARLY" ? <CalendarDays className="h-4 w-4" /> : tier.interval === "LIFETIME" ? <Infinity className="h-4 w-4" /> : <Tag className="h-4 w-4" />}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-bold text-sm">{tier.name}</p>
+                                    {!tier.isActive && <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-sm bg-zinc-100 text-zinc-500 dark:bg-zinc-800">Draft</span>}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    {tier.currency} {tier.discountPrice ? <><span className="line-through opacity-60">{tier.price}</span> <span>{tier.discountPrice}</span></> : tier.price} / {tier.interval.toLowerCase()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => openTierModal("edit", activeProduct!.id, tier as any)}>
+                                  Configure
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1210,6 +1414,24 @@ export default function AdminProductsClient({ initialProducts }: Props) {
                     <div>
                       <label className="text-[10px] font-semibold text-muted-foreground uppercase">GBP (£)</label>
                       <Input type="number" value={tRegGBP} onChange={e => setTRegGBP(e.target.value)} placeholder="8.99" className="mt-1" />
+                    </div>
+                  </div>
+
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-600 border-b border-border pb-2 pt-2 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><CreditCard className="h-3.5 w-3.5" />Payment Gateway Configuration</span>
+                    <Button variant="outline" size="sm" onClick={handleGatewaySync} disabled={loading || !tName || !tPrice} className="h-6 text-[10px] px-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-200">
+                      Create in Gateway API
+                    </Button>
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase flex items-center gap-1">Stripe Price ID</label>
+                      <Input value={tStripePriceId} onChange={e => setTStripePriceId(e.target.value)} placeholder="price_1NXXXX..." className="mt-1 font-mono text-xs" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase flex items-center gap-1">Razorpay Plan ID</label>
+                      <Input value={tRazorpayPlanId} onChange={e => setTRazorpayPlanId(e.target.value)} placeholder="plan_NXXXXX..." className="mt-1 font-mono text-xs" />
                     </div>
                   </div>
 

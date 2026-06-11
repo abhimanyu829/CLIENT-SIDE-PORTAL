@@ -497,3 +497,170 @@ export async function userHasProductAccess(userId: string, productId: string): P
   })
   return Boolean(entitlement)
 }
+
+// ── Activate Subscription (post-payment) ───────────────────────────────────────
+/**
+ * Atomically activates a subscription after verified payment.
+ * Creates entitlement, sets refund eligibility window, emits events.
+ * Only call this AFTER payment verification (webhook or verify endpoint).
+ */
+export async function activateSubscription(
+  subscriptionId: string,
+  actorId: string
+): Promise<{ success: boolean; subscription: object }> {
+  const current = await db.subscription.findUniqueOrThrow({
+    where: { id: subscriptionId },
+    include: { tier: true, user: true, product: true },
+  })
+
+  // Validate period — if period has expired, set to PAST_DUE instead
+  if (current.currentPeriodEnd && new Date(current.currentPeriodEnd) < new Date()) {
+    await markSubscriptionPastDue(subscriptionId, actorId, "Activation attempted with expired period")
+    return { success: false, subscription: current }
+  }
+
+  const result = await db.$transaction(async (tx) => {
+    const subscription = await tx.subscription.update({
+      where: { id: subscriptionId },
+      data: {
+        status: SubStatus.ACTIVE,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: periodEndFor(current.tier.interval),
+        cancelledAt: null,
+        cancelAtPeriodEnd: false,
+        updatedAt: new Date(),
+      },
+      include: { tier: true, user: true, product: true },
+    })
+
+    await syncEntitlementForSubscription(tx, subscriptionId)
+
+    // Set refund eligibility window (3 hours from now)
+    const refundEligibleUntil = new Date(Date.now() + 3 * 60 * 60 * 1000)
+    await tx.customerEntitlement.updateMany({
+      where: { subscriptionId, userId: current.userId },
+      data: {
+        metadata: {
+          ...((await tx.customerEntitlement.findFirst({
+            where: { subscriptionId, userId: current.userId },
+            select: { metadata: true },
+          }))?.metadata as Record<string, unknown> ?? {}),
+          refundEligibleUntil: refundEligibleUntil.toISOString(),
+          activatedAt: new Date().toISOString(),
+        },
+      },
+    })
+
+    await tx.auditLog.create({
+      data: {
+        userId: actorId,
+        action: "SUBSCRIPTION_ACTIVATED",
+        entity: "Subscription",
+        entityId: subscriptionId,
+        beforeJson: { status: current.status },
+        afterJson: {
+          status: "ACTIVE",
+          refundEligibleUntil: refundEligibleUntil.toISOString(),
+          periodEnd: subscription.currentPeriodEnd?.toISOString(),
+        },
+      },
+    })
+
+    return subscription
+  })
+
+  await emitEvent({
+    type: EVENTS.SUBSCRIPTION_ACTIVATED,
+    timestamp: new Date().toISOString(),
+    actorId,
+    payload: {
+      subscriptionId,
+      userId: current.userId,
+      productId: current.productId,
+      tierId: current.tierId,
+    },
+  })
+  await clearUserAccessCaches(current.userId)
+
+  return { success: true, subscription: result }
+}
+
+// ── Grace Period Management ────────────────────────────────────────────────────
+/**
+ * Marks a PAST_DUE subscription as being in a grace period.
+ * After the grace period expires, the subscription is cancelled.
+ */
+export async function startGracePeriod(
+  subscriptionId: string,
+  actorId: string,
+  reason: string,
+  graceDays = 3
+): Promise<{ success: boolean; gracePeriodEnd: Date }> {
+  const current = await db.subscription.findUniqueOrThrow({
+    where: { id: subscriptionId },
+  })
+
+  const gracePeriodEnd = new Date(Date.now() + graceDays * 24 * 60 * 60 * 1000)
+
+  await db.$transaction(async (tx) => {
+    await tx.subscription.update({
+      where: { id: subscriptionId },
+      data: {
+        status: SubStatus.PAST_DUE,
+        metadata: {
+          ...((current.metadata as Record<string, unknown>) ?? {}),
+          gracePeriodEnd: gracePeriodEnd.toISOString(),
+          gracePeriodReason: reason,
+          gracePeriodStartedAt: new Date().toISOString(),
+        },
+        updatedAt: new Date(),
+      },
+    })
+    await syncEntitlementForSubscription(tx, subscriptionId)
+
+    await tx.auditLog.create({
+      data: {
+        userId: actorId,
+        action: "SUBSCRIPTION_GRACE_PERIOD_STARTED",
+        entity: "Subscription",
+        entityId: subscriptionId,
+        beforeJson: { status: current.status },
+        afterJson: { status: "PAST_DUE", gracePeriodEnd: gracePeriodEnd.toISOString(), reason },
+      },
+    })
+  })
+
+  await emitEvent({
+    type: EVENTS.PAYMENT_FAILED,
+    timestamp: new Date().toISOString(),
+    actorId,
+    payload: { subscriptionId, userId: current.userId, reason, gracePeriodEnd: gracePeriodEnd.toISOString() },
+  })
+  await clearUserAccessCaches(current.userId)
+
+  return { success: true, gracePeriodEnd }
+}
+
+/**
+ * Cancels subscriptions whose grace period has expired.
+ * Should be called by a scheduled job (e.g., daily).
+ */
+export async function cancelExpiredGracePeriods(now = new Date()): Promise<{ cancelled: number }> {
+  const pastDue = await db.subscription.findMany({
+    where: {
+      status: SubStatus.PAST_DUE,
+    },
+    select: { id: true, userId: true, metadata: true },
+  })
+
+  let cancelled = 0
+  for (const sub of pastDue) {
+    const meta = sub.metadata as any
+    if (meta?.gracePeriodEnd && new Date(meta.gracePeriodEnd) < now) {
+      await cancelSubscription(sub.id, "system", "Grace period expired — payment not received")
+      cancelled++
+    }
+  }
+
+  return { cancelled }
+}

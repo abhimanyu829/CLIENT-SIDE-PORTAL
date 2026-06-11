@@ -32,13 +32,14 @@ export async function POST(
     where: { id: refundId },
     include: {
       user: { select: { id: true, email: true, name: true } },
-      payment: true,
     },
   })
 
   if (!refund) {
     return NextResponse.json({ error: "Refund request not found" }, { status: 404 })
   }
+
+  const payment = await db.payment.findUnique({ where: { id: refund.paymentId } })
 
   if (refund.status !== "PENDING") {
     return NextResponse.json({ error: `Refund already ${refund.status}` }, { status: 409 })
@@ -47,11 +48,11 @@ export async function POST(
   let gatewayRefundId: string | undefined
 
   // Attempt gateway refund if not already processed
-  if (refund.payment?.id && !refund.gatewayRefundId) {
+  if (payment?.id && !refund.gatewayRefundId) {
     try {
       const result = await processRefund(
-        refund.payment.id,
-        Number(refund.refundAmount ?? refund.payment.amount),
+        payment.id,
+        Number(refund.refundAmount ?? payment.amount),
         refund.reason,
         adminId
       )
@@ -108,8 +109,8 @@ export async function POST(
 
   // Send confirmation email
   await emailQueue.add(EMAIL_JOBS.SEND_REFUND_CONFIRMATION, {
-    to: refund.user?.email,
-    name: refund.user?.name,
+    to: (refund as any).user?.email,
+    name: (refund as any).user?.name,
     userId: refund.userId,
     productName: "Your product",
     refundAmount: String(refund.refundAmount ?? "0"),

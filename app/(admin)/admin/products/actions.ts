@@ -53,6 +53,8 @@ export async function createProduct(data: {
   videoUrls?: string[]
   demoUrl?: string | null
   documentationUrl?: string | null
+  previewEnabled?: boolean
+  previewConfig?: any
   seoTitle?: string | null
   seoDescription?: string | null
   seoKeywords?: string[]
@@ -83,6 +85,8 @@ export async function createProduct(data: {
         videoUrls: data.videoUrls ?? [],
         demoUrl: data.demoUrl,
         documentationUrl: data.documentationUrl,
+        previewEnabled: data.previewEnabled ?? false,
+        previewConfig: data.previewConfig ?? {},
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,
         seoKeywords: data.seoKeywords ?? [],
@@ -159,6 +163,8 @@ export async function updateProduct(productId: string, data: {
   videoUrls?: string[]
   demoUrl?: string | null
   documentationUrl?: string | null
+  previewEnabled?: boolean
+  previewConfig?: any
   seoTitle?: string | null
   seoDescription?: string | null
   seoKeywords?: string[]
@@ -195,6 +201,8 @@ export async function updateProduct(productId: string, data: {
         videoUrls: data.videoUrls ?? [],
         demoUrl: data.demoUrl,
         documentationUrl: data.documentationUrl,
+        previewEnabled: data.previewEnabled ?? false,
+        previewConfig: data.previewConfig ?? {},
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,
         seoKeywords: data.seoKeywords ?? [],
@@ -259,6 +267,45 @@ export async function updateProduct(productId: string, data: {
 }
 
 // ─── Update Product Status ────────────────────────────────────────────────────────
+
+export async function republishProduct(productId: string) {
+  const admin = await requireAdmin()
+
+  const product = await db.$transaction(async (tx) => {
+    const before = await tx.product.findUniqueOrThrow({ where: { id: productId } })
+    if (before.status !== "REPUBLISH_PENDING") {
+      throw new Error("Only REPUBLISH_PENDING products can be republished.")
+    }
+    
+    const updated = await tx.product.update({
+      where: { id: productId },
+      data: { 
+        status: "AVAILABLE", 
+        lastEditedBy: admin.userId,
+        assignedUserId: null,
+        assignedEmail: null,
+        reservedUntil: null
+      },
+    })
+
+    await tx.auditLog.create({
+      data: {
+        userId: admin.userId,
+        action: "PRODUCT_REPUBLISHED",
+        entity: "Product",
+        entityId: productId,
+        beforeJson: { status: before.status },
+        afterJson: { status: updated.status },
+      },
+    })
+
+    return updated
+  })
+
+  revalidatePath("/admin/products")
+  revalidatePath("/marketplace")
+  return product
+}
 
 export async function updateProductStatus(productId: string, status: ProductStatus) {
   const admin = await requireAdmin()
@@ -376,11 +423,13 @@ export async function duplicateProduct(productId: string) {
         videoUrls: source.videoUrls,
         demoUrl: source.demoUrl,
         documentationUrl: source.documentationUrl,
+        previewEnabled: source.previewEnabled,
+        previewConfig: source.previewConfig as any,
         seoTitle: source.seoTitle,
         seoDescription: source.seoDescription,
         seoKeywords: source.seoKeywords,
-        features: source.features ?? {},
-        techStack: source.techStack,
+        features: (source.features as any) ?? {},
+        techStack: source.techStack as any,
         createdBy: admin.userId,
         lastEditedBy: admin.userId,
         version: 1,
@@ -554,6 +603,9 @@ export async function createTier(productId: string, data: {
   isRecommended?: boolean
   isActive: boolean
   sortOrder?: number
+  stripePriceId?: string
+  stripeProductId?: string
+  razorpayPlanId?: string
 }) {
   const admin = await requireAdmin()
 
@@ -583,6 +635,9 @@ export async function createTier(productId: string, data: {
         isActive: data.isActive,
         sortOrder: data.sortOrder ?? 0,
         version: 1,
+        stripePriceId: data.stripePriceId,
+        stripeProductId: data.stripeProductId,
+        razorpayPlanId: data.razorpayPlanId,
       },
     })
 
@@ -632,14 +687,18 @@ export async function updateTier(tierId: string, data: {
   maxSeats?: number | null
   isPopular: boolean
   isRecommended?: boolean
-  isActive: boolean
+  isActive?: boolean
   sortOrder?: number
   priceChangeReason?: string
+  stripePriceId?: string
+  stripeProductId?: string
+  razorpayPlanId?: string
 }) {
   const admin = await requireAdmin()
 
   const result = await db.$transaction(async (tx) => {
-    const before = await tx.productTier.findUniqueOrThrow({ where: { id: tierId } })
+    const current = await tx.productTier.findUniqueOrThrow({ where: { id: tierId } })
+    const before = { ...current }
 
     const updated = await tx.productTier.update({
       where: { id: tierId },
@@ -663,9 +722,12 @@ export async function updateTier(tierId: string, data: {
         maxSeats: data.maxSeats,
         isPopular: data.isPopular,
         isRecommended: data.isRecommended ?? false,
-        isActive: data.isActive,
-        sortOrder: data.sortOrder ?? 0,
-        version: { increment: 1 },
+        isActive: data.isActive !== undefined ? data.isActive : current.isActive,
+        sortOrder: data.sortOrder !== undefined ? data.sortOrder : current.sortOrder,
+        version: current.version + 1,
+        stripePriceId: data.stripePriceId !== undefined ? data.stripePriceId : current.stripePriceId,
+        stripeProductId: data.stripeProductId !== undefined ? data.stripeProductId : current.stripeProductId,
+        razorpayPlanId: data.razorpayPlanId !== undefined ? data.razorpayPlanId : current.razorpayPlanId,
       },
     })
 
@@ -854,7 +916,6 @@ export async function updateProductInventory(
     data: {
       inventoryEnabled: inventory.inventoryEnabled,
       inventoryCount: inventory.inventoryCount ?? null,
-      lowStockThreshold: inventory.lowStockThreshold ?? null,
       lastEditedBy: admin.userId,
     },
   })

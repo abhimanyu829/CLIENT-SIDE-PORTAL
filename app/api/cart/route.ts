@@ -48,7 +48,14 @@ export async function POST(req: NextRequest) {
     if ((error as Error).message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
-    return NextResponse.json({ error: (error as Error).message }, { status: 400 })
+    const msg = (error as Error).message
+    if (msg === "ALREADY_OWNED") {
+      return NextResponse.json({ error: "You already own this product", code: "ALREADY_OWNED" }, { status: 409 })
+    }
+    if (msg === "SOLD_OUT") {
+      return NextResponse.json({ error: "This product is sold out", code: "SOLD_OUT" }, { status: 409 })
+    }
+    return NextResponse.json({ error: msg }, { status: 400 })
   }
 }
 

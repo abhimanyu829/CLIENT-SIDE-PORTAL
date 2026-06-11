@@ -215,6 +215,12 @@ export default function MyProductsClient({ entitlements }: Props) {
               <a href={`/marketplace/${ent.productSlug}`}>View Product</a>
             </Button>
 
+            {ent.status === "EXPIRED" && (
+              <Button size="sm" className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white" asChild>
+                <a href={`/marketplace/${ent.productSlug}`}>Renew Subscription</a>
+              </Button>
+            )}
+
             {refundEligible && (
               <Button
                 variant="ghost"

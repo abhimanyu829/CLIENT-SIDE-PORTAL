@@ -2,8 +2,10 @@
 
 import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
+import { useClerk, useUser } from "@clerk/nextjs"
 import { useState, useEffect, useCallback, lazy, Suspense } from "react"
 import { usePathname } from "next/navigation"
+import { useCart } from "@/providers/CartProvider"
 
 const SearchModal = lazy(() => import("@/components/marketplace/SearchModal"))
 
@@ -47,7 +49,27 @@ interface AnnouncementData {
 
 export default function Navbar({ announcement }: { announcement?: AnnouncementData | null }) {
   const { data: session, status } = useSession()
+  const { user: clerkUser, isLoaded: clerkLoaded } = useUser()
+  const { signOut: clerkSignOut } = useClerk()
+
+  // Unified: a user is "authenticated" if they have either a Clerk session or NextAuth session
+  const isAuthenticated = !!clerkUser || !!session
+  const isLoading = !clerkLoaded || status === "loading"
+  // Prefer Clerk user data, fall back to NextAuth session data
+  const displayName = clerkUser?.firstName || clerkUser?.fullName || session?.user?.name || null
+  const userRole = (session?.user as any)?.role as string | undefined
+
+  // Unified logout: clears both Clerk and NextAuth sessions
+  const handleSignOut = async () => {
+    try {
+      await clerkSignOut({ redirectUrl: '/' })
+    } catch {
+      // Clerk not applicable for this user
+    }
+    await signOut({ callbackUrl: '/' })
+  }
   const pathname = usePathname()
+  const { itemCount } = useCart()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -159,6 +181,11 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
             </Link>
             <Link href="/cart" className={`group relative px-3 py-2 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${pathname === "/cart" ? "text-white/95" : "text-white/55 hover:text-white/95"}`}>
               Cart
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center leading-none">
+                  {itemCount > 99 ? "99+" : itemCount}
+                </span>
+              )}
               <span className={`absolute bottom-[-4px] left-0 h-[1.5px] bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 ${pathname === "/cart" ? "w-full" : "w-0 group-hover:w-full"}`} />
             </Link>
           </nav>
@@ -172,14 +199,14 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
               <kbd className="ml-2 text-[10px] text-zinc-700 glass px-1.5 py-0.5 rounded">⌘K</kbd>
             </button>
 
-            {status === "loading" ? (
+            {isLoading ? (
               <div className="flex gap-2">
                 <div className="h-8 w-20 rounded-xl bg-white/5 animate-pulse" />
                 <div className="h-8 w-24 rounded-xl bg-white/5 animate-pulse" />
               </div>
-            ) : session ? (
+            ) : isAuthenticated ? (
               <>
-                {(session.user?.role === "SUPER_ADMIN" || session.user?.role === "SUB_ADMIN" || session.user?.role === "ADMIN") && (
+                {(userRole === "SUPER_ADMIN" || userRole === "SUB_ADMIN" || userRole === "ADMIN") && (
                   <Link href="/admin">
                     <button className="text-amber-400/80 rounded-xl px-4 py-2 text-sm font-semibold transition-colors hover:text-amber-400 hover:bg-amber-400/10">
                       Admin Panel
@@ -189,7 +216,7 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
                 <Link href="/dashboard"><button className="text-white/60 rounded-xl px-4 py-2 text-sm font-semibold transition-colors hover:text-white hover:bg-white/5">Dashboard</button></Link>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white cursor-pointer">
-                    {session.user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    {(displayName?.charAt(0) || "U").toUpperCase()}
                   </div>
                 </div>
               </>
@@ -245,14 +272,14 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
               <span>💰</span><span className="text-sm font-medium">Pricing</span>
             </Link>
             <Link href="/cart" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all">
-              <span className="text-sm font-medium">Cart</span>
+              <span>🛒</span><span className="text-sm font-medium">Cart{itemCount > 0 ? ` (${itemCount})` : ""}</span>
             </Link>
           </nav>
 
           <div className="flex flex-col gap-3 pt-6 border-t border-white/5">
-            {session ? (
+            {isAuthenticated ? (
               <>
-                {(session.user?.role === "SUPER_ADMIN" || session.user?.role === "SUB_ADMIN" || session.user?.role === "ADMIN") && (
+                {(userRole === "SUPER_ADMIN" || userRole === "SUB_ADMIN" || userRole === "ADMIN") && (
                   <Link href="/admin">
                     <button className="w-full py-3 rounded-xl font-bold text-amber-400 bg-amber-400/10">
                       Admin Panel
@@ -260,7 +287,7 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
                   </Link>
                 )}
                 <Link href="/dashboard"><button className="w-full py-3 rounded-xl font-bold text-zinc-300 bg-white/5">Dashboard</button></Link>
-                <button onClick={() => signOut()} className="w-full py-3 rounded-xl font-bold text-red-400 bg-red-500/10">Sign out</button>
+                <button onClick={handleSignOut} className="w-full py-3 rounded-xl font-bold text-red-400 bg-red-500/10">Sign out</button>
               </>
             ) : (
               <>

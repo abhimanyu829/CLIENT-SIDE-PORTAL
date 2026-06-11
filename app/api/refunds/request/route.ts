@@ -20,14 +20,18 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = session.user.id
-  let body: { entitlementId?: string; reason?: string }
+  let body: { entitlementId?: string; reason?: string; refundReasonCategory?: string; partialAmount?: number }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
   }
 
-  const { entitlementId, reason } = body
+  const { entitlementId, reason, refundReasonCategory, partialAmount } = body
+
+  // Validate reason category
+  const validCategories = ["BUG", "NOT_AS_DESCRIBED", "ACCIDENTAL", "NO_LONGER_NEEDED", "OTHER"]
+  const category = validCategories.includes(refundReasonCategory ?? "") ? refundReasonCategory : "OTHER"
 
   if (!entitlementId) {
     return NextResponse.json({ error: "entitlementId is required" }, { status: 400 })
@@ -86,7 +90,18 @@ export async function POST(req: NextRequest) {
     : null
 
   const payment = order?.payments?.[0]
-  const refundAmount = payment?.amount ?? 0
+  const fullRefundAmount = payment?.amount ? Number(payment.amount) : 0
+
+  // Validate partial refund amount
+  let refundAmount = fullRefundAmount
+  if (partialAmount && partialAmount > 0 && partialAmount < fullRefundAmount) {
+    refundAmount = partialAmount
+  } else if (partialAmount && partialAmount >= fullRefundAmount) {
+    // If partial amount >= full amount, just do full refund
+    refundAmount = fullRefundAmount
+  }
+
+  const isPartialRefund = refundAmount < fullRefundAmount
 
   // Create refund request + suspend entitlement atomically
   const refundRequest = await db.$transaction(async (tx) => {
@@ -99,13 +114,17 @@ export async function POST(req: NextRequest) {
         reason: reason.trim(),
         status: "PENDING",
         gateway: payment?.gateway?.toString(),
-        refundAmount: refundAmount as unknown as number,
+        refundAmount: refundAmount,
         auditTrail: [
           {
             action: "REQUESTED",
             by: userId,
             at: new Date().toISOString(),
             reason: reason.trim(),
+            category,
+            isPartialRefund,
+            refundAmount,
+            fullRefundAmount,
           },
         ],
       },
@@ -148,8 +167,8 @@ export async function POST(req: NextRequest) {
     try {
       const refundResult = await processRefund(
         payment.id,
-        Number(refundAmount),
-        reason.trim(),
+        refundAmount,
+        `${reason.trim()}${isPartialRefund ? ` (Partial: ${refundAmount}/${fullRefundAmount})` : ""}`,
         "SYSTEM"
       )
       if (refundResult?.gatewayRefundId) {
@@ -183,6 +202,9 @@ export async function POST(req: NextRequest) {
     userId,
     productName: entitlement.product.name,
     refundAmount: String(refundAmount),
+    fullRefundAmount: String(fullRefundAmount),
+    isPartialRefund,
+    reasonCategory: category,
     currency: "USD",
     gateway: payment?.gateway?.toString() ?? "Payment Gateway",
     gatewayRefundId,
@@ -215,6 +237,8 @@ export async function POST(req: NextRequest) {
       refundAmount,
       reason: reason.trim(),
       autoProcessed: !!gatewayRefundId,
+      isPartialRefund,
+      reasonCategory: category,
     },
   })
 
@@ -229,9 +253,10 @@ export async function POST(req: NextRequest) {
       status: refundRequest.status,
       refundAmount,
       autoProcessed: !!gatewayRefundId,
+      isPartialRefund,
       gatewayRefundId,
       message: gatewayRefundId
-        ? "Refund processed automatically. You will receive a confirmation email."
+        ? `Refund of ${isPartialRefund ? `${refundAmount} (partial)` : refundAmount} processed automatically. You will receive a confirmation email.`
         : "Refund request submitted. Our team will process it within 1-2 business days.",
     },
   })

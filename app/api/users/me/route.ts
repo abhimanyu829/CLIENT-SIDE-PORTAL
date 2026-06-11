@@ -70,7 +70,7 @@ export async function PATCH(req: Request) {
         action: "USER_PROFILE_UPDATED",
         entity: "User",
         entityId: session.user.id,
-        afterJson: data as Record<string, unknown>,
+        afterJson: data as any,
       },
     }).catch(() => {})
 

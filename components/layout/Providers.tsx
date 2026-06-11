@@ -2,6 +2,7 @@
 
 import { SessionProvider } from "next-auth/react"
 import { ReactNode } from "react"
+import { CartProvider } from "@/providers/CartProvider"
 
 /**
  * Client-side providers wrapper.
@@ -10,7 +11,9 @@ import { ReactNode } from "react"
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <SessionProvider>
-      {children}
+      <CartProvider>
+        {children}
+      </CartProvider>
     </SessionProvider>
   )
 }

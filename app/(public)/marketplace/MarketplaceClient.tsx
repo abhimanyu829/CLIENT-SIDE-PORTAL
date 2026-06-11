@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useMemo, useCallback, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import ProductCard, { type ProductCardProps } from "@/components/marketplace/ProductCard"
 import CountdownTimer from "@/components/marketplace/CountdownTimer"
+import { useCart } from "@/providers/CartProvider"
 
 const TYPES = [
   { label: "All", value: "ALL" },
@@ -67,6 +69,97 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
   const [priceMax, setPriceMax] = useState(1000)
   const [showFilters, setShowFilters] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [addingToCart, setAddingToCart] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ type: "success" | "error" | "info"; msg: string } | null>(null)
+  const router = useRouter()
+  const { addItem } = useCart()
+
+  const showToast = useCallback((type: "success" | "error" | "info", msg: string) => {
+    setToast({ type, msg })
+    setTimeout(() => setToast(null), 3500)
+  }, [])
+
+  const handlePreview = useCallback(async (productId: string) => {
+    try {
+      const res = await fetch("/api/preview/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId }),
+      })
+      if (res.status === 401) {
+        router.push(`/login?callbackUrl=/marketplace?preview=${productId}`)
+        return
+      }
+      const data = await res.json()
+      if (!res.ok) {
+        if (data.error === "ALREADY_OWNED") {
+          showToast("info", "You already own this product!")
+          return
+        }
+        if (data.error === "PREVIEW_LIMIT_REACHED") {
+          showToast("info", data.message || "Preview limit reached for this product")
+          return
+        }
+        showToast("error", data.error || "Preview unavailable")
+        return
+      }
+      router.push(`/preview/${productId}`)
+    } catch {
+      showToast("error", "Failed to start preview. Please try again.")
+    }
+  }, [router, showToast])
+
+  const handleAddToCart = useCallback(async (productId: string, tierId?: string) => {
+    if (addingToCart === productId) return
+    setAddingToCart(productId)
+    try {
+      // Pre-validate (checks auth, ownership, inventory, tiers)
+      const validateRes = await fetch("/api/products/validate-purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, tierId }),
+      })
+      const validateData = await validateRes.json()
+
+      if (validateRes.status === 401) {
+        router.push("/login?callbackUrl=/marketplace")
+        return
+      }
+
+      if (!validateData.valid) {
+        const reason = validateData.reasons?.[0]
+        if (reason === "ALREADY_OWNED") {
+          showToast("info", "You already own this product")
+          return
+        }
+        if (reason === "SOLD_OUT") {
+          showToast("error", "This product is currently sold out")
+          return
+        }
+        showToast("error", validateData.reasons?.join(", ") || "Cannot add to cart")
+        return
+      }
+
+      // Use the CartProvider addItem — triggers Pusher CART_UPDATED → navbar count updates instantly
+      const result = await addItem(productId, tierId, 1)
+      if (!result.success) {
+        const code = result.code ?? result.error
+        if (code === "ALREADY_OWNED") {
+          showToast("info", "You already own this product")
+        } else if (code === "SOLD_OUT") {
+          showToast("error", "This product is sold out")
+        } else {
+          showToast("error", result.error || "Failed to add to cart")
+        }
+        return
+      }
+      showToast("success", "Added to cart ✓")
+    } catch {
+      showToast("error", "Failed to add to cart. Please try again.")
+    } finally {
+      setAddingToCart(null)
+    }
+  }, [router, addItem, addingToCart, showToast])
 
   const filteredProducts = useMemo(() => {
     let list = [...allProducts]
@@ -114,6 +207,18 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
   return (
     <div className="min-h-screen bg-black text-white">
       <style>{S}</style>
+
+      {/* Toast notification */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold transition-all animate-in slide-in-from-bottom-4 ${
+          toast.type === "success" ? "bg-emerald-500/90 text-white border border-emerald-400/30" :
+          toast.type === "error" ? "bg-red-500/90 text-white border border-red-400/30" :
+          "bg-zinc-800/95 text-white border border-white/10"
+        } backdrop-blur-xl`}>
+          <span>{toast.type === "success" ? "✓" : toast.type === "error" ? "✕" : "ℹ"}</span>
+          <span>{toast.msg}</span>
+        </div>
+      )}
 
       {/* ── HERO SECTION ────────────────────────────────────────────────────── */}
       <section className="relative py-16 px-4 border-b border-white/5 overflow-hidden">
@@ -176,7 +281,7 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
               <Link href="/marketplace?filter=sale" className="text-sm text-red-400 hover:text-red-300 transition-colors">View all →</Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {flashSale.map(p => <ProductCard key={p.id} {...p} variant="grid" />)}
+              {flashSale.map(p => <ProductCard key={p.id} {...p} variant="grid" previewEnabled={p.previewEnabled ?? false} onPreview={() => handlePreview(p.id)} onAddToCart={() => handleAddToCart(p.id, p.tierId)} isAddingToCart={addingToCart === p.id} />)}
             </div>
           </div>
         </section>
@@ -194,7 +299,7 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
               <Link href="/marketplace?filter=featured" className="text-sm text-zinc-500 hover:text-white transition-colors">See all →</Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {featured.slice(0, 3).map((p, i) => <ProductCard key={p.id} {...p} variant={i === 0 ? "featured" : "grid"} />)}
+              {featured.slice(0, 3).map((p, i) => <ProductCard key={p.id} {...p} variant={i === 0 ? "featured" : "grid"} previewEnabled={p.previewEnabled ?? false} onPreview={() => handlePreview(p.id)} onAddToCart={() => handleAddToCart(p.id, p.tierId)} isAddingToCart={addingToCart === p.id} />)}
             </div>
           </div>
         </section>
@@ -212,7 +317,7 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
               <Link href="/marketplace?sort=trending" className="text-sm text-zinc-500 hover:text-white transition-colors">See all →</Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {trending.slice(0, 4).map(p => <ProductCard key={p.id} {...p} variant="grid" />)}
+              {trending.slice(0, 4).map(p => <ProductCard key={p.id} {...p} variant="grid" previewEnabled={p.previewEnabled ?? false} onPreview={() => handlePreview(p.id)} onAddToCart={() => handleAddToCart(p.id, p.tierId)} isAddingToCart={addingToCart === p.id} />)}
             </div>
           </div>
         </section>
@@ -229,7 +334,7 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {bestSellers.map(p => <ProductCard key={p.id} {...p} variant="grid" />)}
+              {bestSellers.map(p => <ProductCard key={p.id} {...p} variant="grid" previewEnabled={p.previewEnabled ?? false} onPreview={() => handlePreview(p.id)} onAddToCart={() => handleAddToCart(p.id, p.tierId)} isAddingToCart={addingToCart === p.id} />)}
             </div>
           </div>
         </section>
@@ -304,7 +409,7 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
             </div>
           ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {filteredProducts.map(p => <ProductCard key={p.id} {...p} variant="grid" />)}
+              {filteredProducts.map(p => <ProductCard key={p.id} {...p} variant="grid" previewEnabled={p.previewEnabled ?? false} onPreview={() => handlePreview(p.id)} onAddToCart={() => handleAddToCart(p.id, p.tierId)} isAddingToCart={addingToCart === p.id} />)}
             </div>
           ) : (
             <div className="text-center py-24">

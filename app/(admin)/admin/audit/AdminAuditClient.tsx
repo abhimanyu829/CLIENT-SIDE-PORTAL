@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -43,10 +43,9 @@ interface Session {
 
 interface ApiKey {
   id: string
-  key: string
+  keyHash: string
   prefix: string
   name: string
-  rateLimit: number
   lastUsedAt: string | null
   isActive: boolean
   expiresAt: string | null
@@ -97,7 +96,6 @@ export default function AdminAuditClient({
   // API Key creation
   const [apiKeyModal, setApiKeyModal] = useState(false)
   const [keyName, setKeyName] = useState("")
-  const [keyRateLimit, setKeyRateLimit] = useState("1000")
   const [keyExpires, setKeyExpires] = useState("")
   const [createdRawKey, setCreatedRawKey] = useState<string | null>(null)
 
@@ -147,7 +145,6 @@ export default function AdminAuditClient({
     try {
       const res = await createApiKey({
         name: keyName,
-        rateLimit: Number(keyRateLimit),
         expiresAt: keyExpires || null
       })
       setCreatedRawKey(res.key)
@@ -284,8 +281,8 @@ export default function AdminAuditClient({
                   ) : filteredLogs.map((log) => {
                     const isExpanded = expandedLogId === log.id
                     return (
-                      <>
-                        <tr key={log.id} className="hover:bg-muted/10 font-sans">
+                      <React.Fragment key={log.id}>
+                        <tr className="hover:bg-muted/10 font-sans">
                           <td className="px-6 py-3 text-xs text-muted-foreground font-mono">{new Date(log.createdAt).toLocaleString()}</td>
                           <td className="px-6 py-3 text-xs">
                             <p className="font-semibold text-zinc-700 dark:text-zinc-300">{log.user?.name || "System Orchestrator"}</p>
@@ -321,7 +318,7 @@ export default function AdminAuditClient({
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     )
                   })}
                 </tbody>
@@ -386,7 +383,6 @@ export default function AdminAuditClient({
                   <th className="px-6 py-2.5">Key Name</th>
                   <th className="px-6 py-2.5">Prefix Token</th>
                   <th className="px-6 py-2.5">Actor User</th>
-                  <th className="px-6 py-2.5">Rate Limit / Min</th>
                   <th className="px-6 py-2.5">Status</th>
                   <th className="px-6 py-2.5 text-right">Revoke Key</th>
                 </tr>
@@ -399,7 +395,6 @@ export default function AdminAuditClient({
                     <td className="px-6 py-3 font-sans font-semibold text-zinc-800 dark:text-zinc-200">{k.name}</td>
                     <td className="px-6 py-3 text-muted-foreground">{k.prefix}...</td>
                     <td className="px-6 py-3 font-sans">{k.user.email}</td>
-                    <td className="px-6 py-3">{k.rateLimit} req/m</td>
                     <td className="px-6 py-3 font-sans">
                       <Badge className={k.isActive ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-600"} variant="secondary">
                         {k.isActive ? "Active" : "Revoked"}
@@ -601,11 +596,7 @@ export default function AdminAuditClient({
                   <label className="text-xs font-semibold text-muted-foreground uppercase">Key Name</label>
                   <Input value={keyName} onChange={(e) => setKeyName(e.target.value)} placeholder="e.g. Jenkins Deploy Server key" className="mt-1" />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Rate Limit (req/min)</label>
-                    <Input type="number" value={keyRateLimit} onChange={(e) => setKeyRateLimit(e.target.value)} className="mt-1" />
-                  </div>
+                <div className="grid grid-cols-1 gap-2">
                   <div>
                     <label className="text-xs font-semibold text-muted-foreground uppercase">Expiration Date</label>
                     <Input type="date" value={keyExpires} onChange={(e) => setKeyExpires(e.target.value)} className="mt-1" />

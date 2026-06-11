@@ -59,7 +59,6 @@ export default async function AdminAuditPage() {
   const serializedApiKeys = apiKeys.map((k) => ({
     ...k,
     createdAt: k.createdAt.toISOString(),
-    updatedAt: k.updatedAt.toISOString(),
     lastUsedAt: k.lastUsedAt?.toISOString() ?? null,
     expiresAt: k.expiresAt?.toISOString() ?? null,
   }))
@@ -75,10 +74,10 @@ export default async function AdminAuditPage() {
 
   return (
     <AdminAuditClient
-      initialLogs={serializedLogs}
-      sessions={serializedSessions}
-      apiKeys={serializedApiKeys}
-      adminUsers={serializedAdminUsers}
+      initialLogs={serializedLogs as any}
+      sessions={serializedSessions as any}
+      apiKeys={serializedApiKeys as any}
+      adminUsers={serializedAdminUsers as any}
       isSuperAdmin={admin.isSuperAdmin}
     />
   )

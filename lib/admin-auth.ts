@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import type { Role } from "@prisma/client"
+import { db } from "@/lib/db"
 
 export interface AdminSession {
   userId: string
@@ -12,41 +13,68 @@ export interface AdminSession {
 
 /**
  * Server-side helper — call at the top of any admin Server Component or Action.
- * Redirects to /unauthorized if the user isn't SUPER_ADMIN or SUB_ADMIN.
+ * Zero-trust: role is always fetched from the database, never trusted from JWT alone.
+ * Redirects to /login if unauthenticated, /unauthorized if insufficient role.
  */
 export async function requireAdmin(): Promise<AdminSession> {
   const session = await auth().catch(() => null)
-  
-  // TODO (TESTING ONLY): Admin authentication is disabled for testing.
-  // Re-enable original checks before deploying to production.
-  /*
-  if (!session?.user?.id) redirect("/login")
 
-  const role = session.user.role as Role
+  if (!session?.user?.id) {
+    redirect("/login")
+  }
+
+  // Zero-trust: refetch role from DB — never trust token claims alone
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true, isBanned: true, name: true, email: true },
+  })
+
+  if (!user) redirect("/login")
+  if (user.isBanned) redirect("/unauthorized")
+
+  const role = user.role as Role
   if (role !== "SUPER_ADMIN" && role !== "SUB_ADMIN") {
     redirect("/unauthorized")
   }
-  */
-
-  const userId = session?.user?.id ?? "mock-admin-id"
-  const name = session?.user?.name ?? "Mock Admin"
-  const email = session?.user?.email ?? "admin@example.com"
-  const role = (session?.user?.role as Role) ?? "SUPER_ADMIN"
 
   return {
-    userId,
-    name,
-    email,
+    userId: session.user.id,
+    name: user.name ?? session.user.name ?? "Admin",
+    email: user.email ?? session.user.email ?? "",
     role,
-    isSuperAdmin: true, // Set to true to allow testing of super admin actions
+    isSuperAdmin: role === "SUPER_ADMIN",
   }
 }
 
 /**
- * Server-side helper — only SUPER_ADMIN may proceed.
+ * Server-side helper — SUPER_ADMIN only.
+ * SUB_ADMIN is denied and redirected to /unauthorized.
  */
 export async function requireSuperAdmin(): Promise<AdminSession> {
-  // Always proceed with mock session
-  const session = await requireAdmin()
-  return session
+  const session = await auth().catch(() => null)
+
+  if (!session?.user?.id) {
+    redirect("/login")
+  }
+
+  // Zero-trust: refetch role from DB
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true, isBanned: true, name: true, email: true },
+  })
+
+  if (!user) redirect("/login")
+  if (user.isBanned) redirect("/unauthorized")
+
+  if (user.role !== "SUPER_ADMIN") {
+    redirect("/unauthorized")
+  }
+
+  return {
+    userId: session.user.id,
+    name: user.name ?? session.user.name ?? "Super Admin",
+    email: user.email ?? session.user.email ?? "",
+    role: user.role as Role,
+    isSuperAdmin: true,
+  }
 }

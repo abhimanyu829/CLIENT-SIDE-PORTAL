@@ -13,7 +13,7 @@ import { Shield, Zap, Globe, Lock, Cpu, BarChart } from "lucide-react"
 export const revalidate = 30
 
 export async function generateMetadata() {
-  const count = await db.product.count({ where: { status: ProductStatus.PUBLISHED } }).catch(() => 0)
+  const count = await db.product.count({ where: { status: ProductStatus.AVAILABLE } }).catch(() => 0)
   return {
     title: `${count} Products — NexusAI Marketplace | AI Agents, SaaS Tools & More`,
     description: `Browse ${count}+ premium AI agents, SaaS tools, automation workflows, APIs, and developer products. Filter, compare, and deploy instantly.`,
@@ -29,14 +29,14 @@ const getMarketplaceData = unstable_cache(async () => {
   const [featured, trending, flashSale, bestSellers, allProducts, campaign, totalCount] = await Promise.all([
     // Featured products
     db.product.findMany({
-      where: { status: ProductStatus.PUBLISHED, isFeatured: true },
+      where: { status: ProductStatus.AVAILABLE, isFeatured: true },
       include: { tiers: { orderBy: { price: "asc" }, take: 1 }, _count: { select: { subscriptions: true } } },
       orderBy: { viewCount: "desc" },
       take: 6,
     }),
     // Trending
     db.product.findMany({
-      where: { status: ProductStatus.PUBLISHED, isTrending: true },
+      where: { status: ProductStatus.AVAILABLE, isTrending: true },
       include: { tiers: { orderBy: { price: "asc" }, take: 1 }, _count: { select: { subscriptions: true } } },
       orderBy: { viewCount: "desc" },
       take: 8,
@@ -44,7 +44,7 @@ const getMarketplaceData = unstable_cache(async () => {
     // Flash sale (has flashSalePrice and endsAt in future)
     db.product.findMany({
       where: {
-        status: ProductStatus.PUBLISHED,
+        status: ProductStatus.AVAILABLE,
         tiers: { some: { flashSalePrice: { not: null }, flashSaleEndsAt: { gt: now } } },
       },
       include: { tiers: { where: { flashSaleEndsAt: { gt: now } }, orderBy: { price: "asc" }, take: 1 }, _count: { select: { subscriptions: true } } },
@@ -52,14 +52,14 @@ const getMarketplaceData = unstable_cache(async () => {
     }),
     // Best sellers
     db.product.findMany({
-      where: { status: ProductStatus.PUBLISHED, isBestSeller: true },
+      where: { status: ProductStatus.AVAILABLE, isBestSeller: true },
       include: { tiers: { orderBy: { price: "asc" }, take: 1 }, _count: { select: { subscriptions: true } } },
       orderBy: [{ reviewCount: "desc" }, { averageRating: "desc" }],
       take: 4,
     }),
     // All products for main grid (first page)
     db.product.findMany({
-      where: { status: ProductStatus.PUBLISHED },
+      where: { status: ProductStatus.AVAILABLE },
       include: { tiers: { orderBy: { price: "asc" }, take: 1 }, _count: { select: { subscriptions: true } } },
       orderBy: [{ isFeatured: "desc" }, { viewCount: "desc" }],
       take: 24,
@@ -70,7 +70,7 @@ const getMarketplaceData = unstable_cache(async () => {
       select: { id: true, bannerText: true, ctaText: true, ctaUrl: true, bannerImageUrl: true, endsAt: true, discountPercent: true, type: true },
     }),
     // Total count
-    db.product.count({ where: { status: ProductStatus.PUBLISHED } }),
+    db.product.count({ where: { status: ProductStatus.AVAILABLE } }),
   ])
 
   return { featured, trending, flashSale, bestSellers, allProducts, campaign, totalCount }
@@ -105,8 +105,13 @@ function serialize(products: any[]) {
       viewCount: p.viewCount,
       tags: p.tags,
       demoUrl: p.demoUrl,
+      previewEnabled: p.previewEnabled ?? false,
+      previewConfig: p.previewConfig ?? {},
+      inventoryEnabled: p.inventoryEnabled ?? false,
+      inventoryCount: p.inventoryCount ?? 0,
       activeUsers: p._count?.subscriptions ?? 0,
       createdAt: toIso(p.createdAt),
+      tierId: tier?.id,
       startingPrice: tier ? Number(tier.price) : undefined,
       discountPrice: tier?.discountPrice ? Number(tier.discountPrice) : undefined,
       flashSalePrice: tier?.flashSalePrice ? Number(tier.flashSalePrice) : undefined,

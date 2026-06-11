@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
     const review = await prisma.productReview.update({
       where: { id: params.id },
-      data: { isVerified: status === "APPROVED" }, // Using existing field as proxy to pass TS
+      data: { status: status },
       include: { product: true }
     });
 
@@ -30,8 +30,8 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
             userId: review.userId,
             type: "SYSTEM",
             title: `Review ${status.toLowerCase()}`,
-            body: `Your review for ${review.product.name} has been ${status.toLowerCase()}.`,
-            actionUrl: `/marketplace/${review.product.slug}`
+            body: `Your review for ${(review as any).product?.name} has been ${status.toLowerCase()}.`,
+            actionUrl: `/marketplace/${(review as any).product?.slug}`
         });
     }
 

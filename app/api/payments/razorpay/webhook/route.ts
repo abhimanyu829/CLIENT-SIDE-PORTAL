@@ -24,7 +24,12 @@ function intervalEnd(interval: BillingInterval | string): Date {
 function verifyRazorpayWebhookSignature(body: string, signature: string, secret: string): boolean {
   const expected = crypto.createHmac("sha256", secret).update(body).digest("hex")
   if (expected.length !== signature.length) return false
-  return crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signature, "hex"))
+  try {
+    // Use "hex" encoding so we compare 32 raw bytes, not 64 UTF-8 chars
+    return crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signature, "hex"))
+  } catch {
+    return false
+  }
 }
 
 // ── Handler: payment.captured ─────────────────────────────────────────────────
@@ -364,6 +369,55 @@ async function handleSubscriptionResumed(payload: any) {
   })
 }
 
+// ── Handler: payment.authorized ───────────────────────────────────────────────
+async function handlePaymentAuthorized(payload: any) {
+  const payment = payload.payload?.payment?.entity
+  if (!payment) return
+
+  const { id: gatewayPaymentId, order_id, amount, currency, method, notes } = payment
+  const orderId = notes?.orderId as string | undefined
+
+  // Create an AUTHORIZED payment record for tracking, but don't mark order as PAID yet
+  // (that happens on payment.captured)
+  const existing = await db.payment.findUnique({ where: { gatewayPaymentId } })
+  if (existing) return
+
+  logger.info({ gatewayPaymentId, orderId, method }, "Razorpay payment authorized — awaiting capture")
+}
+
+// ── Handler: order.paid ────────────────────────────────────────────────────────
+async function handleOrderPaid(payload: any) {
+  const orderEntity = payload.payload?.order?.entity
+  if (!orderEntity) return
+
+  const { id: gatewayOrderId, notes } = orderEntity
+  const orderId = notes?.orderId as string | undefined
+
+  if (!orderId) {
+    logger.warn({ gatewayOrderId }, "Razorpay order.paid event missing orderId in notes")
+    return
+  }
+
+  // This is an alternative to payment.captured for one-time orders
+  // Check if order is already paid (idempotent)
+  const order = await db.order.findUnique({ where: { id: orderId } })
+  if (!order || order.status === "PAID" || order.status === "FULFILLED") return
+
+  // Find the captured payment for this order
+  const payment = await db.payment.findFirst({
+    where: { gatewayOrderId, status: PaymentStatus.SUCCESS },
+  })
+
+  if (payment) {
+    // Already processed via payment.captured
+    return
+  }
+
+  // Mark as paid via order.paid event
+  await markOrderPaid(orderId, orderEntity.payment_id ?? "", gatewayOrderId)
+  await fulfillOrder(orderId).catch((err) => logger.error({ err, orderId }, "fulfillOrder failed in order.paid handler"))
+}
+
 // ── Handler: dispute.created ─────────────────────────────────────────────────
 async function handleDisputeCreated(payload: any) {
   const dispute = payload.payload?.dispute?.entity
@@ -481,8 +535,14 @@ export async function POST(req: NextRequest) {
       case "payment.captured":
         await handlePaymentCaptured(event)
         break
+      case "payment.authorized":
+        await handlePaymentAuthorized(event)
+        break
       case "payment.failed":
         await handlePaymentFailed(event)
+        break
+      case "order.paid":
+        await handleOrderPaid(event)
         break
       case "subscription.charged":
         await handleSubscriptionCharged(event)
@@ -521,13 +581,28 @@ export async function POST(req: NextRequest) {
     logger.error({ error, eventType }, "Error handling Razorpay webhook event")
     console.error(`[RAZORPAY WEBHOOK] ❌ Error processing event ${eventType}:`, error)
     const currentAttempts = (webhookRecord.attempts ?? 0) + 1
+    const newStatus = currentAttempts >= 5 ? "DEAD" : "FAILED"
     await db.webhookEvent.update({
       where: { id: webhookRecord.id },
       data: {
-        status: currentAttempts >= 5 ? "DEAD" : "FAILED",
+        status: newStatus,
         errorMessage: (error as Error).message?.slice(0, 500) ?? "Unknown error",
       },
     })
+
+    // Emit dead letter event for admin monitoring
+    if (newStatus === "DEAD") {
+      await emitEvent({
+        type: EVENTS.WEBHOOK_DEAD,
+        timestamp: new Date().toISOString(),
+        payload: {
+          webhookEventId: webhookRecord.id,
+          eventType,
+          eventId: rzpEventId,
+          errorMessage: (error as Error).message?.slice(0, 200),
+        },
+      })
+    }
   }
 
   return NextResponse.json({ received: true })

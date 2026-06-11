@@ -4,11 +4,14 @@ import { ReactNode, useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
+import { useClerk } from "@clerk/nextjs"
 import { useNotifications } from "@/hooks/useNotifications"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
+import { usePaymentSync } from "@/hooks/usePaymentSync"
 
 const NAV = [
   { name: "Overview",      path: "/dashboard",                icon: "◈", color: "text-violet-400" },
+  { name: "My Products",  path: "/dashboard/my-products",   icon: "◆", color: "text-green-400" },
   { name: "Subscriptions", path: "/dashboard/subscriptions", icon: "⬡", color: "text-blue-400" },
   { name: "Projects",      path: "/dashboard/projects",      icon: "◻", color: "text-emerald-400" },
   { name: "Vendor Studio", path: "/dashboard/vendor",        icon: "Store", color: "text-fuchsia-400" },
@@ -213,6 +216,21 @@ function NotificationDropdown({ onClose }: { onClose: () => void }) {
 }
 
 export default function DashboardLayout({ children, userId, userName, isVerified }: { children: ReactNode; userId: string; userName: string; isVerified?: boolean }) {
+  const { signOut: clerkSignOut } = useClerk()
+
+  // Unified logout: always signs out from Clerk (primary), and also clears
+  // any lingering NextAuth JWT for legacy credential users.
+  const handleLogout = async () => {
+    try {
+      // Sign out of Clerk first (OAuth / passwordless users)
+      await clerkSignOut({ redirectUrl: '/' })
+    } catch {
+      // Clerk not available (pure NextAuth user) — fall through to NextAuth
+    }
+    // Also sign out of NextAuth to clear legacy JWT tokens
+    await signOut({ callbackUrl: '/' })
+  }
+
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [cmdOpen, setCmdOpen] = useState(false)
@@ -225,6 +243,9 @@ export default function DashboardLayout({ children, userId, userName, isVerified
 
   // Real-time Pusher channel
   useRealtimeChannel(userId)
+
+  // Payment sync — auto-refresh dashboard on billing events
+  usePaymentSync(userId)
 
   // Open tickets count from notifications (badge)
   const openTicketCount = notifications.filter((n) => n.type === "TICKET" && !n.isRead).length
@@ -306,7 +327,7 @@ export default function DashboardLayout({ children, userId, userName, isVerified
             </Link>
           ))}
           <button 
-            onClick={() => signOut({ callbackUrl: '/' })}
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer border border-transparent hover:bg-red-500/10 hover:border-red-500/20 transition-all text-left text-red-400 group"
           >
             <span className="text-base text-red-400/70 group-hover:text-red-400 shrink-0">↪</span>
@@ -382,7 +403,7 @@ export default function DashboardLayout({ children, userId, userName, isVerified
                       </div>
                     </Link>
                     <button 
-                      onClick={() => signOut({ callbackUrl: '/' })} 
+                      onClick={handleLogout} 
                       className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors mt-0.5"
                     >
                       Log Out

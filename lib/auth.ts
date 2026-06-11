@@ -1,3 +1,4 @@
+import { currentUser } from "@clerk/nextjs/server"
 import NextAuth, { NextAuthOptions } from "next-auth"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import CredentialsProvider from "next-auth/providers/credentials"
@@ -8,7 +9,12 @@ import { db } from "@/lib/db"
 import { env } from "@/lib/env"
 import { compare } from "bcryptjs"
 import { Role } from "@prisma/client"
+import type { AppSession } from "@/lib/auth-types"
 
+// ─────────────────────────────────────────────────────────────────
+// LEGACY NextAuth config — kept alive for existing password users
+// during Clerk migration. New users go through Clerk.
+// ─────────────────────────────────────────────────────────────────
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   secret: env.NEXTAUTH_SECRET,
@@ -109,9 +115,142 @@ export const authOptions: NextAuthOptions = {
   },
 }
 
+// ─────────────────────────────────────────────────────────────────
+// UNIFIED auth() — Clerk-first, NextAuth fallback
+//
+// Call this in every server component, API route, and server action.
+// It always returns an AppSession with the INTERNAL userId from DB.
+// Authorization (roles, permissions) is ALWAYS sourced from the DB.
+// ─────────────────────────────────────────────────────────────────
+export const auth = async (): Promise<AppSession | null> => {
+  // ── PHASE 1: Clerk (primary) ──────────────────────────────────
+  try {
+    const clerkUser = await currentUser()
+
+    if (clerkUser) {
+      // Lookup by clerkUserId (fast path — already linked)
+      let dbUser = await db.user.findUnique({
+        where: { clerkUserId: clerkUser.id },
+        include: { permissions: { include: { permission: true } } },
+      })
+
+      if (!dbUser) {
+        // Slow path: email-based lookup (existing user migrating to Clerk)
+        const email = clerkUser.emailAddresses[0]?.emailAddress
+        if (email) {
+          const existing = await db.user.findUnique({
+            where: { email },
+            include: { permissions: { include: { permission: true } } },
+          })
+
+          if (existing && !existing.isBanned) {
+            // Auto-link: write clerkUserId to existing record
+            dbUser = await db.user.update({
+              where: { id: existing.id },
+              data: {
+                clerkUserId: clerkUser.id,
+                isVerified: true,
+                lastLoginAt: new Date(),
+                // Sync avatar if not set
+                ...(existing.avatarUrl ? {} : { avatarUrl: clerkUser.imageUrl ?? undefined }),
+              },
+              include: { permissions: { include: { permission: true } } },
+            })
+          } else if (!existing) {
+            // Brand-new user: create internal record
+            const name =
+              [clerkUser.firstName, clerkUser.lastName]
+                .filter(Boolean)
+                .join(" ") ||
+              email
+            dbUser = await db.user.create({
+              data: {
+                email,
+                name,
+                clerkUserId: clerkUser.id,
+                isVerified: true,
+                avatarUrl: clerkUser.imageUrl ?? undefined,
+                lastLoginAt: new Date(),
+              },
+              include: { permissions: { include: { permission: true } } },
+            })
+          }
+        }
+      }
+
+      if (dbUser && !dbUser.isBanned) {
+        return {
+          user: {
+            id: dbUser.id,
+            email: dbUser.email,
+            name: dbUser.name,
+            role: dbUser.role,
+            isVerified: dbUser.isVerified,
+            permissions: dbUser.permissions.map((p: any) => p.permission.name),
+            avatarUrl: dbUser.avatarUrl,
+            clerkUserId: dbUser.clerkUserId,
+          },
+        }
+      }
+    }
+  } catch {
+    // Clerk unavailable or not in server context — fall through to NextAuth
+  }
+
+  // ── PHASE 2: NextAuth fallback (legacy credential users) ──────
+  try {
+    const nextAuthSession = await getServerSession(authOptions)
+    if (nextAuthSession?.user?.id) {
+      // Refetch from DB for freshest role/permissions
+      const dbUser = await db.user.findUnique({
+        where: { id: nextAuthSession.user.id },
+        include: { permissions: { include: { permission: true } } },
+      })
+      if (dbUser && !dbUser.isBanned) {
+        return {
+          user: {
+            id: dbUser.id,
+            email: dbUser.email,
+            name: dbUser.name,
+            role: dbUser.role,
+            isVerified: dbUser.isVerified,
+            permissions: dbUser.permissions.map((p: any) => p.permission.name),
+            avatarUrl: dbUser.avatarUrl,
+            clerkUserId: dbUser.clerkUserId,
+          },
+        }
+      }
+    }
+  } catch {
+    // NextAuth unavailable
+  }
+
+  return null
+}
+
 /**
- * Server-side helper: returns the current session.
- * Import this in server components and API routes.
- * Usage: const session = await auth()
+ * Zero-trust role guard — always verifies from the database.
+ * Use this in any API route or server action that requires specific roles.
  */
-export const auth = () => getServerSession(authOptions)
+export const requireRole = async (allowedRoles: Role[]) => {
+  const session = await auth()
+  if (!session?.user) {
+    throw new Error("Unauthorized")
+  }
+
+  // Zero-trust: always refetch from DB
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true, isBanned: true },
+  })
+
+  if (!user || user.isBanned) {
+    throw new Error("Unauthorized")
+  }
+
+  if (!allowedRoles.includes(user.role)) {
+    throw new Error("Forbidden")
+  }
+
+  return user
+}

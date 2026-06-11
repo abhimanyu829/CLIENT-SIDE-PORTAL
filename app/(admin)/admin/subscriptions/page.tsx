@@ -22,7 +22,7 @@ export default async function SubscriptionsPage({
       where,
       include: {
         user: { select: { id: true, name: true, email: true } },
-        product: { select: { id: true, name: true, type: true } },
+        product: { select: { id: true, name: true, type: true, tiers: { where: { isActive: true } } } },
         tier: true,
         payments: {
           orderBy: { createdAt: "desc" },
@@ -82,11 +82,21 @@ export default async function SubscriptionsPage({
       createdAt: p.createdAt.toISOString(),
       paidAt: p.paidAt?.toISOString() ?? null,
     })),
+    product: {
+      ...s.product,
+      tiers: (s.product as any).tiers?.map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        price: String(t.price),
+        interval: t.interval,
+        currency: t.currency
+      })) || []
+    }
   })
 
   return (
     <SubscriptionsClient
-      subscriptions={subscriptions.map(serialize)}
+      subscriptions={subscriptions.map(serialize) as any}
       total={total}
       page={page}
       limit={limit}
@@ -101,7 +111,7 @@ export default async function SubscriptionsPage({
         cancelledAt: r.cancelledAt?.toISOString() ?? null,
         trialEndsAt: r.trialEndsAt?.toISOString() ?? null,
         tier: { ...r.tier, price: String(r.tier.price), createdAt: r.tier.createdAt.toISOString() },
-      }))}
+      })) as any}
       dunningQueue={dunningQueue.map((d) => ({
         ...d,
         currentPeriodStart: d.currentPeriodStart.toISOString(),
@@ -112,7 +122,7 @@ export default async function SubscriptionsPage({
         trialEndsAt: d.trialEndsAt?.toISOString() ?? null,
         tier: { ...d.tier, price: String(d.tier.price), createdAt: d.tier.createdAt.toISOString() },
         payments: d.payments.map((p) => ({ ...p, amount: String(p.amount), createdAt: p.createdAt.toISOString(), paidAt: p.paidAt?.toISOString() ?? null })),
-      }))}
+      })) as any}
     />
   )
 }

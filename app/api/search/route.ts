@@ -33,7 +33,7 @@ export async function GET(req: Request) {
         take: 5,
       }),
       db.product.findMany({
-        where: { status: ProductStatus.PUBLISHED, name: { contains: q, mode: "insensitive" } },
+        where: { status: ProductStatus.AVAILABLE, name: { contains: q, mode: "insensitive" } },
         select: { id: true, slug: true, name: true, tagline: true, type: true, iconUrl: true },
         take: 5,
       }),

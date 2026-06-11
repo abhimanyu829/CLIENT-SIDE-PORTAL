@@ -77,7 +77,7 @@ async function main() {
       tagline: "Everything you need to get started.",
       description: "Everything you need to get started with our platform.",
       type: "SERVICE",
-      status: "PUBLISHED",
+      status: "AVAILABLE",
       features: [
         "AI Chatbot (100 messages/mo)",
         "Basic Analytics",
@@ -121,7 +121,7 @@ async function main() {
       tagline: "Advanced features for growing teams.",
       description: "Advanced features for growing teams.",
       type: "AI_AGENT",
-      status: "PUBLISHED",
+      status: "AVAILABLE",
       features: [
         "Unlimited AI Messages",
         "Advanced Analytics + CRM",
@@ -274,7 +274,7 @@ async function main() {
         entity: "Product",
         entityId: starterProduct.id,
         ip: "127.0.0.1",
-        afterJson: { name: starterProduct.name, status: "PUBLISHED" },
+        afterJson: { name: starterProduct.name, status: "AVAILABLE" },
       },
       {
         userId: admin.id,
@@ -282,7 +282,7 @@ async function main() {
         entity: "Product",
         entityId: proProduct.id,
         ip: "127.0.0.1",
-        afterJson: { name: proProduct.name, status: "PUBLISHED" },
+        afterJson: { name: proProduct.name, status: "AVAILABLE" },
       },
       {
         userId: client.id,

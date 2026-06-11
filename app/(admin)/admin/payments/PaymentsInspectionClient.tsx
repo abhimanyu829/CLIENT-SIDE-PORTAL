@@ -10,7 +10,7 @@
  */
 "use client"
 
-import { useState, useTransition } from "react"
+import React, { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
   AlertTriangle,
@@ -346,8 +346,8 @@ function PaymentsList({ payments, emptyMsg }: { payments: PaymentRecord[]; empty
         </thead>
         <tbody className="divide-y divide-zinc-800">
           {payments.map(p => (
-            <>
-              <tr key={p.id} className="hover:bg-zinc-900/60 transition-colors">
+            <React.Fragment key={p.id}>
+              <tr className="hover:bg-zinc-900/60 transition-colors">
                 <td className="px-4 py-3">
                   <p className="font-mono text-xs text-zinc-300">{p.gatewayPaymentId?.slice(0, 20) ?? p.id.slice(0, 12)}…</p>
                   {p.order && <p className="text-[10px] text-zinc-600 font-mono">{p.order.orderNumber}</p>}
@@ -402,7 +402,7 @@ function PaymentsList({ payments, emptyMsg }: { payments: PaymentRecord[]; empty
                   </td>
                 </tr>
               )}
-            </>
+            </React.Fragment>
           ))}
         </tbody>
       </table>

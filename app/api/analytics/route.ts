@@ -39,7 +39,7 @@ export async function GET(req: Request) {
       }),
       db.subscription.count({ where: { status: "ACTIVE" } }),
       db.ticket.count({ where: { status: { in: ["OPEN", "IN_PROGRESS"] } } }),
-      db.product.count({ where: { status: "PUBLISHED" } }),
+      db.product.count({ where: { status: "AVAILABLE" } }),
     ])
 
     // Revenue by day for chart

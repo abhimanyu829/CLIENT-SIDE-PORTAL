@@ -38,7 +38,8 @@ export async function POST(req: Request) {
         clientId: session.user.id,
         title,
         description,
-        status: "DRAFT",
+        status: "PENDING",
+        milestones: [],
       },
     })
 

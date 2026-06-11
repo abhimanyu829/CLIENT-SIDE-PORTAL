@@ -16,7 +16,7 @@ export default async function ComparePage({ searchParams }: Props) {
   const slugs = productSlugs ? productSlugs.split(",").slice(0, 3) : []
 
   const products = slugs.length > 0 ? await db.product.findMany({
-    where: { slug: { in: slugs }, status: ProductStatus.PUBLISHED },
+    where: { slug: { in: slugs }, status: ProductStatus.AVAILABLE },
     include: { tiers: { orderBy: { price: "asc" } }, _count: { select: { reviews: true, subscriptions: true } } },
   }) : []
 

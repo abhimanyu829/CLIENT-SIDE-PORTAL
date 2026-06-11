@@ -18,6 +18,11 @@ const envSchema = z.object({
   GITHUB_CLIENT_ID: optStr,
   GITHUB_CLIENT_SECRET: optStr,
 
+  // Clerk Authentication (primary auth provider)
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1).optional().or(z.literal('').transform(() => undefined)),
+  CLERK_SECRET_KEY: optStr,
+  CLERK_WEBHOOK_SECRET: optStr,
+
   // Redis / Upstash
   REDIS_URL: optStr,
   UPSTASH_REDIS_REST_URL: optUrl,
@@ -31,6 +36,22 @@ const envSchema = z.object({
   NEXT_PUBLIC_RAZORPAY_KEY_ID: optStr,
   RAZORPAY_KEY_SECRET: optStr,
   RAZORPAY_WEBHOOK_SECRET: optStr,
+  PAYTM_MERCHANT_ID: optStr,
+  PAYTM_MERCHANT_KEY: optStr,
+  PHONEPE_MERCHANT_ID: optStr,
+  PHONEPE_SALT_KEY: optStr,
+  PHONEPE_SALT_INDEX: optStr,
+
+  // UPI Manual Gateway — single fallback
+  NEXT_PUBLIC_UPI_ID: optStr,
+  NEXT_PUBLIC_UPI_NAME: optStr,
+  // UPI Manual Gateway — per-gateway IDs (override the single fallback)
+  PAYTM_UPI_ID: optStr,
+  PAYTM_UPI_NAME: optStr,
+  PHONEPE_UPI_ID: optStr,
+  PHONEPE_UPI_NAME: optStr,
+  // UPI webhook secret for securing admin manual callbacks
+  UPI_WEBHOOK_SECRET: optStr,
 
   // Storage (Cloudflare R2)
   R2_ACCOUNT_ID: optStr,
