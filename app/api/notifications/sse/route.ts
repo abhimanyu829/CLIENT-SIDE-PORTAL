@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 
 // GET /api/notifications/sse — Server-Sent Events stream for real-time notifications
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }

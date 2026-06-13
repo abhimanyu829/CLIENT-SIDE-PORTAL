@@ -1,11 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { useSession, signOut } from "next-auth/react"
-import { useClerk, useUser } from "@clerk/nextjs"
+import { SignOutButton, UserButton, useUser } from "@clerk/nextjs"
 import { useState, useEffect, useCallback, lazy, Suspense } from "react"
 import { usePathname } from "next/navigation"
 import { useCart } from "@/providers/CartProvider"
+import { useInternalUser } from "@/hooks/useInternalUser"
 
 const SearchModal = lazy(() => import("@/components/marketplace/SearchModal"))
 
@@ -48,26 +48,13 @@ interface AnnouncementData {
 }
 
 export default function Navbar({ announcement }: { announcement?: AnnouncementData | null }) {
-  const { data: session, status } = useSession()
   const { user: clerkUser, isLoaded: clerkLoaded } = useUser()
-  const { signOut: clerkSignOut } = useClerk()
+  const { user: internalUser, isLoading: internalUserLoading } = useInternalUser()
 
-  // Unified: a user is "authenticated" if they have either a Clerk session or NextAuth session
-  const isAuthenticated = !!clerkUser || !!session
-  const isLoading = !clerkLoaded || status === "loading"
-  // Prefer Clerk user data, fall back to NextAuth session data
-  const displayName = clerkUser?.firstName || clerkUser?.fullName || session?.user?.name || null
-  const userRole = (session?.user as any)?.role as string | undefined
-
-  // Unified logout: clears both Clerk and NextAuth sessions
-  const handleSignOut = async () => {
-    try {
-      await clerkSignOut({ redirectUrl: '/' })
-    } catch {
-      // Clerk not applicable for this user
-    }
-    await signOut({ callbackUrl: '/' })
-  }
+  const isAuthenticated = !!clerkUser
+  const isLoading = !clerkLoaded || (isAuthenticated && internalUserLoading)
+  const userRole = internalUser?.role
+  const canAccessAdmin = userRole === "SUPER_ADMIN" || userRole === "SUB_ADMIN"
   const pathname = usePathname()
   const { itemCount } = useCart()
   const [scrolled, setScrolled] = useState(false)
@@ -206,7 +193,7 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
               </div>
             ) : isAuthenticated ? (
               <>
-                {(userRole === "SUPER_ADMIN" || userRole === "SUB_ADMIN" || userRole === "ADMIN") && (
+                {canAccessAdmin && (
                   <Link href="/admin">
                     <button className="text-amber-400/80 rounded-xl px-4 py-2 text-sm font-semibold transition-colors hover:text-amber-400 hover:bg-amber-400/10">
                       Admin Panel
@@ -214,11 +201,7 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
                   </Link>
                 )}
                 <Link href="/dashboard"><button className="text-white/60 rounded-xl px-4 py-2 text-sm font-semibold transition-colors hover:text-white hover:bg-white/5">Dashboard</button></Link>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold text-white cursor-pointer">
-                    {(displayName?.charAt(0) || "U").toUpperCase()}
-                  </div>
-                </div>
+                <UserButton showName />
               </>
             ) : (
               <>
@@ -279,7 +262,7 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
           <div className="flex flex-col gap-3 pt-6 border-t border-white/5">
             {isAuthenticated ? (
               <>
-                {(userRole === "SUPER_ADMIN" || userRole === "SUB_ADMIN" || userRole === "ADMIN") && (
+                {canAccessAdmin && (
                   <Link href="/admin">
                     <button className="w-full py-3 rounded-xl font-bold text-amber-400 bg-amber-400/10">
                       Admin Panel
@@ -287,7 +270,9 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
                   </Link>
                 )}
                 <Link href="/dashboard"><button className="w-full py-3 rounded-xl font-bold text-zinc-300 bg-white/5">Dashboard</button></Link>
-                <button onClick={handleSignOut} className="w-full py-3 rounded-xl font-bold text-red-400 bg-red-500/10">Sign out</button>
+                <SignOutButton redirectUrl="/">
+                  <button className="w-full py-3 rounded-xl font-bold text-red-400 bg-red-500/10">Sign out</button>
+                </SignOutButton>
               </>
             ) : (
               <>

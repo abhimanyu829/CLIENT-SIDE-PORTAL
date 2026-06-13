@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { requireApiAuth, UnauthorizedError } from "@/lib/api-auth"
 import { db } from "@/lib/db"
 
 /**
@@ -11,13 +10,15 @@ import { db } from "@/lib/db"
  * Returns { valid: true } or { valid: false, issues: [...] }
  */
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
+  let userId: string
+  try {
+    userId = await requireApiAuth()
+  } catch {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
   }
 
   const cart = await db.cart.findFirst({
-    where: { userId: session.user.id, status: "ACTIVE" },
+    where: { userId, status: "ACTIVE" },
     include: {
       items: {
         include: {
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
     // Ownership check
     const entitlement = await db.customerEntitlement.findFirst({
       where: {
-        userId: session.user.id,
+        userId: userId,
         productId: item.productId,
         status: "ACTIVE",
         OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],

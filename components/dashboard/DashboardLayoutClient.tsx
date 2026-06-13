@@ -3,8 +3,7 @@
 import { ReactNode, useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useSession, signOut } from "next-auth/react"
-import { useClerk } from "@clerk/nextjs"
+import { useClerk, useUser } from "@clerk/nextjs"
 import { useNotifications } from "@/hooks/useNotifications"
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 import { usePaymentSync } from "@/hooks/usePaymentSync"
@@ -97,7 +96,7 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
           )}
 
           {q.length >= 2 && !loading && !hasResults && (
-            <div className="px-4 py-8 text-center text-zinc-600 text-sm">No results for "{q}"</div>
+            <div className="px-4 py-8 text-center text-zinc-600 text-sm">No results for &quot;{q}&quot;</div>
           )}
 
           {hasResults && (
@@ -215,20 +214,28 @@ function NotificationDropdown({ onClose }: { onClose: () => void }) {
   )
 }
 
-export default function DashboardLayout({ children, userId, userName, isVerified }: { children: ReactNode; userId: string; userName: string; isVerified?: boolean }) {
+export default function DashboardLayout({
+  children,
+  userId,
+  userName,
+  userRole,
+  isVerified,
+}: {
+  children: ReactNode
+  userId: string
+  userName: string
+  userRole?: string
+  isVerified?: boolean
+}) {
   const { signOut: clerkSignOut } = useClerk()
+  const { user: clerkUser } = useUser()
 
   // Unified logout: always signs out from Clerk (primary), and also clears
-  // any lingering NextAuth JWT for legacy credential users.
   const handleLogout = async () => {
     try {
-      // Sign out of Clerk first (OAuth / passwordless users)
       await clerkSignOut({ redirectUrl: '/' })
     } catch {
-      // Clerk not available (pure NextAuth user) — fall through to NextAuth
     }
-    // Also sign out of NextAuth to clear legacy JWT tokens
-    await signOut({ callbackUrl: '/' })
   }
 
   const pathname = usePathname()
@@ -236,7 +243,6 @@ export default function DashboardLayout({ children, userId, userName, isVerified
   const [cmdOpen, setCmdOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
-  const { data: session } = useSession()
 
   // Real notifications
   const { notifications, unreadCount } = useNotifications(userId)
@@ -260,8 +266,13 @@ export default function DashboardLayout({ children, userId, userName, isVerified
   }, [])
 
   const currentPage = NAV.find((n) => pathname === n.path || (n.path !== "/dashboard" && pathname.startsWith(n.path)))?.name ?? "Dashboard"
-  const displayName = session?.user?.name ?? userName ?? "You"
+  const displayName =
+    clerkUser?.fullName ||
+    [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ") ||
+    userName ||
+    "You"
   const initials = displayName.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
+  const canAccessAdmin = userRole === "SUPER_ADMIN" || userRole === "SUB_ADMIN"
 
   return (
     <div className="flex h-screen bg-[#080808] text-white overflow-hidden">
@@ -365,6 +376,15 @@ export default function DashboardLayout({ children, userId, userName, isVerified
               <span className="text-zinc-500">Live</span>
             </div>
 
+            {canAccessAdmin && (
+              <Link
+                href="/admin"
+                className="hidden sm:flex items-center bg-amber-400/10 border border-amber-400/20 rounded-lg px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-400/15 transition-colors"
+              >
+                Admin Panel
+              </Link>
+            )}
+
             {/* Notifications */}
             <div className="relative">
               <button
@@ -397,6 +417,13 @@ export default function DashboardLayout({ children, userId, userName, isVerified
               {userOpen && (
                 <div className="absolute right-0 top-12 w-48 bg-[#0e0e0e] border border-white/10 rounded-2xl z-50 overflow-hidden shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="p-1.5">
+                    {canAccessAdmin && (
+                      <Link href="/admin" onClick={() => setUserOpen(false)}>
+                        <div className="w-full text-left px-3 py-2 text-sm text-amber-300 hover:bg-amber-500/10 rounded-lg transition-colors">
+                          Admin Panel
+                        </div>
+                      </Link>
+                    )}
                     <Link href="/dashboard/profile" onClick={() => setUserOpen(false)}>
                       <div className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-white/5 rounded-lg transition-colors">
                         Profile Settings

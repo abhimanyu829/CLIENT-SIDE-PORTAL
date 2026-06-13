@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { z } from "zod"
 import { logger } from "@/lib/logger"
@@ -24,7 +23,7 @@ const updateFlagSchema = createFlagSchema.partial().omit({ name: true })
 // GET /api/admin/feature-flags
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id || !isAdmin(session)) {
       return NextResponse.json({ success: false, error: { code: "FORBIDDEN", message: "Admin only" } }, { status: 403 })
     }
@@ -40,7 +39,7 @@ export async function GET(req: NextRequest) {
 // POST /api/admin/feature-flags — create flag
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id || !isAdmin(session)) {
       return NextResponse.json({ success: false, error: { code: "FORBIDDEN", message: "Admin only" } }, { status: 403 })
     }
@@ -77,7 +76,7 @@ export async function POST(req: NextRequest) {
 // PATCH /api/admin/feature-flags/[name] — toggle / update flag
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id || !isAdmin(session)) {
       return NextResponse.json({ success: false, error: { code: "FORBIDDEN", message: "Admin only" } }, { status: 403 })
     }

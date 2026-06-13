@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { logger } from "@/lib/logger"
 import { auditLog } from "@/lib/audit"
@@ -20,7 +19,7 @@ export async function POST(
   const { id } = await context.params
 
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id || !isAdmin(session)) {
       return NextResponse.json({ success: false, error: { code: "FORBIDDEN", message: "Admin only" } }, { status: 403 })
     }

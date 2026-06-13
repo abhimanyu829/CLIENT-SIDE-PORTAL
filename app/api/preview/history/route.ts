@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 
 /**
@@ -9,7 +8,7 @@ import { db } from "@/lib/db"
  * Returns the current user's preview session history for a product.
  */
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
   }

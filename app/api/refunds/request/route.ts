@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { emailQueue, EMAIL_JOBS } from "@/lib/queue"
 import { emitEvent, EVENTS } from "@/lib/services/event-bus"
@@ -14,7 +13,7 @@ import { logger } from "@/lib/logger"
  * Auto-triggers the gateway refund, suspends entitlement, and notifies admin.
  */
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 })
   }
@@ -268,7 +267,7 @@ export async function POST(req: NextRequest) {
  * Check refund eligibility for a specific entitlement.
  */
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 })
   }

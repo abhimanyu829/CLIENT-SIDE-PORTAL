@@ -190,6 +190,7 @@ export default function CheckoutClient({
 
   // Manual UPI form state
   const [utrNumber, setUtrNumber] = useState("")
+  const [claimedAmount, setClaimedAmount] = useState("")
   const [screenshot, setScreenshot] = useState<File | null>(null)
   const [submittingUtr, setSubmittingUtr] = useState(false)
 
@@ -345,6 +346,9 @@ export default function CheckoutClient({
           upiName: data.upiName,
           qrDataUrl,
         })
+        setUtrNumber("")
+        setScreenshot(null)
+        setClaimedAmount(Number(data.order.amount).toFixed(2))
         return
       }
 
@@ -507,27 +511,39 @@ export default function CheckoutClient({
   // ── Retry ───────────────────────────────────────────────────────────────────
   const handleRetry = useCallback(() => {
     retryCountRef.current += 1
+    setUtrNumber("")
+    setClaimedAmount("")
+    setScreenshot(null)
     setState({ phase: "IDLE", step: "payment" })
   }, [])
 
   // ── Submit UTR ──────────────────────────────────────────────────────────────
-  const submitUtr = useCallback(async (orderId: string) => {
-    if (!utrNumber || utrNumber.length < 12 || utrNumber.length > 22 || !screenshot) {
-      alert("Please provide a valid 12–22 digit UTR / transaction reference and upload the payment screenshot.")
+  const submitUtr = useCallback(async (orderId: string, expectedAmount: number) => {
+    const parsedAmount = Number(claimedAmount)
+    if (!utrNumber || utrNumber.length < 12 || utrNumber.length > 22 || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      alert("Please provide a valid 12–22 digit UTR / transaction reference and a valid claimed amount.")
       return
     }
     setSubmittingUtr(true)
     try {
-      const reader = new FileReader()
-      reader.readAsDataURL(screenshot)
-      const base64Screenshot = await new Promise<string>((resolve) => {
-        reader.onload = () => resolve(reader.result as string)
-      })
+      let base64Screenshot: string | null = null
+      if (screenshot) {
+        const reader = new FileReader()
+        reader.readAsDataURL(screenshot)
+        base64Screenshot = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string)
+        })
+      }
 
       const res = await fetch("/api/payments/submit-proof", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, utrNumber, screenshot: base64Screenshot }),
+        body: JSON.stringify({
+          orderId,
+          utrNumber,
+          claimedAmount: Number.isFinite(parsedAmount) ? parsedAmount : expectedAmount,
+          screenshot: base64Screenshot,
+        }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error?.message || "Failed to submit verification.")
@@ -539,7 +555,7 @@ export default function CheckoutClient({
     } finally {
       setSubmittingUtr(false)
     }
-  }, [utrNumber, screenshot, router])
+  }, [claimedAmount, utrNumber, screenshot, router])
 
   // ── Derived UI state ────────────────────────────────────────────────────────
   const isLoading = state.phase === "LOADING_CART" || state.phase === "LOADING_SDK" || state.phase === "CREATING_ORDER" || state.phase === "VERIFYING"
@@ -784,6 +800,22 @@ export default function CheckoutClient({
                 </div>
 
                 <div className="space-y-2">
+                  <label className="text-xs font-medium text-zinc-300">Claimed Amount</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={claimedAmount}
+                    onChange={(e) => setClaimedAmount(e.target.value)}
+                    placeholder={state.amount.toFixed(2)}
+                    className="border-white/20 bg-zinc-900 font-mono text-base tracking-widest"
+                  />
+                  <p className="text-xs text-zinc-500">
+                    This amount is saved as an unverified claim and validated by the backend.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
                   <label className="text-xs font-medium text-zinc-300">Payment Screenshot</label>
                   <div className="flex items-center gap-3">
                     <Button
@@ -802,6 +834,7 @@ export default function CheckoutClient({
                       onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
                     />
                   </div>
+                  <p className="text-xs text-zinc-500">Screenshot is optional but can help the admin verify faster.</p>
                   {screenshot && (
                     <p className="text-xs text-emerald-400">✓ Screenshot ready to submit</p>
                   )}
@@ -809,8 +842,8 @@ export default function CheckoutClient({
 
                 <Button
                   className="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
-                  disabled={submittingUtr || utrNumber.length < 12 || !screenshot}
-                  onClick={() => submitUtr(state.orderId)}
+                  disabled={submittingUtr || utrNumber.length < 12 || !claimedAmount}
+                  onClick={() => submitUtr(state.orderId, state.amount)}
                 >
                   {submittingUtr ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {submittingUtr ? "Submitting for verification..." : "Submit Payment Proof"}

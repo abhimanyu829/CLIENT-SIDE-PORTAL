@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 
 /**
@@ -13,7 +12,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session?.user?.id || !["SUPER_ADMIN", "SUB_ADMIN", "ADMIN"].includes(session.user.role as string)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }

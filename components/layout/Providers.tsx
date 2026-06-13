@@ -1,19 +1,14 @@
 "use client"
 
-import { SessionProvider } from "next-auth/react"
 import { ReactNode } from "react"
 import { CartProvider } from "@/providers/CartProvider"
+import { ClerkSessionSync } from "@/components/auth/ClerkSessionSync"
 
-/**
- * Client-side providers wrapper.
- * Add any other context providers here (ThemeProvider, ToastProvider, etc.)
- */
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <SessionProvider>
-      <CartProvider>
-        {children}
-      </CartProvider>
-    </SessionProvider>
+    <CartProvider>
+      <ClerkSessionSync />
+      {children}
+    </CartProvider>
   )
 }

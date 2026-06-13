@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { requireApiAuth } from "@/lib/api-auth"
 import { z } from "zod"
 import { logger } from "@/lib/logger"
 import { notifQueue } from "@/lib/queue"
@@ -28,8 +27,10 @@ const abandonSchema = z.object({
  */
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    let userId: string
+    try {
+      userId = await requireApiAuth()
+    } catch {
       // Unauthenticated users can't be recovered by email — no-op
       return NextResponse.json({ success: true, data: { queued: false, reason: "unauthenticated" } })
     }
@@ -48,11 +49,11 @@ export async function POST(req: NextRequest) {
     // Queue the first step with a 30-minute delay
     await notifQueue.add(
       "abandon.start",
-      { userId: session.user.id, cartItems, step: 0 },
+      { userId, cartItems, step: 0 },
       { delay: 30 * 60 * 1000 } // 30 minutes
     )
 
-    logger.info({ userId: session.user.id, itemCount: cartItems.length }, "Cart abandonment sequence started")
+    logger.info({ userId, itemCount: cartItems.length }, "Cart abandonment sequence started")
 
     return NextResponse.json({ success: true, data: { queued: true } })
   } catch (error) {

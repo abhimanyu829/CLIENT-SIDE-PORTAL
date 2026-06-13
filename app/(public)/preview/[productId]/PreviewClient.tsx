@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/useAuth"
 
 interface Product {
   id: string
@@ -26,7 +26,7 @@ interface PreviewSession {
 }
 
 export default function PreviewClient({ product }: { product: Product }) {
-  const { data: session, status } = useSession()
+  const { isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
   const [sessionData, setSessionData] = useState<PreviewSession | null>(null)
   const [loading, setLoading] = useState(true)
@@ -34,7 +34,8 @@ export default function PreviewClient({ product }: { product: Product }) {
   const [timeLeft, setTimeLeft] = useState<number>(0)
 
   const startPreview = useCallback(async () => {
-    if (status !== "authenticated") {
+    if (isLoading) return
+    if (!isAuthenticated) {
       router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
       return
     }
@@ -68,7 +69,7 @@ export default function PreviewClient({ product }: { product: Product }) {
     } finally {
       setLoading(false)
     }
-  }, [product.id, status, router])
+  }, [product.id, isAuthenticated, isLoading, router])
 
   useEffect(() => {
     startPreview()

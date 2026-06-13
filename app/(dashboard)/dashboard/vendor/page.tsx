@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth"
 import Link from "next/link"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { VendorOnboardingClient } from "./VendorOnboardingClient"
 
@@ -9,7 +8,7 @@ function currency(value: number) {
 }
 
 export default async function VendorStudioPage() {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   const userId = session?.user?.id
 
   const vendor = userId ? await db.vendorProfile.findFirst({

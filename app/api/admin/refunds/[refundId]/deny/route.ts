@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { logger } from "@/lib/logger"
 
@@ -18,7 +17,7 @@ export async function POST(
 ) {
   const { refundId } = await params
 
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session?.user?.role || !["SUPER_ADMIN", "SUB_ADMIN"].includes(session.user.role)) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 })
   }

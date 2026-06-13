@@ -16,8 +16,8 @@
 "use client"
 
 import { useCallback, useState } from "react"
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/useAuth"
 
 declare global {
   interface Window {
@@ -107,7 +107,7 @@ export function useRazorpayCheckout({
   onDismiss,
 }: UseRazorpayCheckoutOptions): UseRazorpayCheckoutResult {
   const router = useRouter()
-  const { data: session } = useSession()
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
@@ -165,12 +165,12 @@ export function useRazorpayCheckout({
         image: "/logo.png",
         order_id: razorpayOrder.id,
         prefill: {
-          name: session?.user?.name ?? "",
-          email: billingAddress?.billingEmail || session?.user?.email || "",
+          name: user?.name ?? "",
+          email: billingAddress?.billingEmail || user?.email || "",
         },
         notes: {
           orderId: order.id,
-          userId: session?.user?.id ?? "",
+          userId: user?.id ?? "",
           tierId: tierId ?? "",
           productId: productId ?? "",
           checkoutMode: mode,
@@ -253,7 +253,7 @@ export function useRazorpayCheckout({
     }
   }, [
     tierId, productId, mode, couponCode, billingAddress,
-    session, autoRedirect, onSuccess, onError, onDismiss, router, loading,
+    user, autoRedirect, onSuccess, onError, onDismiss, router, loading,
   ])
 
   const retry = useCallback(() => {

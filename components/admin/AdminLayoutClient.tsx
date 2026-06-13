@@ -3,8 +3,7 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { useState, useEffect, useCallback, useRef } from "react"
-import { signOut } from "next-auth/react"
-import { useClerk } from "@clerk/nextjs"
+import { SignOutButton, UserAvatar, useClerk, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -57,6 +56,7 @@ interface AdminSidebarProps {
 
 function AdminSidebar({ collapsed, onToggle, onSignOut, isSuperAdmin, userName, userEmail }: AdminSidebarProps) {
   const pathname = usePathname()
+  const { signOut: clerkSignOut } = useClerk()
 
   return (
     <aside
@@ -126,8 +126,8 @@ function AdminSidebar({ collapsed, onToggle, onSignOut, isSuperAdmin, userName, 
       <div className="border-t border-zinc-800 p-3 space-y-1">
         {!collapsed && (
           <div className="flex items-center gap-2 px-2 py-1.5 mb-2">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-white text-xs font-bold shrink-0">
-              {userName?.[0]?.toUpperCase() ?? "A"}
+            <div className="shrink-0">
+              <UserAvatar />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-white truncate">{userName}</p>
@@ -174,18 +174,17 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
   const [darkMode, setDarkMode] = useState(true)
   const [mobileOpen, setMobileOpen] = useState(false)
   const pathname = usePathname()
+  const { signOut: clerkSignOut } = useClerk()
   const router = useRouter()
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const { signOut: clerkSignOut } = useClerk()
+  const { user: clerkUser } = useUser()
 
-  // Unified logout: clears both Clerk and NextAuth sessions
   const handleSignOut = useCallback(async (callbackUrl = "/login") => {
     try {
       await clerkSignOut({ redirectUrl: callbackUrl })
     } catch {
-      // Clerk not applicable for this user
+      // Clerk not applicable
     }
-    await signOut({ callbackUrl })
   }, [clerkSignOut])
 
   // Session timeout: 30 min inactivity
@@ -210,6 +209,12 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
   const currentPage = NAV_ITEMS.find((item) =>
     item.path === "/admin" ? pathname === "/admin" : pathname.startsWith(item.path)
   )
+  const displayName =
+    clerkUser?.fullName ||
+    [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ") ||
+    userName ||
+    "Admin"
+  const displayEmail = clerkUser?.primaryEmailAddress?.emailAddress || userEmail || ""
 
   return (
     <div className={cn("flex h-screen bg-background overflow-hidden", darkMode && "dark")}>
@@ -219,8 +224,8 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
         onToggle={() => setCollapsed((v) => !v)}
         onSignOut={handleSignOut}
         isSuperAdmin={isSuperAdmin}
-        userName={userName}
-        userEmail={userEmail}
+        userName={displayName}
+        userEmail={displayEmail}
       />
 
       {/* Mobile Sidebar */}
@@ -328,8 +333,8 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuLabel>
                   <div>
-                    <p className="font-medium">{userName}</p>
-                    <p className="text-xs text-muted-foreground">{userEmail}</p>
+                    <p className="font-medium">{displayName}</p>
+                    <p className="text-xs text-muted-foreground">{displayEmail}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -337,11 +342,12 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
                   <Link href="/admin/settings"><Settings className="mr-2 h-4 w-4" /> Settings</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-red-600 focus:text-red-600"
-                  onClick={() => handleSignOut("/login")}
-                >
-                  <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                <DropdownMenuItem asChild>
+                  <SignOutButton redirectUrl="/login">
+                    <button className="flex w-full items-center px-2 py-2 text-left text-red-600 focus:text-red-600">
+                      <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                    </button>
+                  </SignOutButton>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

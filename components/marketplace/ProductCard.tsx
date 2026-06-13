@@ -184,9 +184,9 @@ function GridCard(p: ProductCardProps) {
 
   return (
     <article className="group relative glass rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:border-purple-500/40 hover:shadow-2xl hover:shadow-purple-500/10 cursor-pointer">
-      <Link href={`/marketplace/${p.slug}`} className="absolute inset-0 z-10" aria-label={`View ${p.name}`} />
         {/* Thumbnail */}
         <div className="aspect-video relative overflow-hidden bg-zinc-900">
+          <Link href={`/marketplace/${p.slug}`} className="absolute inset-0 z-10" aria-label={`View ${p.name}`} />
           {p.thumbnailUrl ? (
             <img src={p.thumbnailUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           ) : (
@@ -255,8 +255,8 @@ function FeaturedCard(p: ProductCardProps) {
 
   return (
     <article className="group relative glass rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 cursor-pointer">
-      <Link href={`/marketplace/${p.slug}`} className="absolute inset-0 z-10" aria-label={`View ${p.name}`} />
         <div className="aspect-[4/3] relative overflow-hidden bg-zinc-900">
+          <Link href={`/marketplace/${p.slug}`} className="absolute inset-0 z-10" aria-label={`View ${p.name}`} />
           {p.thumbnailUrl ? (
             <img src={p.thumbnailUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           ) : (
@@ -300,8 +300,8 @@ function SpotlightCard(p: ProductCardProps) {
 
   return (
     <article className="group relative glass rounded-2xl overflow-hidden transition-all duration-300 hover:border-purple-500/40 cursor-pointer grid grid-cols-1 md:grid-cols-2 gap-0">
-      <Link href={`/marketplace/${p.slug}`} className="absolute inset-0 z-10" aria-label={`View ${p.name}`} />
         <div className="aspect-video md:aspect-auto relative overflow-hidden bg-zinc-900">
+          <Link href={`/marketplace/${p.slug}`} className="absolute inset-0 z-10" aria-label={`View ${p.name}`} />
           {p.thumbnailUrl ? (
             <img src={p.thumbnailUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           ) : (
@@ -350,8 +350,8 @@ function CompactCard(p: ProductCardProps) {
   return (
     <article className="group glass rounded-xl p-3 transition-all hover:border-purple-500/40 cursor-pointer">
       <div className="flex items-center gap-3">
-        <Link href={`/marketplace/${p.slug}`} className="absolute inset-0 z-10" aria-label={`View ${p.name}`} />
         <div className="w-12 h-12 rounded-xl bg-zinc-900 overflow-hidden flex-shrink-0 relative">
+          <Link href={`/marketplace/${p.slug}`} className="absolute inset-0 z-10" aria-label={`View ${p.name}`} />
           {p.thumbnailUrl ? (
             <img src={p.thumbnailUrl} alt={p.name} className="w-full h-full object-cover" />
           ) : (

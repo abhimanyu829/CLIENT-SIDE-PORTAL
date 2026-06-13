@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db as prisma } from "@/lib/db";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth"
 import { createNotification } from "@/lib/notifications";
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const params = await context.params;
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
-    if (!session || !session.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN" && session.user.role !== "SUB_ADMIN")) {
+    if (!session || !session.user || (session.user.role !== "SUPER_ADMIN" && session.user.role !== "SUB_ADMIN")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

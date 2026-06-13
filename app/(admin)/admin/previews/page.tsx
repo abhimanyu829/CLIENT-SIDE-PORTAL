@@ -1,13 +1,12 @@
 import { db } from "@/lib/db"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import AdminPreviewsClient from "./AdminPreviewsClient"
 
 export const metadata = { title: "Preview Sessions — Admin" }
 
 export default async function AdminPreviewsPage() {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session?.user || !["SUPER_ADMIN", "SUB_ADMIN"].includes(session.user.role)) {
     redirect("/unauthorized")
   }

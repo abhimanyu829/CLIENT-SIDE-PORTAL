@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 
 // GET /api/projects — list projects
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -53,7 +52,7 @@ export async function GET(req: Request) {
 // POST /api/projects — create a new project (admin)
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const role = (session?.user as any)?.role
     if (role !== "SUPER_ADMIN" && role !== "SUB_ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })

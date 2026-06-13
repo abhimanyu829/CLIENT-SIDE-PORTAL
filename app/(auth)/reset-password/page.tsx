@@ -1,10 +1,7 @@
-import { Suspense } from "react";
-import ResetPasswordClient from "./ResetPasswordClient";
+"use client"
+
+import { RedirectToSignIn } from "@clerk/nextjs"
 
 export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <ResetPasswordClient />
-    </Suspense>
-  );
+  return <RedirectToSignIn />
 }

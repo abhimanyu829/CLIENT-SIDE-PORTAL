@@ -4,8 +4,7 @@
  * Data fetched from /api/admin/revenue — server component with client chart island.
  */
 import { Metadata } from "next"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { RevenueChartClient } from "./_components/RevenueChartClient"
 import { TopUsersTable } from "./_components/TopUsersTable"
@@ -70,7 +69,7 @@ function KPICard({
 }
 
 export default async function RevenueDashboardPage() {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   const role = (session?.user as any)?.role
   if (!session?.user || (role !== "SUPER_ADMIN" && role !== "SUB_ADMIN")) {
     redirect("/")

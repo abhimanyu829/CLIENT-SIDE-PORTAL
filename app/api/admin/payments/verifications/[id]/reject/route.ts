@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { requireAdmin } from "@/lib/admin-auth"
 import { markOrderPaymentFailed } from "@/lib/services/enterprise-commerce-service"
+import { logManualPaymentAudit } from "@/lib/services/manual-payment-verification"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    await requireAdmin()
-    const verification = await db.paymentVerification.findUnique({ where: { id } })
+    const admin = await requireAdmin()
+    const verification = await db.paymentVerification.findUnique({
+      where: { id },
+      include: {
+        order: { select: { id: true, orderNumber: true } },
+      },
+    })
     if (!verification) return NextResponse.json({ success: false, error: { message: "Not found" } }, { status: 404 })
 
     if (verification.verificationStatus !== "AWAITING_VERIFICATION") {
@@ -17,7 +23,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     await db.$transaction(async (tx) => {
       await tx.paymentVerification.update({
         where: { id: verification.id },
-        data: { verificationStatus: "REJECTED", verifiedAt: new Date() }
+        data: {
+          verificationStatus: "REJECTED",
+          verifiedAt: new Date(),
+          mismatchReason: "Rejected by admin",
+          lastReviewedAt: new Date(),
+        }
       })
       await tx.order.update({
         where: { id: verification.orderId },
@@ -26,6 +37,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     })
 
     await markOrderPaymentFailed({ orderId: verification.orderId, reason: "Manual UTR Rejected" })
+    await logManualPaymentAudit({
+      action: "manual_payment.rejected",
+      orderId: verification.orderId,
+      orderNumber: verification.order.orderNumber,
+      userId: verification.userId,
+      verificationId: verification.id,
+      adminUserId: admin.userId,
+      after: { result: "REJECTED" },
+      req,
+    }).catch(() => {})
 
     return NextResponse.json({ success: true })
   } catch (err: any) {

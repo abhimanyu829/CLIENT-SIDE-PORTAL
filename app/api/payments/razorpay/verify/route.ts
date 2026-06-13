@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
 import crypto from "crypto"
 import { z } from "zod"
 import { OrderStatus } from "@prisma/client"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { env } from "@/lib/env"
 import { db } from "@/lib/db"
 import { logger } from "@/lib/logger"
@@ -43,7 +42,7 @@ export async function POST(req: NextRequest) {
   console.log("[RAZORPAY VERIFY] 📨 POST /api/payments/razorpay/verify — request received")
 
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id) {
       console.log("[RAZORPAY VERIFY] ❌ No authenticated session")
       return NextResponse.json({ success: false, error: { code: "UNAUTHORIZED", message: "Please sign in." } }, { status: 401 })

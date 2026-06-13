@@ -3,6 +3,21 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redis } from "@/lib/redis"
 
+function normalizeCachedStats(cached: unknown) {
+  if (!cached) return null
+  if (typeof cached === "string") {
+    try {
+      return JSON.parse(cached)
+    } catch {
+      return null
+    }
+  }
+  if (typeof cached === "object") {
+    return cached
+  }
+  return null
+}
+
 export async function GET() {
   try {
     const session = await auth()
@@ -12,7 +27,8 @@ export async function GET() {
     // Try cache first
     if (redis) {
       const cached = await redis.get(`dash:stats:${userId}`).catch(() => null)
-      if (cached) return NextResponse.json({ data: JSON.parse(cached as string) })
+      const parsed = normalizeCachedStats(cached)
+      if (parsed) return NextResponse.json({ data: parsed })
     }
 
     const now = new Date()

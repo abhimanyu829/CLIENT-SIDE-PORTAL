@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { z } from "zod"
 import { logger } from "@/lib/logger"
@@ -37,7 +36,7 @@ const paginationSchema = z.object({
 // ── GET /api/admin/campaigns ──────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const role = (session?.user as any)?.role
     if (!session?.user?.id || (role !== "SUPER_ADMIN" && role !== "SUB_ADMIN")) {
       return NextResponse.json({ success: false, error: { code: "FORBIDDEN", message: "Admin access required" } }, { status: 403 })
@@ -70,7 +69,7 @@ export async function GET(req: NextRequest) {
 // ── POST /api/admin/campaigns ─────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const role = (session?.user as any)?.role
     if (!session?.user?.id || (role !== "SUPER_ADMIN" && role !== "SUB_ADMIN")) {
       return NextResponse.json({ success: false, error: { code: "FORBIDDEN", message: "Admin access required" } }, { status: 403 })

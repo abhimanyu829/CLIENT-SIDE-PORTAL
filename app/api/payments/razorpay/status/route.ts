@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { getRazorpay } from "@/lib/razorpay"
 import { markOrderPaid } from "@/lib/services/enterprise-commerce-service"
@@ -16,7 +15,7 @@ import { logger } from "@/lib/logger"
 export async function GET(req: NextRequest) {
   console.log("[RAZORPAY STATUS] 📨 GET /api/payments/razorpay/status — request received")
 
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session?.user?.id) {
     console.log("[RAZORPAY STATUS] ❌ No authenticated session")
     return NextResponse.json({ success: false, error: { code: "UNAUTHORIZED", message: "Please sign in." } }, { status: 401 })

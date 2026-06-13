@@ -8,10 +8,9 @@
  * are made — the user pays via UPI directly and submits proof for admin verification.
  */
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
 import { z } from "zod"
 import { PaymentGateway } from "@prisma/client"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { env } from "@/lib/env"
 import {
@@ -33,7 +32,7 @@ const orderSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: { message: "Unauthorized — please sign in to continue." } },

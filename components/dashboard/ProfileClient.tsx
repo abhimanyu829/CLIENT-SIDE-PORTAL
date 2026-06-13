@@ -1,7 +1,8 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { BadgeCheck, BadgeX, RefreshCw, Smartphone } from "lucide-react"
+import Link from "next/link"
+import { BadgeCheck, BadgeX, Smartphone } from "lucide-react"
 
 interface ProfileUser {
   id: string
@@ -18,8 +19,6 @@ interface ProfileUser {
 export default function ProfileClient({ user }: { user: ProfileUser }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [resendingVerification, setResendingVerification] = useState(false)
-  const [resendMessage, setResendMessage] = useState("")
 
   const [formData, setFormData] = useState({
     name: user.name || "",
@@ -54,24 +53,6 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
     }
   }
 
-  const handleResendVerification = async () => {
-    setResendingVerification(true)
-    setResendMessage("")
-    try {
-      const res = await fetch("/api/auth/resend-verification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email }),
-      })
-      const data = await res.json()
-      setResendMessage(data.message || "Verification email sent.")
-    } catch {
-      setResendMessage("Failed to resend. Please try again.")
-    } finally {
-      setResendingVerification(false)
-    }
-  }
-
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -99,17 +80,12 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
                   </p>
                 )}
                 {!user.isVerified && (
-                  <button
-                    onClick={handleResendVerification}
-                    disabled={resendingVerification}
-                    className="mt-2 flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
+                  <Link
+                    href="/verify-required"
+                    className="mt-2 inline-flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300"
                   >
-                    <RefreshCw className="h-3 w-3" />
-                    {resendingVerification ? "Sending..." : "Resend verification email"}
-                  </button>
-                )}
-                {resendMessage && (
-                  <p className="text-xs text-emerald-400 mt-1">{resendMessage}</p>
+                    Open Clerk verification center
+                  </Link>
                 )}
               </div>
             </div>

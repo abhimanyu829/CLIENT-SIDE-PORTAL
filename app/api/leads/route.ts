@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 
 // GET /api/leads — list CRM leads (admin only)
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const role = (session?.user as any)?.role
     if (role !== "SUPER_ADMIN" && role !== "SUB_ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -80,7 +79,7 @@ function calculateLeadScore(stage: string, createdAt: Date, dealSize: number = 0
 // POST /api/leads — create a new CRM lead
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const role = (session?.user as any)?.role
     
     const body = await req.json()
@@ -132,7 +131,7 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const role = (session?.user as any)?.role
     if (role !== "SUPER_ADMIN" && role !== "SUB_ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })

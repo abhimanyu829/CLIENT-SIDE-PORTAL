@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 
 
@@ -81,7 +80,7 @@ export async function GET(req: Request) {
 // POST /api/products — admin: create a new product
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     const role = (session?.user as any)?.role
     if (role !== "SUPER_ADMIN" && role !== "SUB_ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })

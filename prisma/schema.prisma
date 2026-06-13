@@ -603,8 +603,14 @@ model PaymentVerification {
   orderId            String             @unique
   userId             String
   utrNumber          String             @unique
+  claimedAmount      Decimal?           @db.Decimal(12, 2)
   screenshotUrl      String?
   verificationStatus VerificationStatus @default(AWAITING_VERIFICATION)
+  adminTransactionId String?
+  adminActualAmount  Decimal?           @db.Decimal(12, 2)
+  mismatchReason     String?
+  reviewAttemptCount Int                @default(0)
+  lastReviewedAt     DateTime?
   submittedAt        DateTime           @default(now())
   verifiedAt         DateTime?
   verifiedBy         String?            // Admin User ID

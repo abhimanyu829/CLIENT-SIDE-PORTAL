@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { useSession } from "next-auth/react"
+import { useAuth as useAppAuth } from "@/hooks/useAuth"
 import { pusherClient } from "@/lib/pusher-client"
 
 export interface CartItem {
@@ -35,8 +35,8 @@ interface CartSyncState {
 }
 
 export function useCartSync() {
-  const { data: session, status } = useSession()
-  const userId = session?.user?.id
+  const { user: internalUser, isAuthenticated, isLoading: authLoading } = useAppAuth()
+  const [userId, setUserId] = useState<string | null>(internalUser?.id ?? null)
   const [state, setState] = useState<CartSyncState>({
     cart: null,
     itemCount: 0,
@@ -44,9 +44,37 @@ export function useCartSync() {
     error: null,
   })
   const channelRef = useRef<any>(null)
+  const resolveCurrentUserId = useCallback(async () => {
+    if (internalUser?.id) {
+      setUserId(internalUser.id)
+      return internalUser.id
+    }
+
+    if (!isAuthenticated) {
+      setUserId(null)
+      return null
+    }
+
+    try {
+      const res = await fetch("/api/auth/me")
+      if (!res.ok) {
+        setUserId(null)
+        return null
+      }
+
+      const data = await res.json()
+      const resolvedUserId = data?.user?.id ?? null
+      setUserId(resolvedUserId)
+      return resolvedUserId
+    } catch {
+      setUserId(null)
+      return null
+    }
+  }, [internalUser?.id, isAuthenticated])
 
   const fetchCart = useCallback(async () => {
-    if (!userId) {
+    const resolvedUserId = userId ?? await resolveCurrentUserId()
+    if (!resolvedUserId) {
       setState({ cart: null, itemCount: 0, isLoading: false, error: null })
       return
     }
@@ -88,7 +116,7 @@ export function useCartSync() {
     } catch {
       setState(prev => ({ ...prev, isLoading: false }))
     }
-  }, [userId])
+  }, [userId, resolveCurrentUserId])
 
   // Subscribe to Pusher channel for realtime updates
   useEffect(() => {
@@ -135,15 +163,30 @@ export function useCartSync() {
 
   // Initial fetch when session loads
   useEffect(() => {
-    if (status === "authenticated" && userId) {
+    if (internalUser?.id) {
+      setUserId(internalUser.id)
       fetchCart()
-    } else if (status === "unauthenticated") {
+      return
+    }
+
+    if (!authLoading && isAuthenticated) {
+      resolveCurrentUserId().then((resolvedUserId) => {
+        if (resolvedUserId) {
+          fetchCart()
+        }
+      })
+      return
+    }
+
+    if (!authLoading && !isAuthenticated) {
+      setUserId(null)
       setState({ cart: null, itemCount: 0, isLoading: false, error: null })
     }
-  }, [status, userId, fetchCart])
+  }, [internalUser?.id, authLoading, isAuthenticated, fetchCart, resolveCurrentUserId])
 
   const addItem = useCallback(async (productId: string, tierId?: string, quantity = 1) => {
-    if (!userId) return { success: false, error: "UNAUTHORIZED", code: "UNAUTHORIZED" }
+    const resolvedUserId = userId ?? await resolveCurrentUserId()
+    if (!resolvedUserId) return { success: false, error: "UNAUTHORIZED", code: "UNAUTHORIZED" }
     setState(prev => ({ ...prev, isLoading: true }))
     try {
       const res = await fetch("/api/cart", {
@@ -165,10 +208,11 @@ export function useCartSync() {
       setState(prev => ({ ...prev, isLoading: false, error: "Failed to add item" }))
       return { success: false, error: "Failed to add item" }
     }
-  }, [userId, fetchCart])
+  }, [userId, fetchCart, resolveCurrentUserId])
 
   const removeItem = useCallback(async (itemId: string) => {
-    if (!userId) return
+    const resolvedUserId = userId ?? await resolveCurrentUserId()
+    if (!resolvedUserId) return
     try {
       await fetch("/api/cart", {
         method: "PATCH",
@@ -180,10 +224,11 @@ export function useCartSync() {
     } catch {
       // Silently fail — will refresh on next fetch
     }
-  }, [userId, fetchCart])
+  }, [userId, fetchCart, resolveCurrentUserId])
 
   const updateQuantity = useCallback(async (itemId: string, quantity: number) => {
-    if (!userId) return
+    const resolvedUserId = userId ?? await resolveCurrentUserId()
+    if (!resolvedUserId) return
     try {
       await fetch("/api/cart", {
         method: "PATCH",
@@ -195,10 +240,11 @@ export function useCartSync() {
     } catch {
       // Silently fail
     }
-  }, [userId, fetchCart])
+  }, [userId, fetchCart, resolveCurrentUserId])
 
   const clearCart = useCallback(async () => {
-    if (!userId) return
+    const resolvedUserId = userId ?? await resolveCurrentUserId()
+    if (!resolvedUserId) return
     try {
       await fetch("/api/cart", { method: "DELETE" })
       setState({ cart: null, itemCount: 0, isLoading: false, error: null })
@@ -206,7 +252,7 @@ export function useCartSync() {
     } catch {
       // Silently fail
     }
-  }, [userId])
+  }, [userId, resolveCurrentUserId])
 
   return {
     ...state,

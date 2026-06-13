@@ -51,7 +51,13 @@ export default function ActivityFeed({ initialItems, variant = "ticker" }: Props
       es = new EventSource("/api/live/activity")
       es.onmessage = (e) => {
         try {
-          const item = JSON.parse(e.data) as ActivityItem
+          const raw = JSON.parse(e.data) as ActivityItem
+          // Stamp a guaranteed-unique id if the server omits one,
+          // preventing NaN keys from undefined + number concatenation.
+          const item: ActivityItem = {
+            ...raw,
+            id: raw.id ?? `sse-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          }
           setItems(prev => [item, ...prev].slice(0, 20))
         } catch {}
       }
@@ -79,7 +85,7 @@ export default function ActivityFeed({ initialItems, variant = "ticker" }: Props
   return (
     <div ref={containerRef} className="space-y-2">
       {items.slice(0, 8).map((item, idx) => (
-        <div key={item.id + idx} className="flex items-center gap-3 glass rounded-xl px-4 py-2.5 animate-in slide-in-from-left duration-300"
+        <div key={item.id != null ? `${item.id}-${idx}` : `fallback-${idx}`} className="flex items-center gap-3 glass rounded-xl px-4 py-2.5 animate-in slide-in-from-left duration-300"
           style={{ animationDelay: `${idx * 50}ms` }}>
           <span className="text-lg flex-shrink-0">{ICONS[item.type]}</span>
           <div className="flex-1 min-w-0">

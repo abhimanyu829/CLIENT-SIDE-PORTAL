@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
 import { z } from "zod"
 import { PaymentGateway, OrderStatus } from "@prisma/client"
-import { authOptions } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { getRazorpay } from "@/lib/razorpay"
 import { env } from "@/lib/env"
@@ -42,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   try {
     // ── 1. Authenticate ────────────────────────────────────────────────────
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session?.user?.id) {
       console.log("[RAZORPAY ORDER] ❌ No authenticated session")
       return NextResponse.json(

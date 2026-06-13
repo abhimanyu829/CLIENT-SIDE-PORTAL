@@ -11,9 +11,9 @@
 "use client"
 
 import { useCallback, useState } from "react"
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { CreditCard, Loader2, RefreshCw, AlertCircle } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
 declare global {
   interface Window {
@@ -96,7 +96,7 @@ export function RazorpayButton({
   autoRedirect = true,
 }: RazorpayButtonProps) {
   const router = useRouter()
-  const { data: session } = useSession()
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
@@ -151,12 +151,12 @@ export function RazorpayButton({
         image: "/logo.png",
         order_id: razorpayOrder.id,
         prefill: {
-          name: session?.user?.name ?? "",
-          email: session?.user?.email ?? "",
+          name: user?.name ?? "",
+          email: user?.email ?? "",
         },
         notes: {
           orderId: order.id,
-          userId: session?.user?.id ?? "",
+          userId: user?.id ?? "",
           tierId,
           productId: productId ?? "",
           checkoutMode: mode,
@@ -236,7 +236,7 @@ export function RazorpayButton({
       onError?.(message)
       setLoading(false)
     }
-  }, [tierId, productId, mode, couponCode, session, autoRedirect, onSuccess, onError, router, loading])
+  }, [tierId, productId, mode, couponCode, user, autoRedirect, onSuccess, onError, router, loading])
 
   const handleRetry = () => {
     setError(null)

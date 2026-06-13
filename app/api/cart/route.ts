@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { requireApiAuth, UnauthorizedError } from "@/lib/api-auth"
 import {
   addMarketplaceItemToCart,
   applyCouponToActiveCart,
@@ -9,27 +8,22 @@ import {
   updateCartItemQuantity,
 } from "@/lib/services/enterprise-commerce-service"
 
-async function requireAuth() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    throw new Error("UNAUTHORIZED")
-  }
-  return session.user.id
-}
-
 export async function GET() {
   try {
-    const userId = await requireAuth()
+    const userId = await requireApiAuth()
     const cart = await getActiveCart({ userId })
     return NextResponse.json({ data: cart })
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 })
+    }
     return NextResponse.json({ error: "Authentication required" }, { status: 401 })
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const userId = await requireAuth()
+    const userId = await requireApiAuth()
     const body = await req.json()
     if (!body.productId) {
       return NextResponse.json({ error: "productId is required" }, { status: 400 })
@@ -45,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ data: cart }, { status: 201 })
   } catch (error) {
-    if ((error as Error).message === "UNAUTHORIZED") {
+    if (error instanceof UnauthorizedError || (error as Error).message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
     const msg = (error as Error).message
@@ -61,7 +55,7 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const userId = await requireAuth()
+    const userId = await requireApiAuth()
     const body = await req.json()
 
     if (body.action === "apply_coupon") {
@@ -84,7 +78,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ error: "Unsupported cart action" }, { status: 400 })
   } catch (error) {
-    if ((error as Error).message === "UNAUTHORIZED") {
+    if (error instanceof UnauthorizedError || (error as Error).message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
     return NextResponse.json({ error: (error as Error).message }, { status: 400 })
@@ -93,7 +87,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE() {
   try {
-    const userId = await requireAuth()
+    const userId = await requireApiAuth()
     await clearActiveCart({ userId })
     return NextResponse.json({ data: null })
   } catch (error) {
