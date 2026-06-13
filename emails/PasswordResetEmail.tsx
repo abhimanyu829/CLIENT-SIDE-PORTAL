@@ -2,7 +2,7 @@ import { Button, Hr, Link, Section, Text } from "@react-email/components"
 import * as React from "react"
 import { EmailShell, baseStyles } from "./_shared"
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://yourapp.com"
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://nexusai.com"
 
 interface PasswordResetEmailProps {
   name: string
@@ -16,7 +16,7 @@ export const PasswordResetEmail = ({
   expiresInHours = 2,
 }: PasswordResetEmailProps) => (
   <EmailShell
-    preview="Reset your YourApp password — link expires soon"
+    preview="Reset your NexusAI password — link expires soon"
     footerNote="If you didn't request this, please ignore this email. Your password will not change."
   >
     <Text style={baseStyles.greeting}>Password reset request</Text>
@@ -24,7 +24,7 @@ export const PasswordResetEmail = ({
     <Text style={baseStyles.paragraph}>Hi {name},</Text>
 
     <Text style={baseStyles.paragraph}>
-      We received a request to reset the password for your YourApp account. Click the
+      We received a request to reset the password for your NexusAI account. Click the
       button below to choose a new password. This link is valid for{" "}
       <strong>{expiresInHours} hours</strong>.
     </Text>
@@ -59,7 +59,7 @@ export const PasswordResetEmail = ({
 
 PasswordResetEmail.PreviewProps = {
   name: "Jane Doe",
-  resetLink: "https://yourapp.com/auth/reset?token=abc123",
+  resetLink: "https://nexusai.com/auth/reset?token=abc123",
   expiresInHours: 2,
 } satisfies PasswordResetEmailProps
 

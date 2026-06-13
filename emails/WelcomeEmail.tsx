@@ -2,7 +2,7 @@ import { Button, Hr, Link, Section, Text } from "@react-email/components"
 import * as React from "react"
 import { EmailShell, baseStyles } from "./_shared"
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://yourapp.com"
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://nexusai.com"
 
 interface WelcomeEmailProps {
   name: string
@@ -15,11 +15,11 @@ export const WelcomeEmail = ({
   email,
   dashboardUrl = `${BASE_URL}/dashboard`,
 }: WelcomeEmailProps) => (
-  <EmailShell preview={`Welcome to YourApp, ${name}! Your account is ready.`}>
+  <EmailShell preview={`Welcome to NexusAI, ${name}! Your account is ready.`}>
     <Text style={baseStyles.greeting}>Welcome aboard, {name}! 🎉</Text>
 
     <Text style={baseStyles.paragraph}>
-      We're thrilled to have you join YourApp. Your account is all set up and ready
+      We're thrilled to have you join NexusAI. Your account is all set up and ready
       to go. Here's everything you can do on day one:
     </Text>
 

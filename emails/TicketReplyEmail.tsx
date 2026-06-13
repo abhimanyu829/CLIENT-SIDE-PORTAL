@@ -2,7 +2,7 @@ import { Button, Hr, Section, Text } from "@react-email/components"
 import * as React from "react"
 import { EmailShell, baseStyles } from "./_shared"
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://yourapp.com"
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://nexusai.com"
 
 interface TicketReplyEmailProps {
   name: string

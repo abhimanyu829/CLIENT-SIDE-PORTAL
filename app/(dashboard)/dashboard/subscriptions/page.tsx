@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import SubscriptionsClient from "@/components/dashboard/SubscriptionsClient"
+import { serializePrisma } from "@/lib/serialize-prisma"
 
 export const dynamic = "force-dynamic"
 
@@ -61,8 +62,8 @@ export default async function SubscriptionsPage() {
 
   return (
     <SubscriptionsClient
-      initialSubscriptions={serializedSubs as any}
-      availableProducts={serializedProducts as any}
+      initialSubscriptions={serializePrisma(serializedSubs) as any}
+      availableProducts={serializePrisma(serializedProducts) as any}
     />
   )
 }

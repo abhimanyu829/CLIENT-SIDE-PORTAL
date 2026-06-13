@@ -110,7 +110,11 @@ export async function POST(req: NextRequest) {
   }
 
   if (reasons.length > 0) {
-    return NextResponse.json({ valid: false, reasons }, { status: 200 })
+    return NextResponse.json({
+      valid: false,
+      reasons,
+      message: reasons.includes("ALREADY_OWNED") ? "You already own this product." : undefined,
+    }, { status: 200 })
   }
 
   return NextResponse.json({

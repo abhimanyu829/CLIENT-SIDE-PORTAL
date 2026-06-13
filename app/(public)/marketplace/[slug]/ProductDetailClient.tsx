@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import CountdownTimer from "@/components/marketplace/CountdownTimer"
 import ProductCard from "@/components/marketplace/ProductCard"
 import { useCart } from "@/providers/CartProvider"
@@ -60,6 +61,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const [cartState, setCartState] = useState<"idle" | "adding" | "added" | "error">("idle")
   const [cartError, setCartError] = useState<string | null>(null)
   const { addItem } = useCart()
+  const router = useRouter()
 
   const features: string[] = Array.isArray(product.features) ? product.features as string[] : []
   const integrations = Array.isArray(product.integrationCatalog) ? product.integrationCatalog as any[] : []
@@ -106,7 +108,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       if (!validateData.valid) {
         const reason = validateData.reasons?.[0]
         if (reason === "ALREADY_OWNED") {
-          setCartError("You already own this product")
+          setCartError("You already own this product.")
           setCartState("error")
           return
         }
@@ -128,10 +130,11 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       const result = await addItem(product.id, tierId, 1)
       if (result.success) {
         setCartState("added")
+        router.push("/cart")
         setTimeout(() => setCartState("idle"), 3000)
       } else {
         if (result.code === "ALREADY_OWNED") {
-          setCartError("You already own this product")
+          setCartError("You already own this product.")
         } else if (result.code === "SOLD_OUT") {
           setCartError("This product is sold out")
         } else {

@@ -12,7 +12,7 @@ import {
 } from "@react-email/components"
 import * as React from "react"
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://yourapp.com"
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://nexusai.com"
 const BRAND_COLOR = "#6366f1" // indigo-500
 const SECONDARY_COLOR = "#f1f5f9"
 const TEXT_DARK = "#0f172a"
@@ -169,9 +169,19 @@ interface EmailShellProps {
   preview: string
   children: React.ReactNode
   footerNote?: React.ReactNode
+  brandName?: string
+  brandTagline?: string
+  unsubscribeUrl?: string
 }
 
-export function EmailShell({ preview, children, footerNote }: EmailShellProps) {
+export function EmailShell({
+  preview,
+  children,
+  footerNote,
+  brandName = "NexusAI",
+  brandTagline = "Enterprise AI Infrastructure",
+  unsubscribeUrl = `${BASE_URL}/settings/notifications`,
+}: EmailShellProps) {
   return (
     <Html lang="en">
       <Head />
@@ -180,8 +190,8 @@ export function EmailShell({ preview, children, footerNote }: EmailShellProps) {
         <Container style={baseStyles.card}>
           {/* Header / Logo */}
           <Section style={baseStyles.header}>
-            <Text style={baseStyles.headerLogo}>YourApp</Text>
-            <Text style={baseStyles.headerTagline}>AI-Powered SaaS Platform</Text>
+            <Text style={baseStyles.headerLogo}>{brandName}</Text>
+            <Text style={baseStyles.headerTagline}>{brandTagline}</Text>
           </Section>
 
           {/* Content */}
@@ -191,12 +201,10 @@ export function EmailShell({ preview, children, footerNote }: EmailShellProps) {
           <Section style={baseStyles.footer}>
             {footerNote && <Text style={baseStyles.muted}>{footerNote}</Text>}
             <Text style={baseStyles.footerText}>
-              © {new Date().getFullYear()} YourApp, Inc. · All rights reserved.
+              © {new Date().getFullYear()} NexusAI, Inc. · All rights reserved.
             </Text>
             <Text style={baseStyles.footerText}>
-              <Link href={`${BASE_URL}/settings/notifications`} style={baseStyles.footerLink}>
-                Unsubscribe
-              </Link>
+              <Link href={unsubscribeUrl} style={baseStyles.footerLink}>Unsubscribe</Link>
               {" · "}
               <Link href={`${BASE_URL}/legal/privacy`} style={baseStyles.footerLink}>
                 Privacy Policy

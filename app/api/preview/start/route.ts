@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   })
 
   if (entitlement) {
-    return NextResponse.json({ error: "ALREADY_OWNED", message: "You already own this product" }, { status: 409 })
+    return NextResponse.json({ error: "ALREADY_OWNED", message: "You already own this product." }, { status: 409 })
   }
 
   // Count user's preview sessions for this product

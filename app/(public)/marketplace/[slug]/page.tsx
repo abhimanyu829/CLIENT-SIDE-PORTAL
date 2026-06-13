@@ -3,6 +3,7 @@ import Link from "next/link"
 import { db } from "@/lib/db"
 import { ProductStatus, CampaignStatus } from "@prisma/client"
 import ProductDetailClient from "./ProductDetailClient"
+import { serializePrisma } from "@/lib/serialize-prisma"
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -257,5 +258,5 @@ export default async function ProductDetailPage({ params }: Props) {
     })),
   }
 
-  return <ProductDetailClient product={serialized} />
+  return <ProductDetailClient product={serializePrisma(serialized)} />
 }

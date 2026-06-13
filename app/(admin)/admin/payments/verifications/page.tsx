@@ -1,11 +1,11 @@
-import { requireAdmin } from "@/lib/admin-auth"
+import { requireSuperAdmin } from "@/lib/admin-auth"
 import { db } from "@/lib/db"
 import VerificationsClient from "./VerificationsClient"
 
 export const dynamic = "force-dynamic"
 
 export default async function AdminPaymentVerificationsPage() {
-  await requireAdmin()
+  await requireSuperAdmin()
 
   const verifications = await db.paymentVerification.findMany({
     where: { verificationStatus: "AWAITING_VERIFICATION" },

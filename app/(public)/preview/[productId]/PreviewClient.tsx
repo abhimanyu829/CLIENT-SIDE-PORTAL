@@ -52,7 +52,7 @@ export default function PreviewClient({ product }: { product: Product }) {
 
       if (!res.ok) {
         if (data.code === "ALREADY_OWNED") {
-          setError("You already own this product. No preview needed!")
+          setError("You already own this product.")
           return
         }
         if (data.code === "PREVIEW_LIMIT_REACHED") {

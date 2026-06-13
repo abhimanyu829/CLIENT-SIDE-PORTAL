@@ -2,7 +2,7 @@ import { Button, Hr, Section, Text } from "@react-email/components"
 import * as React from "react"
 import { EmailShell, baseStyles } from "./_shared"
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://yourapp.com"
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://nexusai.com"
 
 interface InvoiceEmailProps {
   name: string
@@ -95,7 +95,7 @@ export const InvoiceEmail = ({
 InvoiceEmail.PreviewProps = {
   name: "Jane Doe",
   invoiceNumber: "INV-2025-0042",
-  invoiceUrl: "https://yourapp.com/invoices/inv_abc123.pdf",
+  invoiceUrl: "https://nexusai.com/invoices/inv_abc123.pdf",
   amount: "$49.00",
   currency: "USD",
   issuedAt: "May 13, 2025",

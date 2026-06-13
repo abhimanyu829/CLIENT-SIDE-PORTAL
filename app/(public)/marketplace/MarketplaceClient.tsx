@@ -93,7 +93,7 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
       const data = await res.json()
       if (!res.ok) {
         if (data.error === "ALREADY_OWNED") {
-          showToast("info", "You already own this product!")
+          showToast("info", "You already own this product.")
           return
         }
         if (data.error === "PREVIEW_LIMIT_REACHED") {
@@ -129,7 +129,7 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
       if (!validateData.valid) {
         const reason = validateData.reasons?.[0]
         if (reason === "ALREADY_OWNED") {
-          showToast("info", "You already own this product")
+          showToast("info", "You already own this product.")
           return
         }
         if (reason === "SOLD_OUT") {
@@ -145,7 +145,7 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
       if (!result.success) {
         const code = result.code ?? result.error
         if (code === "ALREADY_OWNED") {
-          showToast("info", "You already own this product")
+          showToast("info", "You already own this product.")
         } else if (code === "SOLD_OUT") {
           showToast("error", "This product is sold out")
         } else {
@@ -154,6 +154,7 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
         return
       }
       showToast("success", "Added to cart ✓")
+      router.push("/cart")
     } catch {
       showToast("error", "Failed to add to cart. Please try again.")
     } finally {

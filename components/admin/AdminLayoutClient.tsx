@@ -32,10 +32,11 @@ const NAV_ITEMS = [
   { name: "Subscriptions",       path: "/admin/subscriptions", icon: CreditCard },
   { name: "Orders & Payments",  path: "/admin/orders",      icon: ShoppingCart },
   { name: "Payment Inspection",  path: "/admin/payments",    icon: ScanSearch },
-  { name: "Manual Verifications", path: "/admin/payments/verifications", icon: WalletCards },
+  { name: "Manual Verifications", path: "/admin/payments/verifications", icon: WalletCards, superAdminOnly: true },
   { name: "Products & Plans",   path: "/admin/products",    icon: Package },
   { name: "Preview Center",    path: "/admin/previews",     icon: Eye },
   { name: "Offers & Coupons",   path: "/admin/coupons",     icon: Tag },
+  { name: "Email Center",       path: "/admin/emails",      icon: Settings, superAdminOnly: true },
   { name: "Analytics",           path: "/admin/analytics",   icon: BarChart3 },
   { name: "AI Monitoring",       path: "/admin/ai-monitoring", icon: Bot },
   { name: "Webhooks & Events",  path: "/admin/webhooks",    icon: Webhook },
@@ -95,7 +96,7 @@ function AdminSidebar({ collapsed, onToggle, onSignOut, isSuperAdmin, userName, 
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => !("superAdminOnly" in item) || !item.superAdminOnly || isSuperAdmin).map((item) => {
           const isActive = item.path === "/admin"
             ? pathname === "/admin"
             : pathname.startsWith(item.path)
@@ -238,7 +239,7 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
               </Link>
             </div>
             <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
-              {NAV_ITEMS.map((item) => {
+              {NAV_ITEMS.filter((item) => !("superAdminOnly" in item) || !item.superAdminOnly || isSuperAdmin).map((item) => {
                 const isActive = item.path === "/admin"
                   ? pathname === "/admin"
                   : pathname.startsWith(item.path)

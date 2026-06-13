@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     }
     const msg = (error as Error).message
     if (msg === "ALREADY_OWNED") {
-      return NextResponse.json({ error: "You already own this product", code: "ALREADY_OWNED" }, { status: 409 })
+      return NextResponse.json({ error: "You already own this product.", code: "ALREADY_OWNED" }, { status: 409 })
     }
     if (msg === "SOLD_OUT") {
       return NextResponse.json({ error: "This product is sold out", code: "SOLD_OUT" }, { status: 409 })

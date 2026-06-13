@@ -63,6 +63,8 @@ const envSchema = z.object({
   // Email
   RESEND_API_KEY: optStr,
   EMAIL_FROM: optStr,
+  ADMIN_EMAIL: optStr,
+  RESEND_WEBHOOK_SECRET: optStr,
 
   // AI
   OPENAI_API_KEY: optStr,

@@ -12,6 +12,7 @@ import { expireOverdueSubscriptions, markSubscriptionPastDue } from "@/lib/servi
 import { generateInvoiceArtifact, sendInvoiceEmail } from "@/lib/services/invoice-service"
 import { createNotification } from "@/lib/notifications"
 import { sendEmail } from "@/lib/resend"
+import { processEmailQueue, scheduleEmailCampaign } from "@/lib/email/service"
 import WelcomeEmail from "@/emails/WelcomeEmail"
 import VerificationEmail from "@/emails/VerificationEmail"
 import PasswordResetEmail from "@/emails/PasswordResetEmail"
@@ -102,6 +103,20 @@ export function startWorkers() {
       const data = job.data as Record<string, any>
 
       logger.info({ jobName, data }, "Email worker processing job")
+
+      if (jobName === EMAIL_JOBS.PROCESS_QUEUE) {
+        const { queueId } = data as { queueId?: string }
+        if (!queueId) throw new Error("queueId is required")
+        await processEmailQueue(queueId)
+        return
+      }
+
+      if (jobName === EMAIL_JOBS.PROCESS_CAMPAIGN) {
+        const { campaignId } = data as { campaignId?: string }
+        if (!campaignId) throw new Error("campaignId is required")
+        await scheduleEmailCampaign(campaignId)
+        return
+      }
 
       if (
         jobName === EMAIL_JOBS.SEND_WELCOME ||

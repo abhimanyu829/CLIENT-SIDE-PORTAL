@@ -29,11 +29,7 @@ export default function VerifyRequiredPage() {
     >
       <div className="rounded-[1.75rem] border border-white/10 bg-[#0d0d10]/95 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.45)] sm:p-6">
         <ClerkLoaded>
-          <UserProfile
-            routing="path"
-            path="/verify-required"
-            appearance={clerkAppearance}
-          />
+          <UserProfile routing="hash" appearance={clerkAppearance} />
         </ClerkLoaded>
         <ClerkLoading>
           <div className="flex min-h-[420px] items-center justify-center rounded-[1.5rem] border border-white/10 bg-black/20">

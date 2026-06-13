@@ -346,6 +346,7 @@ model User {
   metricEvents    PlatformMetricEvent[]
   previewSessions PreviewSession[]
   paymentVerifications PaymentVerification[]
+  emailCampaigns   EmailCampaign[]
 
   @@index([email])
   @@index([role])
@@ -1661,5 +1662,189 @@ model CouponUsage {
 
   @@unique([couponId, userId])
   @@index([couponId])
+  @@index([userId])
+}
+
+enum EmailStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  RETRYING
+  SUPPRESSED
+}
+
+enum EmailProviderName {
+  RESEND
+  SENDGRID
+  POSTMARK
+  SES
+  MAILGUN
+}
+
+enum DeliveryState {
+  QUEUED
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  COMPLAINED
+  DROPPED
+}
+
+enum EmailAudienceType {
+  ALL_USERS
+  ACTIVE_SUBSCRIBERS
+  EXPIRED_SUBSCRIBERS
+  BY_PRODUCT
+  BY_PLAN
+  BY_ROLE
+  INDIVIDUAL
+}
+
+enum SuppressionReason {
+  UNSUBSCRIBED
+  HARD_BOUNCE
+  SPAM_COMPLAINT
+  MANUAL
+  INVALID_ADDRESS
+}
+
+enum EmailCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  PAUSED
+  CANCELLED
+}
+
+model EmailCampaign {
+  id                String             @id @default(cuid())
+  name              String
+  subject           String
+  templateName      String
+  payload           Json               @default("{}")
+  audienceType      EmailAudienceType
+  audienceFilter    Json?
+  status            EmailCampaignStatus @default(DRAFT)
+  createdByAdminId  String
+  scheduledAt       DateTime?
+  sentAt            DateTime?
+  totalRecipients   Int                @default(0)
+  sentCount         Int                @default(0)
+  deliveredCount    Int                @default(0)
+  openedCount       Int                @default(0)
+  clickedCount      Int                @default(0)
+  bouncedCount      Int                @default(0)
+  unsubscribeCount  Int                @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  createdByAdmin    User               @relation(fields: [createdByAdminId], references: [id], onDelete: Cascade)
+  queueItems        EmailQueue[]
+
+  @@index([status, scheduledAt])
+  @@index([createdByAdminId])
+}
+
+model EmailQueue {
+  id             String    @id @default(cuid())
+  emailType      String
+  recipient      String
+  sender         String    @default("noreply@nexusai.com")
+  subject        String
+  templateName   String
+  payload        Json      @default("{}")
+  status         EmailStatus @default(PENDING)
+  priority       Int       @default(5)
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(5)
+  nextRetryAt    DateTime?
+  lastError      String?
+  campaignId     String?
+  userId         String?
+  orderId        String?
+  subscriptionId String?
+  productId      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  campaign       EmailCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  log            EmailLog?
+
+  @@index([status, nextRetryAt])
+  @@index([emailType])
+  @@index([userId])
+  @@index([campaignId])
+}
+
+model EmailLog {
+  id             String          @id @default(cuid())
+  queueId        String          @unique
+  emailType      String
+  recipient      String
+  sender         String
+  provider       EmailProviderName @default(RESEND)
+  status         EmailStatus
+  deliveryState  DeliveryState   @default(QUEUED)
+  providerMsgId  String?
+  providerResponse Json?
+  retries        Int             @default(0)
+  failureReason  String?
+  userId         String?
+  orderId        String?
+  subscriptionId String?
+  productId      String?
+  queuedAt       DateTime        @default(now())
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  openedAt       DateTime?
+  clickedAt      DateTime?
+  failedAt       DateTime?
+
+  queue          EmailQueue      @relation(fields: [queueId], references: [id], onDelete: Cascade)
+
+  @@index([recipient])
+  @@index([emailType])
+  @@index([deliveryState])
+  @@index([userId])
+  @@index([orderId])
+}
+
+model RateLimit {
+  id          String   @id @default(cuid())
+  bucketKey   String   @unique
+  tokens      Int
+  windowStart DateTime @default(now())
+  windowSecs  Int      @default(3600)
+  maxTokens   Int      @default(10)
+  updatedAt   DateTime @updatedAt
+
+  @@index([bucketKey])
+}
+
+model EmailSuppression {
+  id          String           @id @default(cuid())
+  email       String           @unique
+  reason      SuppressionReason
+  emailTypes  String[]
+  source      String?
+  createdAt   DateTime         @default(now())
+
+  @@index([email])
+}
+
+model EmailPreference {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  transactional    Boolean  @default(true)
+  subscriptionMail  Boolean  @default(true)
+  marketing        Boolean  @default(true)
+  newsletter       Boolean  @default(true)
+  productUpdates   Boolean  @default(true)
+  unsubscribeToken String   @unique
+  updatedAt        DateTime @updatedAt
+
   @@index([userId])
 }

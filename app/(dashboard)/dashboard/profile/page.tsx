@@ -37,7 +37,7 @@ export default async function ProfilePage() {
           </p>
         </div>
         <ClerkLoaded>
-          <UserProfile routing="path" path="/dashboard/profile" appearance={clerkAppearance} />
+          <UserProfile routing="hash" appearance={clerkAppearance} />
         </ClerkLoaded>
         <ClerkLoading>
           <div className="flex min-h-[420px] items-center justify-center rounded-[1.5rem] border border-white/10 bg-black/20">

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { requireAdmin } from "@/lib/admin-auth"
+import { requireSuperAdmin } from "@/lib/admin-auth"
 import { markOrderPaymentFailed } from "@/lib/services/enterprise-commerce-service"
 import { logManualPaymentAudit } from "@/lib/services/manual-payment-verification"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const admin = await requireAdmin()
+    const admin = await requireSuperAdmin()
     const verification = await db.paymentVerification.findUnique({
       where: { id },
       include: {

@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin-auth"
 import { db } from "@/lib/db"
+import { serializePrisma } from "@/lib/serialize-prisma"
 import SubscriptionsClient from "./SubscriptionsClient"
 
 export default async function SubscriptionsPage({
@@ -94,35 +95,39 @@ export default async function SubscriptionsPage({
     }
   })
 
+  const serializedSubscriptions = serializePrisma(subscriptions.map(serialize))
+  const serializedUpcomingRenewals = serializePrisma(upcomingRenewals.map((r) => ({
+    ...r,
+    currentPeriodStart: r.currentPeriodStart.toISOString(),
+    currentPeriodEnd: r.currentPeriodEnd.toISOString(),
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+    cancelledAt: r.cancelledAt?.toISOString() ?? null,
+    trialEndsAt: r.trialEndsAt?.toISOString() ?? null,
+    tier: { ...r.tier, price: String(r.tier.price), createdAt: r.tier.createdAt.toISOString() },
+  })))
+  const serializedDunningQueue = serializePrisma(dunningQueue.map((d) => ({
+    ...d,
+    currentPeriodStart: d.currentPeriodStart.toISOString(),
+    currentPeriodEnd: d.currentPeriodEnd.toISOString(),
+    createdAt: d.createdAt.toISOString(),
+    updatedAt: d.updatedAt.toISOString(),
+    cancelledAt: d.cancelledAt?.toISOString() ?? null,
+    trialEndsAt: d.trialEndsAt?.toISOString() ?? null,
+    tier: { ...d.tier, price: String(d.tier.price), createdAt: d.tier.createdAt.toISOString() },
+    payments: d.payments.map((p) => ({ ...p, amount: String(p.amount), createdAt: p.createdAt.toISOString(), paidAt: p.paidAt?.toISOString() ?? null })),
+  })))
+
   return (
     <SubscriptionsClient
-      subscriptions={subscriptions.map(serialize) as any}
+      subscriptions={serializedSubscriptions as any}
       total={total}
       page={page}
       limit={limit}
       activeStatus={status}
       statusCounts={statusCounts}
-      upcomingRenewals={upcomingRenewals.map((r) => ({
-        ...r,
-        currentPeriodStart: r.currentPeriodStart.toISOString(),
-        currentPeriodEnd: r.currentPeriodEnd.toISOString(),
-        createdAt: r.createdAt.toISOString(),
-        updatedAt: r.updatedAt.toISOString(),
-        cancelledAt: r.cancelledAt?.toISOString() ?? null,
-        trialEndsAt: r.trialEndsAt?.toISOString() ?? null,
-        tier: { ...r.tier, price: String(r.tier.price), createdAt: r.tier.createdAt.toISOString() },
-      })) as any}
-      dunningQueue={dunningQueue.map((d) => ({
-        ...d,
-        currentPeriodStart: d.currentPeriodStart.toISOString(),
-        currentPeriodEnd: d.currentPeriodEnd.toISOString(),
-        createdAt: d.createdAt.toISOString(),
-        updatedAt: d.updatedAt.toISOString(),
-        cancelledAt: d.cancelledAt?.toISOString() ?? null,
-        trialEndsAt: d.trialEndsAt?.toISOString() ?? null,
-        tier: { ...d.tier, price: String(d.tier.price), createdAt: d.tier.createdAt.toISOString() },
-        payments: d.payments.map((p) => ({ ...p, amount: String(p.amount), createdAt: p.createdAt.toISOString(), paidAt: p.paidAt?.toISOString() ?? null })),
-      })) as any}
+      upcomingRenewals={serializedUpcomingRenewals as any}
+      dunningQueue={serializedDunningQueue as any}
     />
   )
 }

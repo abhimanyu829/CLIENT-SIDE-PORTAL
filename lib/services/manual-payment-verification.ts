@@ -1,8 +1,7 @@
 import { createNotification } from "@/lib/notifications"
-import { sendEmail } from "@/lib/resend"
 import { db } from "@/lib/db"
 import { auditLog } from "@/lib/audit"
-import ManualPaymentReviewAdminEmail from "@/emails/ManualPaymentReviewAdminEmail"
+import { sendManualPaymentReviewEmail } from "@/lib/email/send-manual-payment-review-email"
 
 export const MANUAL_PAYMENT_ADMIN_EMAIL = "luckypal5002@gmail.com"
 
@@ -174,23 +173,18 @@ export async function notifyManualPaymentAdmin(input: {
 
   const adminEmail = admin?.email ?? MANUAL_PAYMENT_ADMIN_EMAIL
   if (adminEmail) {
-    await sendEmail({
-      to: adminEmail,
-      subject: `Manual payment review required: ${input.order.orderNumber}`,
-      react: ManualPaymentReviewAdminEmail({
-        adminName: admin?.name ?? "Admin",
-        adminEmail,
-        orderNumber: input.order.orderNumber,
-        orderId: input.order.id,
-        userEmail: input.order.user.email,
-        productSummary,
-        claimedUtr: input.verification.utrNumber,
-        claimedAmount: String(input.verification.claimedAmount ?? ""),
-        expectedAmount: String(formatMoney(input.order.grandTotal)),
-        currency: input.order.currency,
-        reviewUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/admin/payments/verifications`,
-      }),
-      tags: [{ name: "type", value: "manual-payment-review" }],
+    await sendManualPaymentReviewEmail({
+      adminName: admin?.name ?? "Admin",
+      adminEmail,
+      orderNumber: input.order.orderNumber,
+      orderId: input.order.id,
+      userEmail: input.order.user.email,
+      productSummary,
+      claimedUtr: input.verification.utrNumber,
+      claimedAmount: String(input.verification.claimedAmount ?? ""),
+      expectedAmount: String(formatMoney(input.order.grandTotal)),
+      currency: input.order.currency,
+      reviewUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/admin/payments/verifications`,
     })
   }
 

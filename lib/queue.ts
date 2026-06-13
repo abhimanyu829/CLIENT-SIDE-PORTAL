@@ -91,6 +91,9 @@ export const auditQueue = createLazyQueue("audit", {
 })
 
 export const EMAIL_JOBS = {
+  PROCESS_QUEUE:             "email.process-queue",
+  PROCESS_CAMPAIGN:          "email.process-campaign",
+  SEND_TEST:                 "email.send-test",
   SEND_WELCOME:              "send-welcome",
   SEND_INVOICE:              "send-invoice",
   SEND_RESET:                "send-password-reset",

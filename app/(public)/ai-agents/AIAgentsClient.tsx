@@ -66,7 +66,7 @@ export default function AIAgentsClient({ agents }: { agents: AgentCardData[] }) 
       })
       if (res.status === 401) { router.push("/login?callbackUrl=/ai-agents"); return }
       if (!res.ok) { const d = await res.json(); alert(d.error || "Failed to add to cart"); return }
-      router.refresh()
+      router.push("/cart")
     } catch { alert("Failed to add to cart.") }
   }, [router])
 

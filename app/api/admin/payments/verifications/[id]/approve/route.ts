@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { requireAdmin } from "@/lib/admin-auth"
+import { requireSuperAdmin } from "@/lib/admin-auth"
 import { markOrderPaid, markOrderPaymentFailed, fulfillOrder } from "@/lib/services/enterprise-commerce-service"
 import {
   compareManualPaymentReview,
@@ -17,7 +17,7 @@ const reviewSchema = z.object({
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const admin = await requireAdmin()
+    const admin = await requireSuperAdmin()
     const body = reviewSchema.parse(await req.json())
     const verification = await db.paymentVerification.findUnique({
       where: { id },
