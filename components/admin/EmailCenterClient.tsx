@@ -30,9 +30,16 @@ type Campaign = {
 type Props = {
   campaigns: Campaign[]
   stats: { total: number; sending: number; sent: number; draft: number }
+  apiBasePath?: string
+  heading?: string
+  description?: string
+  defaultTemplateName?: string
+  defaultPayload?: string
+  defaultAudienceFilter?: string
+  audienceOptions?: string[]
 }
 
-const audienceOptions = [
+const defaultAudienceOptions = [
   "ALL_USERS",
   "ACTIVE_SUBSCRIBERS",
   "EXPIRED_SUBSCRIBERS",
@@ -42,15 +49,25 @@ const audienceOptions = [
   "INDIVIDUAL",
 ]
 
-export default function EmailCenterClient({ campaigns: initialCampaigns, stats }: Props) {
+export default function EmailCenterClient({
+  campaigns: initialCampaigns,
+  stats,
+  apiBasePath = "/api/admin/emails",
+  heading = "Email Center",
+  description = "Backend-authoritative email infrastructure for transactional, marketing, subscription, security, and admin communications.",
+  defaultTemplateName = "NEWSLETTER_CAMPAIGN",
+  defaultPayload = '{"title":"NexusAI Update","body":"Hello from NexusAI"}',
+  defaultAudienceFilter = '{"roles":["CLIENT"]}',
+  audienceOptions = defaultAudienceOptions,
+}: Props) {
   const [campaigns, setCampaigns] = useState(initialCampaigns)
   const [loading, startTransition] = useTransition()
   const [name, setName] = useState("")
   const [subject, setSubject] = useState("")
-  const [templateName, setTemplateName] = useState("NEWSLETTER_CAMPAIGN")
+  const [templateName, setTemplateName] = useState(defaultTemplateName)
   const [audienceType, setAudienceType] = useState("ALL_USERS")
-  const [payload, setPayload] = useState('{"title":"NexusAI Update","body":"Hello from NexusAI"}')
-  const [audienceFilter, setAudienceFilter] = useState('{"roles":["CLIENT"]}')
+  const [payload, setPayload] = useState(defaultPayload)
+  const [audienceFilter, setAudienceFilter] = useState(defaultAudienceFilter)
   const [scheduledAt, setScheduledAt] = useState("")
   const [sendNow, setSendNow] = useState(false)
   const [testRecipient, setTestRecipient] = useState("")
@@ -61,7 +78,7 @@ export default function EmailCenterClient({ campaigns: initialCampaigns, stats }
   const counters = useMemo(() => stats, [stats])
 
   const refreshCampaigns = async () => {
-    const res = await fetch("/api/admin/emails")
+    const res = await fetch(apiBasePath)
     const json = await res.json()
     if (json.success) setCampaigns(json.data)
   }
@@ -69,7 +86,7 @@ export default function EmailCenterClient({ campaigns: initialCampaigns, stats }
   const handleCreate = async () => {
     setMessage(null)
     try {
-      const res = await fetch("/api/admin/emails", {
+      const res = await fetch(apiBasePath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -84,10 +101,11 @@ export default function EmailCenterClient({ campaigns: initialCampaigns, stats }
         }),
       })
       const json = await res.json()
-      if (!res.ok || !json.success) throw new Error(json.error?.message ?? "Failed to create campaign")
+      if (!res.ok || !json.success) throw new Error(json.error?.message ?? "Unable to save campaign")
       setMessage("Campaign saved")
       setName("")
       setSubject("")
+      setScheduledAt("")
       await refreshCampaigns()
     } catch (error) {
       setMessage((error as Error).message)
@@ -96,15 +114,19 @@ export default function EmailCenterClient({ campaigns: initialCampaigns, stats }
 
   const handlePreview = async () => {
     setPreviewBusy(true)
+    setMessage(null)
     try {
-      const res = await fetch("/api/admin/emails/preview", {
+      const res = await fetch(`${apiBasePath}/preview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ templateName, payload: JSON.parse(payload || "{}") }),
+        body: JSON.stringify({
+          templateName,
+          payload: JSON.parse(payload || "{}"),
+        }),
       })
       const json = await res.json()
       if (!res.ok || !json.success) throw new Error(json.error?.message ?? "Unable to preview email")
-      setPreviewHtml(json.html)
+      setPreviewHtml(json.data.html)
     } catch (error) {
       setMessage((error as Error).message)
     } finally {
@@ -115,7 +137,7 @@ export default function EmailCenterClient({ campaigns: initialCampaigns, stats }
   const handleTest = async () => {
     setMessage(null)
     try {
-      const res = await fetch("/api/admin/emails/test", {
+      const res = await fetch(`${apiBasePath}/test`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -136,7 +158,7 @@ export default function EmailCenterClient({ campaigns: initialCampaigns, stats }
   const handleSendCampaign = async (campaignId: string) => {
     setMessage(null)
     try {
-      const res = await fetch(`/api/admin/emails/${campaignId}/send`, { method: "POST" })
+      const res = await fetch(`${apiBasePath}/${campaignId}/send`, { method: "POST" })
       const json = await res.json()
       if (!res.ok || !json.success) throw new Error(json.error?.message ?? "Unable to send campaign")
       setMessage("Campaign queued for delivery")
@@ -157,15 +179,19 @@ export default function EmailCenterClient({ campaigns: initialCampaigns, stats }
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
-          <h2 className="text-xl font-black text-white">Create Email Campaign</h2>
-          <p className="mt-1 text-sm text-zinc-500">Backend-only audience selection, queue fanout, retries, and audit logs.</p>
+          <h2 className="text-xl font-black text-white">{heading}</h2>
+          <p className="mt-1 text-sm text-zinc-500">{description}</p>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Campaign name" className="border-white/10 bg-zinc-950" />
             <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="border-white/10 bg-zinc-950" />
             <Input value={templateName} onChange={(e) => setTemplateName(e.target.value)} placeholder="Template key" className="border-white/10 bg-zinc-950" />
             <select value={audienceType} onChange={(e) => setAudienceType(e.target.value)} className="rounded-md border border-white/10 bg-zinc-950 px-3 py-2 text-sm text-white">
-              {audienceOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+              {audienceOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
             </select>
             <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="border-white/10 bg-zinc-950" />
             <label className="flex items-center gap-2 text-sm text-zinc-300">
@@ -180,10 +206,16 @@ export default function EmailCenterClient({ campaigns: initialCampaigns, stats }
           </div>
 
           <div className="mt-4 flex flex-wrap gap-3">
-            <Button onClick={handleCreate} disabled={loading || !name || !subject} className="bg-violet-600 hover:bg-violet-500">Save Campaign</Button>
-            <Button variant="outline" onClick={handlePreview} disabled={previewBusy} className="border-white/10 bg-transparent text-white">Preview</Button>
+            <Button onClick={handleCreate} disabled={loading || !name || !subject} className="bg-violet-600 hover:bg-violet-500">
+              Save Campaign
+            </Button>
+            <Button variant="outline" onClick={handlePreview} disabled={previewBusy} className="border-white/10 bg-transparent text-white">
+              Preview
+            </Button>
             <Input value={testRecipient} onChange={(e) => setTestRecipient(e.target.value)} placeholder="test@company.com" className="max-w-56 border-white/10 bg-zinc-950" />
-            <Button variant="outline" onClick={handleTest} disabled={!testRecipient} className="border-white/10 bg-transparent text-white">Send Test</Button>
+            <Button variant="outline" onClick={handleTest} disabled={!testRecipient} className="border-white/10 bg-transparent text-white">
+              Send Test
+            </Button>
           </div>
 
           {message && <p className="mt-3 text-sm text-amber-300">{message}</p>}
@@ -196,9 +228,7 @@ export default function EmailCenterClient({ campaigns: initialCampaigns, stats }
             {previewHtml ? (
               <iframe title="Email Preview" srcDoc={previewHtml} className="min-h-[540px] w-full rounded-xl bg-white" />
             ) : (
-              <div className="flex min-h-[540px] items-center justify-center text-sm text-zinc-500">
-                Click Preview to render the current template.
-              </div>
+              <div className="flex min-h-[540px] items-center justify-center text-sm text-zinc-500">Click Preview to render the current template.</div>
             )}
           </div>
         </section>
@@ -213,7 +243,9 @@ export default function EmailCenterClient({ campaigns: initialCampaigns, stats }
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-white">{campaign.name}</h3>
-                    <Badge variant="outline" className="border-white/10 text-zinc-300">{campaign.status}</Badge>
+                    <Badge variant="outline" className="border-white/10 text-zinc-300">
+                      {campaign.status}
+                    </Badge>
                   </div>
                   <p className="mt-1 text-sm text-zinc-500">{campaign.subject}</p>
                 </div>

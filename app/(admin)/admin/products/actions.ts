@@ -9,7 +9,7 @@ import { encrypt } from "@/lib/encryption"
 
 // ─── ISR Revalidation Helper ─────────────────────────────────────────────────────
 
-const REVALIDATE_PROFILE = "" // Next.js 16 requires second arg
+const REVALIDATE_PROFILE = "max" // Next.js 16 requires second arg
 
 async function revalidateProductCaches(type?: ProductType, slug?: string) {
   // Revalidate all product-related pages and tags
@@ -370,6 +370,7 @@ export async function deleteProduct(productId: string) {
 
   const product = await db.$transaction(async (tx) => {
     const existing = await tx.product.findUniqueOrThrow({ where: { id: productId } })
+    const orderItemCount = await tx.orderItem.count({ where: { productId } })
 
     await tx.auditLog.create({
       data: {
@@ -378,15 +379,38 @@ export async function deleteProduct(productId: string) {
         entity: "Product",
         entityId: productId,
         beforeJson: { name: existing.name, slug: existing.slug, type: existing.type },
+        afterJson: {
+          archivedInsteadOfDeleted: orderItemCount > 0,
+          orderItemCount,
+        },
       },
     })
 
-    await tx.product.delete({ where: { id: productId } })
+    if (orderItemCount > 0) {
+      await tx.product.update({
+        where: { id: productId },
+        data: {
+          status: "ARCHIVED",
+          isFeatured: false,
+          isPinned: false,
+          isTrending: false,
+          isBestSeller: false,
+          assignedUserId: null,
+          assignedEmail: null,
+          reservedUntil: null,
+          lockedBy: null,
+          lockedAt: null,
+          lastEditedBy: admin.userId,
+        },
+      })
+    } else {
+      await tx.product.delete({ where: { id: productId } })
+    }
     return existing
   })
 
   await revalidateProductCaches(product.type, product.slug)
-  return { success: true }
+  return { success: true, archived: true }
 }
 
 // ─── Duplicate Product ────────────────────────────────────────────────────────────

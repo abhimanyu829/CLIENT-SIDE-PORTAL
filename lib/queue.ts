@@ -5,10 +5,6 @@ import { logger } from "@/lib/logger"
 const REDIS_URL = env.REDIS_URL
 const REDIS_AVAILABLE = !!REDIS_URL
 
-if (!REDIS_AVAILABLE) {
-  console.warn("⚠️  Redis not configured (REDIS_URL missing). BullMQ queues are disabled — payment webhooks and background jobs will run synchronously.")
-}
-
 const connection = REDIS_URL ? { url: REDIS_URL } : undefined
 
 const defaultJobOptions = {
@@ -32,7 +28,7 @@ function createLazyQueue(name: string, options: Partial<QueueOptions> = {}) {
           ...options.defaultJobOptions,
         },
       })
-      logger.info({ queue: name }, "BullMQ queue initialized")
+      logger.debug({ queue: name }, "BullMQ queue initialized")
     }
     return queue
   }

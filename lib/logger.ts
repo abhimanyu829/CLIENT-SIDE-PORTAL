@@ -9,12 +9,6 @@ export const logger = pino({
   level: isProduction ? "info" : "debug",
   base: { service: "start-client" },
   timestamp: pino.stdTimeFunctions.isoTime,
-  transport: !isProduction
-    ? {
-        target: "pino-pretty",
-        options: { colorize: true, translateTime: "SYS:HH:MM:ss", ignore: "pid,hostname" },
-      }
-    : undefined,
   serializers: {
     err: pino.stdSerializers.err,
     error: pino.stdSerializers.err,

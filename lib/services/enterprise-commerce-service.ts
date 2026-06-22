@@ -1243,21 +1243,32 @@ export async function fulfillOrder(orderId: string): Promise<void> {
 
   const { encrypt, decrypt } = await import("@/lib/encryption")
 
+  const resolveDeliveryConfig = (value: unknown): Record<string, unknown> => {
+    if (!value) return {}
+    if (typeof value === "object") return value as Record<string, unknown>
+    if (typeof value !== "string") return {}
+
+    try {
+      const decrypted = decrypt(value)
+      const parsed = JSON.parse(decrypted)
+      return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {}
+    } catch {
+      try {
+        const parsed = JSON.parse(value)
+        return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {}
+      } catch {
+        return {}
+      }
+    }
+  }
+
   for (const item of order.items) {
     const product = item.product
     if (!product) continue
 
     try {
       // Decrypt deliveryConfig to get credential template
-      let deliveryConfig: Record<string, unknown> = {}
-      if (product.deliveryConfig) {
-        try {
-          const decrypted = decrypt(product.deliveryConfig as string)
-          deliveryConfig = JSON.parse(decrypted)
-        } catch (decryptErr) {
-          console.warn(`[FULFILL] ⚠️ Could not decrypt deliveryConfig for product ${product.id}`, decryptErr)
-        }
-      }
+      const deliveryConfig = resolveDeliveryConfig(product.deliveryConfig)
 
       // Find the entitlement created by markOrderPaid
       const entitlement = await db.customerEntitlement.findFirst({

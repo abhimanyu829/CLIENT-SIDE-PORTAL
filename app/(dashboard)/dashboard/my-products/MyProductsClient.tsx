@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,8 +49,18 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function CountdownBadge({ until }: { until: string }) {
-  const remaining = Math.max(0, Math.floor((new Date(until).getTime() - Date.now()) / 1000))
-  if (remaining === 0) return null
+  const [remaining, setRemaining] = useState<number | null>(null)
+
+  useEffect(() => {
+    const tick = () => {
+      setRemaining(Math.max(0, Math.floor((new Date(until).getTime() - Date.now()) / 1000)))
+    }
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => window.clearInterval(timer)
+  }, [until])
+
+  if (remaining === null || remaining === 0) return null
   const mins = Math.floor(remaining / 60)
   const secs = remaining % 60
   return (

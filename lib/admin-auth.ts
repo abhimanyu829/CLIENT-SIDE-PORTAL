@@ -78,3 +78,42 @@ export async function requireSuperAdmin(): Promise<AdminSession> {
     isSuperAdmin: true,
   }
 }
+
+const SERVICE_CENTER_PERMISSION_PREFIX = "manage:service-center:"
+
+async function hasPermission(userId: string, permissionName: string) {
+  const permission = await db.permission.findUnique({
+    where: { name: permissionName },
+    select: { id: true },
+  })
+  if (!permission) return false
+
+  const grant = await db.userPermission.findUnique({
+    where: {
+      userId_permissionId: {
+        userId,
+        permissionId: permission.id,
+      },
+    },
+    select: { userId: true },
+  })
+
+  return !!grant
+}
+
+export async function requireServicePermission(permissionName: string): Promise<AdminSession> {
+  const session = await requireAdmin()
+  if (session.isSuperAdmin) return session
+
+  const allowed = await hasPermission(session.userId, permissionName)
+  if (!allowed) redirect("/unauthorized")
+  return session
+}
+
+export async function requireServiceCenterAccess(centerSlug: string): Promise<AdminSession> {
+  return requireServicePermission(`${SERVICE_CENTER_PERMISSION_PREFIX}${centerSlug}`)
+}
+
+export async function requireServiceOperationsAccess(area: "emails" | "analytics" | "orders" | "requests") {
+  return requireServicePermission(`manage:service:${area}`)
+}

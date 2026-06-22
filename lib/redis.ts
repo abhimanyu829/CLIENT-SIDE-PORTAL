@@ -14,10 +14,7 @@ if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
     token: "",
   });
 } else {
-  // Redis is optional for local development — rate limiting and queues are disabled
-  console.warn(
-    "⚠️  Redis not configured. Rate limiting and BullMQ queues are disabled."
-  );
+  // Redis is optional for local development — rate limiting and queues are disabled silently.
 }
 
 export { redis };

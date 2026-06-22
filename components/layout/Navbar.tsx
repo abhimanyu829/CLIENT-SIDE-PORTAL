@@ -8,6 +8,7 @@ import { useCart } from "@/providers/CartProvider"
 import { useInternalUser } from "@/hooks/useInternalUser"
 
 const SearchModal = lazy(() => import("@/components/marketplace/SearchModal"))
+import { ThemeToggle } from "@/components/theme/ThemeToggle"
 
 const MEGA_MENU = {
   Products: {
@@ -15,6 +16,7 @@ const MEGA_MENU = {
     items: [
       { href: "/marketplace", label: "Marketplace", desc: "Browse all products & tools", icon: "🏪" },
       { href: "/ai-agents", label: "AI Agents", desc: "Deploy intelligent AI agents", icon: "🤖", badge: "Live" },
+      { href: "/services", label: "Services", desc: "Enterprise delivery and consulting", icon: "🏢" },
       { href: "/marketplace?type=SAAS", label: "SaaS Tools", desc: "Cloud software solutions", icon: "⚡" },
       { href: "/marketplace?type=API", label: "API Tools", desc: "Developer APIs & integrations", icon: "🔗" },
       { href: "/marketplace?type=AUTOMATION", label: "Automation", desc: "Workflow automation tools", icon: "⚙️" },
@@ -166,6 +168,10 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
               Pricing
               <span className={`absolute bottom-[-4px] left-0 h-[1.5px] bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 ${pathname === "/pricing" ? "w-full" : "w-0 group-hover:w-full"}`} />
             </Link>
+            <Link href="/services" className={`group relative px-3 py-2 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${pathname.startsWith("/services") ? "text-white/95" : "text-white/55 hover:text-white/95"}`}>
+              Services
+              <span className={`absolute bottom-[-4px] left-0 h-[1.5px] bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 ${pathname.startsWith("/services") ? "w-full" : "w-0 group-hover:w-full"}`} />
+            </Link>
             <Link href="/cart" className={`group relative px-3 py-2 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${pathname === "/cart" ? "text-white/95" : "text-white/55 hover:text-white/95"}`}>
               Cart
               {itemCount > 0 && (
@@ -185,6 +191,7 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
               <span className="text-zinc-600 text-sm">Search...</span>
               <kbd className="ml-2 text-[10px] text-zinc-700 glass px-1.5 py-0.5 rounded">⌘K</kbd>
             </button>
+            <ThemeToggle />
 
             {isLoading ? (
               <div className="flex gap-2">
@@ -235,7 +242,10 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
               style={{ background: "linear-gradient(135deg,#a78bfa,#60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
               ⬡ NexusAI
             </span>
-            <button onClick={() => setMobileOpen(false)} className="text-zinc-500 hover:text-white text-2xl w-10 h-10 flex items-center justify-center">✕</button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button onClick={() => setMobileOpen(false)} className="text-zinc-500 hover:text-white text-2xl w-10 h-10 flex items-center justify-center">✕</button>
+            </div>
           </div>
 
           <nav className="flex flex-col gap-1 flex-1">
@@ -253,6 +263,9 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
             ))}
             <Link href="/pricing" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all">
               <span>💰</span><span className="text-sm font-medium">Pricing</span>
+            </Link>
+            <Link href="/services" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all">
+              <span>🏢</span><span className="text-sm font-medium">Services</span>
             </Link>
             <Link href="/cart" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all">
               <span>🛒</span><span className="text-sm font-medium">Cart{itemCount > 0 ? ` (${itemCount})` : ""}</span>

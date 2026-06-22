@@ -4,10 +4,6 @@ import { logger } from "@/lib/logger"
 
 const PREVIEW_SECRET = process.env.PREVIEW_TOKEN_SECRET ?? randomBytes(32).toString("hex")
 
-if (process.env.NODE_ENV === "production" && !process.env.PREVIEW_TOKEN_SECRET) {
-  console.warn("⚠️  PREVIEW_TOKEN_SECRET not set in production — preview tokens are insecure")
-}
-
 export interface PreviewTokenPayload {
   sessionId: string
   userId: string

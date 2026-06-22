@@ -316,10 +316,11 @@ model User {
   createdAt        DateTime                     @default(now())
   updatedAt        DateTime                     @updatedAt
 
-  permissions     UserPermission[]
-  subscriptions   Subscription[]
-  payments        Payment[]
-  clientProjects  Project[]             @relation("ClientProjects")
+    permissions     UserPermission[]
+    subscriptions   Subscription[]
+    payments        Payment[]
+    serviceOrders   ServiceOrder[]
+    clientProjects  Project[]             @relation("ClientProjects")
   managedProjects Project[]             @relation("ManagerProjects")
   clientTickets   Ticket[]              @relation("ClientTickets")
   assignedTickets Ticket[]              @relation("AssignedTickets")
@@ -345,8 +346,11 @@ model User {
   serviceRequests ServiceEngagement[]   @relation("ClientServiceEngagements")
   metricEvents    PlatformMetricEvent[]
   previewSessions PreviewSession[]
-  paymentVerifications PaymentVerification[]
-  emailCampaigns   EmailCampaign[]
+    paymentVerifications PaymentVerification[]
+    emailCampaigns   EmailCampaign[]
+    serviceSubscriptions ServiceSubscription[]
+    serviceOwnerships    ServiceOwnership[]
+    serviceEntitlements  ServiceEntitlement[]
 
   @@index([email])
   @@index([role])
@@ -1847,4 +1851,432 @@ model EmailPreference {
   updatedAt        DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ── Services Section (Independent Layer) ──────────────────────────────────────
+
+model ServiceCategory {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String
+  description String?
+  isActive    Boolean       @default(true)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  services    ServicePage[]
+}
+
+model ServicePage {
+  id               String             @id @default(cuid())
+  categoryId       String?
+  slug             String             @unique
+  title            String
+  heroHeading      String
+  heroSubheading   String
+  heroImageUrl     String?
+  overview         String             @db.Text
+  businessBenefits Json               @default("[]")
+  technicalBenefits Json              @default("[]")
+  workflow         Json               @default("[]")
+  useCases         Json               @default("[]")
+  industriesServed String[]
+  pricingGuidance  String?            @db.Text
+  isActive         Boolean            @default(true)
+  seoTitle         String?
+  seoDescription   String?
+  seoKeywords      String[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  category         ServiceCategory?   @relation(fields: [categoryId], references: [id])
+  features         ServiceFeature[]
+  technologies     ServiceTechnology[]
+  faqs             ServiceFaq[]
+  portfolios       ServicePortfolio[]
+  plans            ServicePlan[]
+  addOns           ServiceAddon[]
+  requests         ServiceRequest[]
+  leads            ServiceLead[]
+  orders           ServiceOrder[]
+  serviceSubscriptions ServiceSubscription[]
+  serviceOwnerships    ServiceOwnership[]
+  serviceEntitlements  ServiceEntitlement[]
+  mediaAssets      ServiceMediaAsset[]
+  documents        ServiceDocument[]
+}
+
+model ServiceFeature {
+  id            String      @id @default(cuid())
+  servicePageId String
+  title         String
+  description   String      @db.Text
+  icon          String?
+  sortOrder     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  servicePage   ServicePage @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+}
+
+model ServiceTechnology {
+  id            String      @id @default(cuid())
+  servicePageId String
+  name          String
+  iconUrl       String?
+  sortOrder     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  servicePage   ServicePage @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+}
+
+model ServiceFaq {
+  id            String      @id @default(cuid())
+  servicePageId String
+  question      String
+  answer        String      @db.Text
+  sortOrder     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  servicePage   ServicePage @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+}
+
+model ServicePortfolio {
+  id            String      @id @default(cuid())
+  servicePageId String
+  title         String
+  description   String      @db.Text
+  imageUrl      String?
+  projectUrl    String?
+  results       Json        @default("[]")
+  sortOrder     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  servicePage   ServicePage @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+}
+
+model ServiceLead {
+  id                  String       @id @default(cuid())
+  servicePageId       String?
+  inquiryType         ServiceInquiryType @default(CONTACT)
+  name                String
+  email               String
+  phone               String?
+  company             String?
+  projectRequirements String       @db.Text
+  status              LeadStage    @default(NEW)
+  notifiedAdmin       Boolean      @default(false)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  servicePage         ServicePage? @relation(fields: [servicePageId], references: [id], onDelete: SetNull)
+}
+
+enum ServiceInquiryType {
+  CONTACT
+  PROJECT_REQUEST
+  CONSULTATION
+  ENTERPRISE
+}
+
+enum ServicePlanType {
+  SUBSCRIPTION
+  ONE_TIME
+}
+
+enum ServiceRequestType {
+  CANCELLATION
+  REFUND
+}
+
+enum ServiceRequestStatus {
+  OPEN
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
+enum ServiceOrderStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PAID
+  FULFILLING
+  ACTIVE
+  CANCELLED
+  FAILED
+  EXPIRED
+}
+
+enum ServiceOrderLineType {
+  PLAN
+  ADDON
+}
+
+enum ServiceSubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum ServiceOwnershipStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum ServiceEntitlementStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum ServiceMediaType {
+  SCREENSHOT
+  VIDEO
+  DEMO
+  PREVIEW
+}
+
+enum ServiceDocumentType {
+  DOCUMENTATION
+  PROPOSAL
+  TERMS
+  GUIDE
+}
+
+model ServicePlan {
+  id            String           @id @default(cuid())
+  servicePageId String
+  type          ServicePlanType
+  name          String
+  billingLabel  String?
+  price         Decimal          @db.Decimal(12, 2)
+  currency      String           @default("USD")
+  description   String?          @db.Text
+  features      Json             @default("[]")
+  isPopular     Boolean          @default(false)
+  isActive      Boolean          @default(true)
+  sortOrder     Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  servicePage   ServicePage      @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  serviceOrders ServiceOrder[]   @relation("ServiceOrderPrimaryPlan")
+  orderLines    ServiceOrderLine[] @relation("ServiceOrderLinePlan")
+
+  @@index([servicePageId, type])
+}
+
+model ServiceAddon {
+  id            String      @id @default(cuid())
+  servicePageId String
+  name          String
+  description   String?     @db.Text
+  price         Decimal     @db.Decimal(12, 2)
+  currency      String      @default("USD")
+  enabled       Boolean     @default(true)
+  bundleOnly    Boolean     @default(false)
+  restricted    Boolean     @default(false)
+  isPopular     Boolean     @default(false)
+  sortOrder     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  servicePage   ServicePage @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  orderLines    ServiceOrderLine[] @relation("ServiceOrderLineAddon")
+
+  @@index([servicePageId])
+}
+
+model ServiceRequest {
+  id            String              @id @default(cuid())
+  servicePageId String?
+  serviceOrderId String?
+  type          ServiceRequestType
+  status        ServiceRequestStatus @default(OPEN)
+  name          String
+  email         String
+  orderRef      String?
+  reason        String              @db.Text
+  refundAmount  Decimal?            @db.Decimal(12, 2)
+  currency      String              @default("USD")
+  refundEligibleUntil DateTime?
+  adminNotes    String?             @db.Text
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  resolvedAt    DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  servicePage   ServicePage?        @relation(fields: [servicePageId], references: [id], onDelete: SetNull)
+  order         ServiceOrder?       @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+
+  @@index([servicePageId, type, status])
+  @@index([serviceOrderId, type, status])
+}
+
+model ServiceOrder {
+  id             String            @id @default(cuid())
+  orderNumber    String            @unique
+  userId         String
+  servicePageId  String
+  servicePlanId  String
+  status         ServiceOrderStatus @default(PENDING_PAYMENT)
+  currency       String            @default("USD")
+  subtotal       Decimal           @default(0) @db.Decimal(12, 2)
+  discountTotal  Decimal           @default(0) @db.Decimal(12, 2)
+  taxTotal       Decimal           @default(0) @db.Decimal(12, 2)
+  grandTotal     Decimal           @default(0) @db.Decimal(12, 2)
+  billingSnapshot Json             @default("{}")
+  metadata       Json              @default("{}")
+  paidAt         DateTime?
+  fulfilledAt    DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  servicePage    ServicePage       @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  servicePlan    ServicePlan       @relation("ServiceOrderPrimaryPlan", fields: [servicePlanId], references: [id])
+  lines          ServiceOrderLine[]
+  subscriptions  ServiceSubscription[]
+  ownerships     ServiceOwnership[]
+  entitlements   ServiceEntitlement[]
+  requests       ServiceRequest[]
+
+  @@index([userId, status])
+  @@index([servicePageId, status])
+}
+
+model ServiceOrderLine {
+  id             String            @id @default(cuid())
+  serviceOrderId  String
+  lineType       ServiceOrderLineType
+  servicePlanId  String?
+  serviceAddonId  String?
+  name           String
+  quantity       Int               @default(1)
+  unitPrice      Decimal           @db.Decimal(12, 2)
+  totalPrice     Decimal           @db.Decimal(12, 2)
+  currency       String            @default("USD")
+  snapshot       Json              @default("{}")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  order          ServiceOrder      @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  plan           ServicePlan?      @relation("ServiceOrderLinePlan", fields: [servicePlanId], references: [id])
+  addon          ServiceAddon?     @relation("ServiceOrderLineAddon", fields: [serviceAddonId], references: [id])
+
+  @@index([serviceOrderId])
+  @@index([lineType])
+}
+
+model ServiceSubscription {
+  id             String                   @id @default(cuid())
+  userId         String
+  servicePageId  String
+  serviceOrderId String
+  status         ServiceSubscriptionStatus @default(ACTIVE)
+  startsAt       DateTime                 @default(now())
+  endsAt         DateTime?
+  metadata       Json                     @default("{}")
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  servicePage    ServicePage              @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  order          ServiceOrder             @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  ownerships     ServiceOwnership[]
+  entitlements   ServiceEntitlement[]
+
+  @@index([userId, status])
+  @@index([servicePageId, status])
+  @@index([serviceOrderId])
+}
+
+model ServiceOwnership {
+  id                  String                 @id @default(cuid())
+  userId              String
+  servicePageId       String
+  serviceOrderId      String
+  serviceSubscriptionId String?
+  status              ServiceOwnershipStatus @default(ACTIVE)
+  assignedAt          DateTime               @default(now())
+  expiresAt           DateTime?
+  metadata            Json                   @default("{}")
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  user                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  servicePage         ServicePage            @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  order               ServiceOrder           @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  subscription        ServiceSubscription?   @relation(fields: [serviceSubscriptionId], references: [id], onDelete: SetNull)
+  entitlements        ServiceEntitlement[]
+
+  @@index([userId, status])
+  @@index([servicePageId, status])
+  @@index([serviceOrderId])
+}
+
+model ServiceEntitlement {
+  id                  String                    @id @default(cuid())
+  userId              String
+  servicePageId       String
+  serviceOrderId      String
+  serviceSubscriptionId String?
+  serviceOwnershipId  String?
+  status              ServiceEntitlementStatus  @default(ACTIVE)
+  accessType          String
+  startsAt            DateTime                  @default(now())
+  endsAt              DateTime?
+  credentialsSnapshot Json                      @default("{}")
+  metadata            Json                      @default("{}")
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  user                User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  servicePage         ServicePage               @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  order               ServiceOrder              @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  subscription        ServiceSubscription?      @relation(fields: [serviceSubscriptionId], references: [id], onDelete: SetNull)
+  ownership           ServiceOwnership?         @relation(fields: [serviceOwnershipId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([servicePageId, status])
+  @@index([serviceOrderId])
+}
+
+model ServiceMediaAsset {
+  id            String           @id @default(cuid())
+  servicePageId String
+  mediaType     ServiceMediaType
+  title         String
+  url           String
+  caption       String?          @db.Text
+  altText       String?
+  isActive      Boolean          @default(true)
+  sortOrder     Int              @default(0)
+  metadata      Json             @default("{}")
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  servicePage   ServicePage      @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+
+  @@index([servicePageId, mediaType, isActive])
+}
+
+model ServiceDocument {
+  id            String             @id @default(cuid())
+  servicePageId String
+  documentType  ServiceDocumentType @default(DOCUMENTATION)
+  title         String
+  slug          String
+  summary       String?            @db.Text
+  content       String?            @db.Text
+  previewUrl    String?
+  demoUrl       String?
+  version       String             @default("1.0")
+  isPublished   Boolean            @default(true)
+  sortOrder     Int                @default(0)
+  metadata      Json               @default("{}")
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  servicePage   ServicePage        @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+
+  @@unique([servicePageId, slug])
+  @@index([servicePageId, documentType, isPublished])
 }

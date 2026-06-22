@@ -18,6 +18,8 @@ import SuspiciousActivityEmail from "@/emails/SuspiciousActivityEmail"
 import TicketReplyEmail from "@/emails/TicketReplyEmail"
 import ManualPaymentReviewAdminEmail from "@/emails/ManualPaymentReviewAdminEmail"
 import CommunicationEmail from "@/emails/CommunicationEmail"
+import ServiceRequestAdminEmail from "@/emails/ServiceRequestAdminEmail"
+import ServiceRequestUserEmail from "@/emails/ServiceRequestUserEmail"
 
 export type EmailTemplatePayload = Record<string, unknown>
 
@@ -230,6 +232,28 @@ export function resolveEmailTemplate(templateName: string, payload: EmailTemplat
       expectedAmount: asString(payload.expectedAmount, ""),
       currency: asString(payload.currency, "USD"),
       reviewUrl: asString(payload.reviewUrl, `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/admin/payments/verifications`),
+    })
+  }
+
+  if (name.includes("service-request-admin")) {
+    return ServiceRequestAdminEmail({
+      name: asString(payload.name, "User"),
+      email: asString(payload.email, ""),
+      type: asString(payload.type, "REFUND"),
+      orderRef: asString(payload.orderRef, ""),
+      reason: asString(payload.reason, "No reason provided"),
+      servicePageTitle: payload.servicePageTitle ? asString(payload.servicePageTitle, "") : null,
+      adminUrl: asString(payload.adminUrl, `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/admin/services/requests`),
+    })
+  }
+
+  if (name.includes("service-request-user")) {
+    return ServiceRequestUserEmail({
+      name: asString(payload.name, "there"),
+      servicePageTitle: payload.servicePageTitle ? asString(payload.servicePageTitle, "") : null,
+      type: asString(payload.type, "REFUND"),
+      orderRef: asString(payload.orderRef, ""),
+      adminUrl: asString(payload.adminUrl, `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/admin/services`),
     })
   }
 
