@@ -603,6 +603,45 @@ export async function updateProductSEO(productId: string, data: {
   return product
 }
 
+// ─── Update Product Access Config ─────────────────────────────────────────────
+
+export async function updateProductAccessConfig(productId: string, data: {
+  productAccessUrl?: string | null
+  productLoginUrl?: string | null
+  productDashboardUrl?: string | null
+  productAccessNotes?: string | null
+}) {
+  const admin = await requireAdmin()
+
+  const product = await db.product.update({
+    where: { id: productId },
+    data: {
+      productAccessUrl: data.productAccessUrl ?? null,
+      productLoginUrl: data.productLoginUrl ?? null,
+      productDashboardUrl: data.productDashboardUrl ?? null,
+      productAccessNotes: data.productAccessNotes ?? null,
+      lastEditedBy: admin.userId,
+    },
+  })
+
+  await db.auditLog.create({
+    data: {
+      userId: admin.userId,
+      action: "PRODUCT_ACCESS_CONFIG_UPDATED",
+      entity: "Product",
+      entityId: productId,
+      afterJson: {
+        productAccessUrl: data.productAccessUrl,
+        productLoginUrl: data.productLoginUrl,
+        productDashboardUrl: data.productDashboardUrl,
+      },
+    },
+  })
+
+  await revalidateProductCaches(product.type, product.slug)
+  return product
+}
+
 // ─── Create Tier ─────────────────────────────────────────────────────────────────
 
 export async function createTier(productId: string, data: {

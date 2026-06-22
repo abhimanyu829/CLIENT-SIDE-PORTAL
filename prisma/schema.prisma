@@ -351,6 +351,7 @@ model User {
     serviceSubscriptions ServiceSubscription[]
     serviceOwnerships    ServiceOwnership[]
     serviceEntitlements  ServiceEntitlement[]
+    credentialRequests   CredentialRequest[]
 
   @@index([email])
   @@index([role])
@@ -514,6 +515,11 @@ model Product {
   // deliveryConfig shape: { saasUrl_enc, deploymentUrl_enc, aiDashboardUrl_enc,
   //   cloudInstanceUrl_enc, username_enc, password_enc, apiKeys_enc,
   //   trialCredentials_enc, onboardingInstructions, accessDocUrl, renewalBehavior }
+  // Access URLs (non-sensitive, admin-configured, shown only to active owners)
+  productAccessUrl    String?
+  productLoginUrl     String?
+  productDashboardUrl String?
+  productAccessNotes  String?                      @db.Text
   // Inventory control
   inventoryEnabled   Boolean                      @default(false)
   inventoryCount     Int?
@@ -559,6 +565,7 @@ model Product {
   cartItems          CartItem[]
   orderItems         OrderItem[]
   entitlements       CustomerEntitlement[]
+  credentialRequests CredentialRequest[]
   serviceEngagements ServiceEngagement[]
   agentDeployments   AgentDeployment[]
   metricEvents       PlatformMetricEvent[]
@@ -966,6 +973,7 @@ model CustomerEntitlement {
   product        Product         @relation(fields: [productId], references: [id])
   order          Order?          @relation(fields: [orderId], references: [id])
   refundRequests RefundRequest[]
+  credentialRequests CredentialRequest[]
 
   @@index([userId, status])
   @@index([productId])
@@ -1002,6 +1010,47 @@ model RefundRequest {
   @@index([status])
   @@index([requestedAt])
   @@index([entitlementId])
+}
+
+// ── Credential Request System ─────────────────────────────────────────────────
+
+enum CredentialRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DELIVERED
+}
+
+model CredentialRequest {
+  id               String                  @id @default(cuid())
+  userId           String
+  productId        String
+  entitlementId    String
+  email            String
+  reason           String?                 @db.Text
+  status           CredentialRequestStatus @default(PENDING)
+  adminNotes       String?                 @db.Text
+  // Admin-entered credentials for delivery
+  deliveredUsername String?
+  deliveredPassword String?
+  // Whether admin enabled in-dashboard credential viewing
+  allowDashboard   Boolean                 @default(false)
+  // Encrypted payload for dashboard delivery (AES-256-GCM)
+  credentialPayload String?                @db.Text
+  requestedAt      DateTime                @default(now())
+  resolvedAt       DateTime?
+  resolvedBy       String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product             @relation(fields: [productId], references: [id])
+  entitlement CustomerEntitlement @relation(fields: [entitlementId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([productId])
+  @@index([entitlementId])
+  @@index([status, requestedAt])
 }
 
 model VendorPayout {
