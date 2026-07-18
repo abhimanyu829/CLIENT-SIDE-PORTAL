@@ -4,17 +4,18 @@ import { useState, useCallback } from "react"
 import Link from "next/link"
 
 const S = `
-.d-glass{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.06)}
-.d-btn{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+.d-glass{background:hsl(var(--card));backdrop-filter:blur(20px);border:1px solid hsl(var(--border))}
+.d-btn{background:hsl(var(--primary));color:hsl(var(--primary-foreground))}
+.d-btn:hover{background:hsl(var(--primary)/0.9)}
 .d-card{transition:all .3s ease}
-.d-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.1)}
+.d-card:hover{transform:translateY(-2px);border-color:hsl(var(--primary)/0.3);box-shadow:0 10px 30px -10px hsl(var(--primary)/0.1)}
 `
 
 const TIERS = [
-  { name:"Free",       price:0,    interval:"mo", color:"text-zinc-400",    border:"border-zinc-700/40",  features:["5 AI requests/day","1 project","Community support","Basic analytics"] },
-  { name:"Pro",        price:4900, interval:"mo", color:"text-blue-400",    border:"border-blue-500/30",  popular:true, features:["500 AI requests/day","10 projects","Email support","Advanced analytics","API access"] },
-  { name:"Team",       price:14900,interval:"mo", color:"text-purple-400",  border:"border-purple-500/30",features:["Unlimited AI requests","Unlimited projects","Priority support","Custom models","Team seats","SSO"] },
-  { name:"Enterprise", price:0,    interval:"mo", color:"text-amber-400",   border:"border-amber-500/30", features:["Everything in Team","Dedicated infra","SLA guarantee","Custom contracts","Onboarding","24/7 support"] },
+  { name:"Free",       price:0,    interval:"mo", color:"text-muted-foreground",    border:"border-border/60",  features:["5 AI requests/day","1 project","Community support","Basic analytics"] },
+  { name:"Pro",        price:4900, interval:"mo", color:"text-primary",    border:"border-primary/30",  popular:true, features:["500 AI requests/day","10 projects","Email support","Advanced analytics","API access"] },
+  { name:"Team",       price:14900,interval:"mo", color:"text-purple-600",  border:"border-purple-500/30",features:["Unlimited AI requests","Unlimited projects","Priority support","Custom models","Team seats","SSO"] },
+  { name:"Enterprise", price:0,    interval:"mo", color:"text-amber-600",   border:"border-amber-500/30", features:["Everything in Team","Dedicated infra","SLA guarantee","Custom contracts","Onboarding","24/7 support"] },
 ]
 
 export default function SubscriptionsClient({ subscriptions, invoices }: { subscriptions: any[], invoices: any[] }) {
@@ -63,12 +64,12 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight">Subscriptions</h1>
-          <p className="text-zinc-500 text-sm mt-1">Manage your plans, billing cycles, and usage quotas.</p>
+          <h1 className="text-3xl font-black tracking-tight font-sans">Subscriptions</h1>
+          <p className="text-muted-foreground text-sm mt-1">Manage your plans, billing cycles, and usage quotas.</p>
         </div>
         <div className="d-glass rounded-xl px-4 py-2 text-center">
-          <p className="text-xs text-zinc-600">Current Plan</p>
-          <p className="font-black text-blue-400">{activeSub?.tier?.name ?? "Free"}</p>
+          <p className="text-xs text-muted-foreground">Current Plan</p>
+          <p className="font-black text-primary">{activeSub?.tier?.name ?? "Free"}</p>
         </div>
       </div>
 
@@ -78,12 +79,12 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
           <div className="flex items-start gap-3">
             <span className="text-xl">⚠️</span>
             <div className="flex-1">
-              <p className="font-bold text-amber-400 text-sm">Payment Overdue</p>
-              <p className="text-xs text-zinc-400 mt-1">
-                Your subscription to <span className="text-white">{pastDueSub.product?.name ?? "this product"}</span> has a past-due payment.
+              <p className="font-bold text-amber-600 text-sm">Payment Overdue</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Your subscription to <span className="text-foreground">{pastDueSub.product?.name ?? "this product"}</span> has a past-due payment.
                 You have a grace period to update your payment method before access is revoked.
               </p>
-              <Link href="/dashboard/subscriptions?tab=billing" className="inline-block mt-2 text-xs font-bold text-amber-400 hover:underline">
+              <Link href="/dashboard/subscriptions?tab=billing" className="inline-block mt-2 text-xs font-bold text-amber-600 hover:underline">
                 Update Payment Method →
               </Link>
             </div>
@@ -95,16 +96,16 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
           <div className="flex items-start gap-3">
             <span className="text-xl">⏳</span>
             <div className="flex-1">
-              <p className="font-bold text-orange-400 text-sm">Subscription Cancelling</p>
-              <p className="text-xs text-zinc-400 mt-1">
-                Your subscription to <span className="text-white">{cancellingSub.product?.name ?? "this product"}</span> is scheduled for cancellation.
-                You can continue using it until <span className="text-white">{cancellingSub.currentPeriodEnd ? new Date(cancellingSub.currentPeriodEnd).toLocaleDateString() : "the end of the billing period"}</span>.
+              <p className="font-bold text-orange-600 text-sm">Subscription Cancelling</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Your subscription to <span className="text-foreground">{cancellingSub.product?.name ?? "this product"}</span> is scheduled for cancellation.
+                You can continue using it until <span className="text-foreground">{cancellingSub.currentPeriodEnd ? new Date(cancellingSub.currentPeriodEnd).toLocaleDateString() : "the end of the billing period"}</span>.
               </p>
               <button onClick={async () => {
                 const res = await fetch(`/api/subscriptions/${cancellingSub.id}/resume`, { method: "POST" })
                 if (res.ok) window.location.reload()
                 else alert("Failed to resume subscription")
-              }} className="mt-2 text-xs font-bold text-orange-400 hover:underline">
+              }} className="mt-2 text-xs font-bold text-orange-600 hover:underline">
                 Resume Subscription →
               </button>
             </div>
@@ -116,12 +117,12 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
           <div className="flex items-start gap-3">
             <span className="text-xl">⏰</span>
             <div className="flex-1">
-              <p className="font-bold text-purple-400 text-sm">Renewal Coming Up</p>
-              <p className="text-xs text-zinc-400 mt-1">
-                Your subscription renews in <span className="text-white">{expiryWarning} day{expiryWarning !== 1 ? "s" : ""}</span>.
+              <p className="font-bold text-purple-600 text-sm">Renewal Coming Up</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Your subscription renews in <span className="text-foreground">{expiryWarning} day{expiryWarning !== 1 ? "s" : ""}</span>.
                 Make sure your payment method is up to date to avoid interruption.
               </p>
-              <Link href="/dashboard/subscriptions?tab=billing" className="inline-block mt-2 text-xs font-bold text-purple-400 hover:underline">
+              <Link href="/dashboard/subscriptions?tab=billing" className="inline-block mt-2 text-xs font-bold text-purple-600 hover:underline">
                 Review Payment Method →
               </Link>
             </div>
@@ -130,10 +131,10 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 d-glass rounded-xl p-1 w-fit">
+      <div className="flex gap-1 d-glass rounded-xl p-1 w-fit bg-muted/30">
         {[["plans","Plans"],["billing","Billing"],["usage","Usage"]].map(([id,label])=>(
           <button key={id} onClick={()=>setTab(id as any)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab===id?"bg-violet-600 text-white":"text-zinc-500 hover:text-zinc-300"}`}>
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab===id?"bg-background text-foreground shadow-sm border border-border":"text-muted-foreground hover:text-foreground"}`}>
             {label}
           </button>
         ))}
@@ -144,13 +145,13 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
         <div className="space-y-6">
           {/* Billing toggle */}
           <div className="flex items-center justify-center gap-3">
-            <span className={`text-sm ${billingCycle==="monthly"?"text-white":"text-zinc-500"}`}>Monthly</span>
+            <span className={`text-sm ${billingCycle==="monthly"?"text-foreground":"text-muted-foreground"}`}>Monthly</span>
             <button onClick={()=>setBillingCycle(b=>b==="monthly"?"yearly":"monthly")}
-              className={`relative w-12 h-6 rounded-full transition-all ${billingCycle==="yearly"?"bg-violet-600":"bg-zinc-800"}`}>
-              <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${billingCycle==="yearly"?"left-7":"left-1"}`} />
+              className={`relative w-12 h-6 rounded-full transition-all ${billingCycle==="yearly"?"bg-primary":"bg-muted-foreground"}`}>
+              <span className={`absolute top-1 w-4 h-4 bg-background rounded-full transition-all ${billingCycle==="yearly"?"left-7":"left-1"}`} />
             </button>
-            <span className={`text-sm ${billingCycle==="yearly"?"text-white":"text-zinc-500"}`}>Yearly</span>
-            <span className="d-glass text-[10px] px-2 py-0.5 rounded-full text-emerald-400 border-emerald-500/20">Save 20%</span>
+            <span className={`text-sm ${billingCycle==="yearly"?"text-foreground":"text-muted-foreground"}`}>Yearly</span>
+            <span className="bg-emerald-100 text-[10px] px-2 py-0.5 rounded-full text-emerald-700 border border-emerald-200">Save 20%</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -158,9 +159,9 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
               const price = tier.price === 0 ? tier.price : billingCycle==="yearly" ? Math.floor(tier.price*0.8) : tier.price
               const isActive = activeSub?.tier?.name?.toLowerCase() === tier.name.toLowerCase()
               return (
-                <div key={i} className={`d-glass rounded-2xl p-5 border ${tier.border} d-card relative overflow-hidden ${tier.popular?"border-blue-500/40":""}`}>
+                <div key={i} className={`d-glass rounded-2xl p-5 border ${tier.border} d-card relative overflow-hidden ${tier.popular?"border-primary/40":""}`}>
                   {tier.popular && (
-                    <div className="absolute top-0 left-0 right-0 py-1 text-center text-[10px] font-black tracking-widest bg-blue-600 text-white">
+                    <div className="absolute top-0 left-0 right-0 py-1 text-center text-[10px] font-black tracking-widest bg-primary text-primary-foreground">
                       MOST POPULAR
                     </div>
                   )}
@@ -168,32 +169,32 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
                     <p className={`font-black text-lg ${tier.color}`}>{tier.name}</p>
                     <div className="my-3">
                       {tier.price === 0 && tier.name === "Free" ? (
-                        <p className="text-3xl font-black">$0</p>
+                        <p className="text-3xl font-black text-foreground">$0</p>
                       ) : tier.price === 0 ? (
-                        <p className="text-2xl font-black">Custom</p>
+                        <p className="text-2xl font-black text-foreground">Custom</p>
                       ) : (
-                        <p className="text-3xl font-black">${(price/100).toFixed(0)}<span className="text-sm text-zinc-600">/{billingCycle==="yearly"?"yr":"mo"}</span></p>
+                        <p className="text-3xl font-black text-foreground">$\{(price/100).toFixed(0)}<span className="text-sm text-muted-foreground">/\{billingCycle==="yearly"?"yr":"mo"}</span></p>
                       )}
                     </div>
                     <div className="space-y-1.5 mb-5">
                       {tier.features.map(f=>(
-                        <p key={f} className="text-xs text-zinc-500 flex items-center gap-2">
+                        <p key={f} className="text-xs text-muted-foreground flex items-center gap-2">
                           <span className={`${tier.color} text-[10px]`}>✓</span>{f}
                         </p>
                       ))}
                     </div>
                     {isActive ? (
-                      <button disabled className="w-full d-glass py-2.5 rounded-xl text-sm font-bold text-zinc-500 cursor-default">
+                      <button disabled className="w-full bg-muted/50 py-2.5 rounded-xl text-sm font-bold text-muted-foreground cursor-default border border-border">
                         ✓ Current Plan
                       </button>
                     ) : tier.name === "Enterprise" ? (
                       <Link href="/dashboard/tickets">
-                        <button className="w-full d-glass py-2.5 rounded-xl text-sm font-bold text-amber-400 hover:border-amber-500/30 transition-all">
+                        <button className="w-full d-glass py-2.5 rounded-xl text-sm font-bold text-amber-600 hover:border-amber-500/30 transition-all">
                           Contact Sales
                         </button>
                       </Link>
                     ) : (
-                      <button className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105 ${tier.popular ? "d-btn text-white" : "d-glass text-zinc-300 hover:text-white"}`}>
+                      <button className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105 ${tier.popular ? "d-btn text-white" : "d-glass text-foreground hover:bg-muted"}`}>
                         {activeSub ? "Switch Plan" : "Get Started"}
                       </button>
                     )}
@@ -205,15 +206,15 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
 
           {/* Current subscription detail */}
           {activeSub && (
-            <div className="d-glass rounded-2xl p-6 border border-blue-500/20">
+            <div className="d-glass rounded-2xl p-6 border border-primary/20">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm font-bold text-blue-400 mb-1">Active Subscription</p>
-                  <h2 className="text-xl font-black">{activeSub.product?.name}</h2>
-                  <p className="text-sm text-zinc-500">{activeSub.tier?.name} · Renews {activeSub.currentPeriodEnd ? new Date(activeSub.currentPeriodEnd).toLocaleDateString() : "—"}</p>
+                  <p className="text-sm font-bold text-primary mb-1">Active Subscription</p>
+                  <h2 className="text-xl font-black text-foreground">{activeSub.product?.name}</h2>
+                  <p className="text-sm text-muted-foreground">{activeSub.tier?.name} · Renews {activeSub.currentPeriodEnd ? new Date(activeSub.currentPeriodEnd).toLocaleDateString() : "—"}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => setShowCancelDialog(true)} className="d-glass px-4 py-2 rounded-xl text-sm text-red-400 hover:border-red-500/30 transition-all">Cancel</button>
+                  <button onClick={() => setShowCancelDialog(true)} className="d-glass px-4 py-2 rounded-xl text-sm text-red-500 hover:border-red-500/30 hover:bg-red-50 transition-all">Cancel</button>
                 </div>
               </div>
             </div>
@@ -227,38 +228,38 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
           {/* Payment method */}
           <div className="d-glass rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold">Payment Methods</h2>
-              <button className="d-btn px-4 py-2 rounded-xl text-sm font-bold text-white hover:scale-105 transition-all">+ Add Card</button>
+              <h2 className="font-bold text-foreground">Payment Methods</h2>
+              <button className="d-btn px-4 py-2 rounded-xl text-sm font-bold text-primary-foreground hover:scale-105 transition-all">+ Add Card</button>
             </div>
-            <div className="d-glass rounded-xl p-4 flex items-center gap-4 border border-blue-500/20">
-              <div className="w-12 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-xs font-black text-white">VISA</div>
+            <div className="d-glass rounded-xl p-4 flex items-center gap-4 border border-primary/20 bg-primary/5">
+              <div className="w-12 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-xs font-black text-white">VISA</div>
               <div>
-                <p className="font-semibold text-sm">•••• •••• •••• 4242</p>
-                <p className="text-xs text-zinc-600">Expires 12/2026</p>
+                <p className="font-semibold text-sm text-foreground">•••• •••• •••• 4242</p>
+                <p className="text-xs text-muted-foreground">Expires 12/2026</p>
               </div>
-              <span className="ml-auto d-glass text-[10px] px-2 py-0.5 rounded-full text-emerald-400">Default</span>
+              <span className="ml-auto bg-emerald-100 text-[10px] px-2 py-0.5 rounded-full text-emerald-700 font-medium">Default</span>
             </div>
           </div>
 
           {/* Invoice history */}
           <div className="d-glass rounded-2xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
-              <h2 className="font-bold">Invoice History</h2>
-              <Link href="/dashboard/invoices" className="text-xs text-purple-400 hover:underline">View all →</Link>
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
+              <h2 className="font-bold text-foreground">Invoice History</h2>
+              <Link href="/dashboard/invoices" className="text-xs text-primary hover:underline">View all →</Link>
             </div>
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-border">
               {invoices.length > 0 ? invoices.slice(0,5).map((inv:any)=>(
                 <div key={inv.id} className="px-5 py-4 flex items-center gap-4">
                   <div className="flex-1">
-                    <p className="text-sm font-mono font-semibold">{inv.stripeInvoiceId?.slice(0,16) ?? `INV-${inv.id.slice(0,8)}`}</p>
-                    <p className="text-xs text-zinc-600">{inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString() : "—"}</p>
+                    <p className="text-sm font-mono font-semibold text-foreground">{inv.stripeInvoiceId?.slice(0,16) ?? `INV-${inv.id.slice(0,8)}`}</p>
+                    <p className="text-xs text-muted-foreground">{inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString() : "—"}</p>
                   </div>
-                  <p className="font-black">${(Number(inv.amount||0)/100).toFixed(2)}</p>
-                  <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold border ${inv.status==="PAID"?"text-emerald-400 border-emerald-500/20 bg-emerald-500/10":"text-amber-400 border-amber-500/20 bg-amber-500/10"}`}>{inv.status}</span>
-                  <button className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">⬇ PDF</button>
+                  <p className="font-black text-foreground">$\{(Number(inv.amount||0)/100).toFixed(2)}</p>
+                  <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold border ${inv.status==="PAID"?"text-emerald-700 border-emerald-200 bg-emerald-100":"text-amber-700 border-amber-200 bg-amber-100"}`}>{inv.status}</span>
+                  <button className="text-xs text-muted-foreground hover:text-foreground transition-colors">⬇ PDF</button>
                 </div>
               )) : (
-                <div className="px-5 py-8 text-center text-zinc-600 text-sm">No invoices yet</div>
+                <div className="px-5 py-8 text-center text-muted-foreground text-sm">No invoices yet</div>
               )}
             </div>
           </div>
@@ -269,7 +270,7 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
       {tab === "usage" && (
         <div className="space-y-4">
           {[
-            { label:"AI Token Usage", used:45200, total:100000, color:"#8b5cf6", icon:"✦" },
+            { label:"AI Token Usage", used:45200, total:100000, color:"#EA580C", icon:"✦" },
             { label:"API Requests",   used:3200,  total:10000,  color:"#3b82f6", icon:"⚡" },
             { label:"Storage",        used:2.4,   total:10,     color:"#10b981", icon:"◻", unit:"GB" },
             { label:"Team Seats",     used:3,     total:5,      color:"#f59e0b", icon:"◑" },
@@ -278,19 +279,19 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span style={{color:u.color}}>{u.icon}</span>
-                  <p className="font-semibold text-sm">{u.label}</p>
+                  <p className="font-semibold text-sm text-foreground">{u.label}</p>
                 </div>
-                <p className="text-sm font-mono text-zinc-400">{u.used.toLocaleString()}{u.unit?"":"/"}{!u.unit&&u.total.toLocaleString()}{u.unit&&" "+u.unit}</p>
+                <p className="text-sm font-mono text-muted-foreground">{u.used.toLocaleString()}{u.unit?"":"/"}{!u.unit&&u.total.toLocaleString()}{u.unit&&" "+u.unit}</p>
               </div>
-              <div className="h-2 bg-zinc-900 rounded-full overflow-hidden">
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all" style={{width:`${(u.used/u.total)*100}%`,background:u.color}} />
               </div>
-              <p className="text-[11px] text-zinc-700 mt-1.5">{Math.round((u.used/u.total)*100)}% used</p>
+              <p className="text-[11px] text-muted-foreground mt-1.5">{Math.round((u.used/u.total)*100)}% used</p>
             </div>
           ))}
-          <div className="d-glass rounded-2xl p-5 text-center border border-purple-500/20">
-            <p className="text-sm text-zinc-400 mb-3">Need more resources?</p>
-            <button onClick={()=>setTab("plans")} className="d-btn px-6 py-2.5 rounded-xl text-sm font-bold text-white hover:scale-105 transition-all">
+          <div className="d-glass rounded-2xl p-5 text-center border border-primary/20 bg-primary/5">
+            <p className="text-sm text-muted-foreground mb-3">Need more resources?</p>
+            <button onClick={()=>setTab("plans")} className="d-btn px-6 py-2.5 rounded-xl text-sm font-bold text-primary-foreground hover:scale-105 transition-all">
               Upgrade Plan →
             </button>
           </div>
@@ -300,22 +301,22 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
       {/* Cancel Confirmation Dialog */}
       {showCancelDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="d-glass rounded-2xl p-6 max-w-md w-full mx-4 border border-red-500/20">
-            <h3 className="text-lg font-bold text-red-400 mb-2">Cancel Subscription?</h3>
-            <p className="text-sm text-zinc-400 mb-4">
-              Your access to <span className="text-white font-semibold">{activeSub?.product?.name ?? "this product"}</span> will end at the current period.
+          <div className="d-glass rounded-2xl p-6 max-w-md w-full mx-4 border border-red-500/20 bg-background shadow-2xl">
+            <h3 className="text-lg font-bold text-red-600 mb-2">Cancel Subscription?</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Your access to <span className="text-foreground font-semibold">{activeSub?.product?.name ?? "this product"}</span> will end at the current period.
               {activeSub?.currentPeriodEnd && (
-                <span> You can continue using it until <span className="text-white">{new Date(activeSub.currentPeriodEnd).toLocaleDateString()}</span>.</span>
+                <span> You can continue using it until <span className="text-foreground font-medium">{new Date(activeSub.currentPeriodEnd).toLocaleDateString()}</span>.</span>
               )}
             </p>
             <textarea
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               placeholder="Reason for cancellation (optional)"
-              className="w-full d-glass rounded-xl p-3 text-sm text-zinc-300 border border-white/5 focus:border-red-500/30 focus:outline-none resize-none h-20 mb-4"
+              className="w-full bg-background rounded-xl p-3 text-sm text-foreground border border-border focus:border-red-500/30 focus:outline-none resize-none h-20 mb-4"
             />
             <div className="flex gap-3 justify-end">
-              <button onClick={() => { setShowCancelDialog(false); setCancelReason("") }} className="d-glass px-4 py-2 rounded-xl text-sm text-zinc-400 hover:text-white transition-all" disabled={cancelling}>
+              <button onClick={() => { setShowCancelDialog(false); setCancelReason("") }} className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-all" disabled={cancelling}>
                 Keep Subscription
               </button>
               <button onClick={handleCancel} disabled={cancelling} className="px-4 py-2 rounded-xl text-sm font-bold bg-red-600 text-white hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">

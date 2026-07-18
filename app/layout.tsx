@@ -29,7 +29,7 @@ export default function RootLayout({
       appearance={clerkAppearance}
     >
       <html lang="en" suppressHydrationWarning>
-        <body className="font-sans antialiased">
+        <body className="light-theme font-sans antialiased">
           <Providers>{children}</Providers>
         </body>
       </html>

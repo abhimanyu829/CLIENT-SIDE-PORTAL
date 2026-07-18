@@ -17,6 +17,27 @@ enum Role {
   GUEST
 }
 
+enum SubadminApplicationStatus {
+  PENDING
+  SHORTLISTED
+  APPROVED
+  REJECTED
+}
+
+enum SubadminAccountStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DISABLED
+  REVOKED
+}
+
+enum AdminApprovalStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
 enum Department {
   TECH
   MARKETING
@@ -352,6 +373,15 @@ model User {
     serviceOwnerships    ServiceOwnership[]
     serviceEntitlements  ServiceEntitlement[]
     credentialRequests   CredentialRequest[]
+    subadminAccount      SubadminAccount?
+    createdSubadmins     SubadminAccount[]        @relation("SubadminCreatedBy")
+    updatedSubadmins     SubadminAccount[]        @relation("SubadminUpdatedBy")
+    reviewedSubadminApplications SubadminApplication[] @relation("SubadminApplicationReviewedBy")
+    subadminPermissionGrants SubadminPermission[] @relation("SubadminPermissionGrantedBy")
+    subadminActivityLogs SubadminActivityLog[]    @relation("SubadminActivityActor")
+    requestedAdminApprovals SubadminApprovalRequest[] @relation("AdminApprovalRequestedBy")
+    reviewedAdminApprovals  SubadminApprovalRequest[] @relation("AdminApprovalReviewedBy")
+    adminPortalSettingUpdates AdminPortalSetting[] @relation("AdminPortalSettingUpdatedBy")
 
   @@index([email])
   @@index([role])
@@ -1449,6 +1479,167 @@ model AuditLog {
   @@index([action])
   @@index([entity, entityId])
   @@index([createdAt])
+}
+
+model SubadminApplication {
+  id           String                    @id @default(cuid())
+  name         String
+  email        String                    @unique
+  phone        String?
+  country      String?
+  skills       String[]
+  portfolioUrl String?
+  githubUrl    String?
+  linkedinUrl  String?
+  resumeUrl    String?
+  motivation   String                    @db.Text
+  status       SubadminApplicationStatus @default(PENDING)
+  adminNotes   String?                   @db.Text
+  reviewedById String?
+  reviewedAt   DateTime?
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  reviewedBy User?            @relation("SubadminApplicationReviewedBy", fields: [reviewedById], references: [id])
+  account    SubadminAccount?
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+model SubadminAccount {
+  id                      String                @id @default(cuid())
+  userId                  String?               @unique
+  applicationId           String?               @unique
+  name                    String
+  email                   String                @unique
+  username                String                @unique
+  passwordHash            String?
+  accessTokenHash         String?
+  status                  SubadminAccountStatus @default(PENDING)
+  credentialsActive       Boolean               @default(false)
+  forceLogoutVersion      Int                   @default(0)
+  failedLoginCount        Int                   @default(0)
+  lockedUntil             DateTime?
+  passwordChangedAt       DateTime?
+  lastCredentialRotatedAt DateTime?
+  lastAdminLoginAt        DateTime?
+  suspendedAt             DateTime?
+  disabledAt              DateTime?
+  revokedAt               DateTime?
+  createdById             String
+  updatedById             String?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+
+  user         User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  application  SubadminApplication?    @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  createdBy    User                    @relation("SubadminCreatedBy", fields: [createdById], references: [id])
+  updatedBy    User?                   @relation("SubadminUpdatedBy", fields: [updatedById], references: [id])
+  permissions  SubadminPermission[]
+  sessions     SubadminSession[]
+  activityLogs SubadminActivityLog[]
+  approvals    SubadminApprovalRequest[]
+
+  @@index([status])
+  @@index([email])
+  @@index([userId])
+}
+
+model SubadminPermission {
+  id            String    @id @default(cuid())
+  subadminId    String
+  resource      String
+  action        String
+  grantedById   String
+  grantedAt     DateTime  @default(now())
+  revokedAt     DateTime?
+  revokeReason  String?
+
+  subadmin  SubadminAccount @relation(fields: [subadminId], references: [id], onDelete: Cascade)
+  grantedBy User            @relation("SubadminPermissionGrantedBy", fields: [grantedById], references: [id])
+
+  @@unique([subadminId, resource, action])
+  @@index([resource, action])
+  @@index([revokedAt])
+}
+
+model SubadminSession {
+  id                 String    @id @default(cuid())
+  subadminId         String
+  sessionTokenHash   String    @unique
+  clerkSessionHint   String?
+  ip                 String?
+  userAgent          String?
+  device             String?
+  forceLogoutVersion Int       @default(0)
+  expiresAt          DateTime
+  revokedAt          DateTime?
+  lastSeenAt         DateTime  @default(now())
+  createdAt          DateTime  @default(now())
+
+  subadmin SubadminAccount @relation(fields: [subadminId], references: [id], onDelete: Cascade)
+
+  @@index([subadminId, revokedAt])
+  @@index([expiresAt])
+}
+
+model SubadminActivityLog {
+  id         String   @id @default(cuid())
+  subadminId String?
+  actorId    String?
+  action     String
+  entity     String?
+  entityId   String?
+  metadata   Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  subadmin SubadminAccount? @relation(fields: [subadminId], references: [id], onDelete: SetNull)
+  actor    User?           @relation("SubadminActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([subadminId, createdAt])
+  @@index([actorId])
+  @@index([action])
+}
+
+model SubadminApprovalRequest {
+  id            String              @id @default(cuid())
+  subadminId    String
+  requestedById String
+  reviewedById  String?
+  resource      String
+  action        String
+  entity        String?
+  entityId      String?
+  title         String
+  payload       Json
+  status        AdminApprovalStatus @default(PENDING_APPROVAL)
+  reviewNotes   String?
+  reviewedAt    DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  subadmin    SubadminAccount @relation(fields: [subadminId], references: [id], onDelete: Cascade)
+  requestedBy User            @relation("AdminApprovalRequestedBy", fields: [requestedById], references: [id])
+  reviewedBy  User?           @relation("AdminApprovalReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([status, createdAt])
+  @@index([subadminId])
+  @@index([resource, action])
+}
+
+model AdminPortalSetting {
+  id               String   @id @default("subadmin-portal")
+  enabled          Boolean  @default(true)
+  applicationsOpen Boolean  @default(true)
+  portalPath       String   @default("/join-our-team")
+  updatedById      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  updatedBy User? @relation("AdminPortalSettingUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 }
 
 model BlogPost {

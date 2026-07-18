@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import type { Role } from "@prisma/client"
 import { db } from "@/lib/db"
+import { validateSubadminCredentialSession } from "@/lib/subadmin-workforce"
 
 export interface AdminSession {
   userId: string
@@ -34,6 +35,14 @@ export async function requireAdmin(): Promise<AdminSession> {
 
   const role = user.role as Role
   if (role !== "SUPER_ADMIN" && role !== "SUB_ADMIN") {
+    redirect("/unauthorized")
+  }
+
+  const access = await validateSubadminCredentialSession(session.user.id, role)
+  if (!access.allowed) {
+    if (role === "SUB_ADMIN" && access.reason === "ADMIN_CREDENTIAL_LOGIN_REQUIRED") {
+      redirect("/admin-access")
+    }
     redirect("/unauthorized")
   }
 

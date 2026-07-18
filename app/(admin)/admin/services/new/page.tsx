@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { serializePrisma } from "@/lib/serialize-prisma"
 import NewServiceClient from "./NewServiceClient"
 
 export default async function NewServicePage({ searchParams }: { searchParams?: Promise<{ category?: string }> }) {
@@ -12,5 +13,5 @@ export default async function NewServicePage({ searchParams }: { searchParams?: 
     ? categories.find((item) => item.slug === category)?.id ?? ""
     : ""
 
-  return <NewServiceClient categories={categories} initialCategoryId={initialCategoryId} />
+  return <NewServiceClient categories={serializePrisma(categories)} initialCategoryId={initialCategoryId} />
 }

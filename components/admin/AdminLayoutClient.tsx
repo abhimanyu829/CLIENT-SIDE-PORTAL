@@ -29,6 +29,7 @@ const NAV_ITEMS = [
   { name: "Revenue Dashboard",   path: "/admin",             icon: LayoutDashboard },
   { name: "Ecosystem Control",   path: "/admin/ecosystem",   icon: Store },
   { name: "User Management",     path: "/admin/users",       icon: Users },
+  { name: "Subadmin Management", path: "/admin/subadmins",   icon: ShieldCheck, superAdminOnly: true },
   { name: "Subscriptions",       path: "/admin/subscriptions", icon: CreditCard },
   { name: "Orders & Payments",  path: "/admin/orders",      icon: ShoppingCart },
   { name: "Payment Inspection",  path: "/admin/payments",    icon: ScanSearch },

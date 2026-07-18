@@ -104,7 +104,7 @@ function CredentialRequestDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><KeyRound className="w-4 h-4 text-indigo-400" /> Request Login Credentials</DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><KeyRound className="w-4 h-4 text-primary" /> Request Login Credentials</DialogTitle>
           <DialogDescription>Submit a request for <strong>{productName}</strong>. An admin will review and email your credentials.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-2">
@@ -116,7 +116,7 @@ function CredentialRequestDialog({
           />
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={submit} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Button onClick={submit} disabled={loading} className="bg-primary hover:bg-primary/90 text-primary-foreground">
               {loading ? "Submitting…" : "Submit Request"}
             </Button>
           </div>
@@ -193,12 +193,12 @@ export default function MyProductsClient({ entitlements }: { entitlements: Entit
   if (entitlements.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center p-8">
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
-          <ShoppingBag className="w-8 h-8 text-indigo-400" />
+        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+          <ShoppingBag className="w-8 h-8 text-primary" />
         </div>
         <h2 className="text-xl font-semibold">No products yet</h2>
         <p className="text-muted-foreground text-sm max-w-xs">Browse the marketplace to find your first AI tool or SaaS product.</p>
-        <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
+        <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
           <a href="/marketplace">Browse Marketplace</a>
         </Button>
       </div>
@@ -212,7 +212,7 @@ export default function MyProductsClient({ entitlements }: { entitlements: Entit
     const hasPending = ent.hasPendingCredentialRequest || localPending.has(ent.id)
 
     return (
-      <Card key={ent.id} className="overflow-hidden border border-border/50 bg-card/50 backdrop-blur-sm hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-200">
+      <Card key={ent.id} className="overflow-hidden border border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200">
         <CardContent className="p-5 space-y-4">
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
@@ -220,7 +220,7 @@ export default function MyProductsClient({ entitlements }: { entitlements: Entit
               {ent.productThumbnail ? (
                 <img src={ent.productThumbnail} alt={ent.productName} className="w-12 h-12 rounded-xl object-cover border border-border/50" />
               ) : (
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg font-bold shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-lg font-bold shrink-0">
                   {ent.productName.charAt(0)}
                 </div>
               )}
@@ -291,7 +291,7 @@ export default function MyProductsClient({ entitlements }: { entitlements: Entit
           <div className="flex flex-wrap gap-2 pt-1">
             {/* Open Product — ONLY when ACTIVE and URL exists */}
             {isActive && ent.productAccessUrl && (
-              <Button size="sm" className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5" asChild>
+              <Button size="sm" className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5" asChild>
                 <a href={ent.productAccessUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="w-3 h-3" /> Open Product
                 </a>
@@ -326,7 +326,7 @@ export default function MyProductsClient({ entitlements }: { entitlements: Entit
 
             {/* Renew */}
             {ent.status === "EXPIRED" && (
-              <Button size="sm" className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white" asChild>
+              <Button size="sm" className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
                 <a href={`/marketplace/${ent.productSlug}`}>Renew</a>
               </Button>
             )}
@@ -380,7 +380,7 @@ export default function MyProductsClient({ entitlements }: { entitlements: Entit
                 <div key={key} className="bg-muted/50 rounded-lg p-3 border border-border/30">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{key}</p>
                   <p className="font-mono text-sm mt-1 break-all">{typeof value === "string" ? value : JSON.stringify(value)}</p>
-                  <button className="text-xs text-indigo-400 mt-1 hover:underline"
+                  <button className="text-xs text-primary mt-1 hover:underline"
                     onClick={() => { navigator.clipboard.writeText(typeof value === "string" ? value : JSON.stringify(value)); toast.success(`${key} copied`) }}>
                     Copy
                   </button>

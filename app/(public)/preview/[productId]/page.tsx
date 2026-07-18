@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
+import { serializePrisma } from "@/lib/serialize-prisma"
 import PreviewClient from "./PreviewClient"
 
 interface Props {
@@ -28,5 +29,5 @@ export default async function PreviewPage({ params }: Props) {
     notFound()
   }
 
-  return <PreviewClient product={product} />
+  return <PreviewClient product={serializePrisma(product)} />
 }

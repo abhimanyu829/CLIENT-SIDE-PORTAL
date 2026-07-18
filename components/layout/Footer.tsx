@@ -63,28 +63,28 @@ const SOCIALS = [
 ]
 
 const S = `
-.f-glass{background:rgba(4,4,4,.97);border-top:1px solid rgba(255,255,255,.05)}
-.f-link{color:rgba(255,255,255,.38);font-size:.8125rem;transition:color .18s;display:inline-block}
-.f-link:hover{color:rgba(255,255,255,.85);transform:translateX(2px)}
-.trust-badge{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:.75rem;padding:.375rem .875rem;display:inline-flex;align-items:center;gap:.375rem;font-size:.75rem;color:rgba(255,255,255,.45);transition:all .2s}
-.trust-badge:hover{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.75)}
-.social-btn{width:2.25rem;height:2.25rem;border-radius:.625rem;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.45);font-size:.75rem;font-weight:700;transition:all .2s}
+.f-glass{background:hsl(var(--background));border-top:1px solid hsl(var(--border))}
+.f-link{color:hsl(var(--muted-foreground));font-size:.8125rem;transition:color .18s;display:inline-block}
+.f-link:hover{color:hsl(var(--foreground));transform:translateX(2px)}
+.trust-badge{background:hsl(var(--muted));border:1px solid hsl(var(--border));border-radius:.75rem;padding:.375rem .875rem;display:inline-flex;align-items:center;gap:.375rem;font-size:.75rem;color:hsl(var(--muted-foreground));transition:all .2s}
+.trust-badge:hover{border-color:hsl(var(--foreground));color:hsl(var(--foreground))}
+.social-btn{width:2.25rem;height:2.25rem;border-radius:.625rem;border:1px solid hsl(var(--border));display:flex;align-items:center;justify-content:center;color:hsl(var(--muted-foreground));font-size:.75rem;font-weight:700;transition:all .2s}
 .social-btn:hover{border-color:rgba(139,92,246,.5);color:#a78bfa;background:rgba(139,92,246,.08);transform:translateY(-2px)}
-.stat-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:.875rem;padding:.75rem 1.25rem;text-align:center}
-.newsletter-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:.75rem;padding:.625rem 1rem;color:#fff;font-size:.875rem;outline:none;transition:border-color .2s}
+.stat-card{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:.875rem;padding:.75rem 1.25rem;text-align:center}
+.newsletter-input{width:100%;background:hsl(var(--border));border:1px solid hsl(var(--border));border-radius:.75rem;padding:.625rem 1rem;color:hsl(var(--foreground));font-size:.875rem;outline:none;transition:border-color .2s}
 .newsletter-input:focus{border-color:rgba(139,92,246,.5)}
-.newsletter-input::placeholder{color:rgba(255,255,255,.25)}
+.newsletter-input::placeholder{color:hsl(var(--muted-foreground))}
 `
 
 export default function Footer() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="f-glass">
+    <footer suppressHydrationWarning className="f-glass">
       <style>{S}</style>
 
       {/* Stats bar */}
-      <div className="border-b border-white/5">
+      <div className="border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -96,7 +96,7 @@ export default function Footer() {
               <div key={label} className="stat-card">
                 <div className="flex items-center justify-center gap-1.5 mb-1">
                   <span className="text-base">{icon}</span>
-                  <span className="text-xl font-black text-white">{val}</span>
+                  <span className="text-xl font-black text-foreground">{val}</span>
                 </div>
                 <p className="text-xs text-zinc-600">{label}</p>
               </div>
@@ -111,8 +111,7 @@ export default function Footer() {
           {/* Brand column */}
           <div className="lg:col-span-2 space-y-6">
             <Link href="/" className="flex items-center gap-2 w-fit">
-              <span className="text-xl font-black"
-                style={{ background: "linear-gradient(135deg,#a78bfa,#60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              <span className="brand-gradient text-xl font-black">
                 ⬡ NexusAI
               </span>
             </Link>
@@ -158,7 +157,7 @@ export default function Footer() {
         </div>
 
         {/* Trust badges */}
-        <div className="mt-12 pt-8 border-t border-white/5">
+        <div className="mt-12 pt-8 border-t border-border">
           <div className="flex flex-wrap gap-2 mb-8">
             {TRUST_BADGES.map(b => (
               <span key={b.label} className="trust-badge">

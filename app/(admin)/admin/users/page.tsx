@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { requireAdmin } from "@/lib/admin-auth"
 import { db } from "@/lib/db"
+import { serializePrisma } from "@/lib/serialize-prisma"
 import AdminUsersClient from "./AdminUsersClient"
 
 export default async function AdminUsersPage({
@@ -70,7 +71,7 @@ export default async function AdminUsersPage({
   return (
     <Suspense fallback={<div className="p-8 text-center text-zinc-500">Loading users...</div>}>
       <AdminUsersClient
-        users={serialized}
+        users={serializePrisma(serialized)}
         total={total}
         page={page}
         limit={limit}

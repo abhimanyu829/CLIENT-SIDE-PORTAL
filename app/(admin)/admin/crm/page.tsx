@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { requireAdmin } from "@/lib/admin-auth"
 import { redirect } from "next/navigation"
 import AdminCRMClient from "./AdminCRMClient"
+import { serializePrisma } from "@/lib/serialize-prisma"
 
 export default async function AdminCRMPage() {
   // Zero-trust: requireAdmin enforces SUPER_ADMIN | SUB_ADMIN from DB
@@ -18,5 +19,5 @@ export default async function AdminCRMPage() {
     })
   ])
 
-  return <AdminCRMClient leads={leads} sequences={sequences} />
+  return <AdminCRMClient leads={serializePrisma(leads)} sequences={serializePrisma(sequences)} />
 }

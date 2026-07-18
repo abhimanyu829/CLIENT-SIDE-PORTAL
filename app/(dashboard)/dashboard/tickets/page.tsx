@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import TicketsClient from "@/components/dashboard/TicketsClient"
+import { serializePrisma } from "@/lib/serialize-prisma"
 
 export default async function TicketsPage() {
   const session = await auth()
@@ -12,5 +13,5 @@ export default async function TicketsPage() {
     orderBy: { updatedAt: "desc" },
   })
 
-  return <TicketsClient initialTickets={tickets as any} />
+  return <TicketsClient initialTickets={serializePrisma(tickets)} />
 }

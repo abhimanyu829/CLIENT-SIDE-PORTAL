@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import ProjectsClient from "@/components/dashboard/ProjectsClient"
+import { serializePrisma } from "@/lib/serialize-prisma"
 
 export default async function ProjectsPage() {
   const session = await auth()
@@ -12,5 +13,5 @@ export default async function ProjectsPage() {
     orderBy: { updatedAt: "desc" },
   })
 
-  return <ProjectsClient initialProjects={projects as any} />
+  return <ProjectsClient initialProjects={serializePrisma(projects)} />
 }

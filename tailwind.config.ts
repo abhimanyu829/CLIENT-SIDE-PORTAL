@@ -70,7 +70,9 @@ const config: Config = {
         sm: `calc(var(--radius) - 4px)`,
       },
       fontFamily: {
-        sans: ['var(--font-sans)', 'Inter', 'sans-serif'],
+        sans: ['var(--font-sans)', 'Geist', 'sans-serif'],
+        display: ['var(--font-display)', 'Geist', 'sans-serif'],
+        mono: ['var(--font-mono)', 'JetBrains Mono', 'monospace'],
       },
       keyframes: {
         "accordion-down": {

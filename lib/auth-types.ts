@@ -13,6 +13,10 @@ export interface AppUser {
   role: Role
   isVerified: boolean
   permissions: string[]
+  adminAccess?: {
+    allowed: boolean
+    reason?: string | null
+  }
   avatarUrl?: string | null
   /** Clerk user ID — only for auth layer. Never use as FK in business tables. */
   clerkUserId?: string | null

@@ -183,9 +183,12 @@ function GridCard(p: ProductCardProps) {
   const hasFlash = !!(p.flashSalePrice && p.flashSaleEndsAt && new Date(p.flashSaleEndsAt) > new Date())
 
   return (
-    <article className="group relative glass rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:border-purple-500/40 hover:shadow-2xl hover:shadow-purple-500/10 cursor-pointer">
-        {/* Thumbnail */}
-        <div className="aspect-video relative overflow-hidden bg-zinc-900">
+    <div className="uiverse-parent h-full">
+      <article className="uiverse-card group rounded-2xl h-full cursor-pointer flex flex-col">
+        <div className="uiverse-glass rounded-2xl" />
+        <div className="uiverse-content flex flex-col h-full overflow-hidden rounded-2xl relative z-10">
+          {/* Thumbnail */}
+          <div className="aspect-video relative overflow-hidden bg-zinc-900">
           <Link href={`/marketplace/${p.slug}`} className="absolute inset-0 z-10" aria-label={`View ${p.name}`} />
           {p.thumbnailUrl ? (
             <img src={p.thumbnailUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -245,7 +248,9 @@ function GridCard(p: ProductCardProps) {
           <ActionButtons p={p} layout="grid" />
         </div>
 
-        </article>
+        </div>
+      </article>
+    </div>
   )
 }
 
@@ -254,8 +259,11 @@ function FeaturedCard(p: ProductCardProps) {
   const hasFlash = !!(p.flashSalePrice && p.flashSaleEndsAt && new Date(p.flashSaleEndsAt) > new Date())
 
   return (
-    <article className="group relative glass rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 cursor-pointer">
-        <div className="aspect-[4/3] relative overflow-hidden bg-zinc-900">
+    <div className="uiverse-parent h-full">
+      <article className="uiverse-card group rounded-2xl h-full cursor-pointer flex flex-col">
+        <div className="uiverse-glass rounded-2xl" />
+        <div className="uiverse-content flex flex-col h-full overflow-hidden rounded-2xl relative z-10">
+          <div className="aspect-[4/3] relative overflow-hidden bg-zinc-900">
           <Link href={`/marketplace/${p.slug}`} className="absolute inset-0 z-10" aria-label={`View ${p.name}`} />
           {p.thumbnailUrl ? (
             <img src={p.thumbnailUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -290,7 +298,9 @@ function FeaturedCard(p: ProductCardProps) {
           )}
           <ActionButtons p={p} layout="row" />
         </div>
-    </article>
+        </div>
+      </article>
+    </div>
   )
 }
 

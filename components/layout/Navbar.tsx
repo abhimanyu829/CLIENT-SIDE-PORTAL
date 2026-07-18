@@ -56,7 +56,9 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
   const isAuthenticated = !!clerkUser
   const isLoading = !clerkLoaded || (isAuthenticated && internalUserLoading)
   const userRole = internalUser?.role
-  const canAccessAdmin = userRole === "SUPER_ADMIN" || userRole === "SUB_ADMIN"
+  const canAccessAdmin =
+    userRole === "SUPER_ADMIN" ||
+    (userRole === "SUB_ADMIN" && internalUser?.adminAccess?.allowed === true)
   const pathname = usePathname()
   const { itemCount } = useCart()
   const [scrolled, setScrolled] = useState(false)
@@ -111,15 +113,14 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
         </div>
       )}
 
-      <header className={`sticky top-0 z-50 w-full bg-[#050505]/90 backdrop-blur-xl border-b border-white/[0.06] transition-all ${scrolled ? "shadow-lg shadow-black/30" : ""}`}
+      <header suppressHydrationWarning className={`sticky top-0 z-50 w-full bg-background/90 backdrop-blur-xl border-b border-border transition-all ${scrolled ? "shadow-lg shadow-sm" : ""}`}
         onMouseLeave={closeMenu}>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex h-14 items-center justify-between gap-4">
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <span className="text-xl font-black"
-              style={{ background: "linear-gradient(135deg,#a78bfa,#60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+            <span className="brand-gradient text-xl font-black">
               ⬡ NexusAI
             </span>
           </Link>
@@ -129,7 +130,7 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
             {Object.entries(MEGA_MENU).map(([key, menu]) => (
               <div key={key} className="relative">
                 <button
-                  className={`group relative px-3 py-2 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${activeMega === key ? "text-white/95" : "text-white/55 hover:text-white/95"}`}
+                  className={`group relative px-3 py-2 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${activeMega === key ? "text-foreground/95" : "text-foreground/55 hover:text-foreground/95"}`}
                   onMouseEnter={() => setActiveMega(key)}
                 >
                   {key}
@@ -140,14 +141,14 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
                 </button>
 
                 {activeMega === key && (
-                  <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-[#080808]/95 backdrop-blur-2xl border border-white/10 rounded-[1.25rem] p-5 min-w-[520px] shadow-[0_24px_64px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.03)] z-[200] animate-in fade-in slide-in-from-top-2 duration-150" onMouseEnter={() => setActiveMega(key)}>
+                  <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-popover/95 backdrop-blur-2xl border border-border rounded-[1.25rem] p-5 min-w-[520px] shadow-[0_24px_64px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.03)] z-[200] animate-in fade-in slide-in-from-top-2 duration-150" onMouseEnter={() => setActiveMega(key)}>
                     <div className="grid grid-cols-2 gap-1">
                       {menu.items.map(item => (
-                        <Link key={item.href} href={item.href} className="flex items-start gap-3 p-3 rounded-xl transition-all duration-150 border border-transparent hover:bg-white/5 hover:border-white/10" onClick={closeMenu}>
+                        <Link key={item.href} href={item.href} className="flex items-start gap-3 p-3 rounded-xl transition-all duration-150 border border-transparent hover:bg-muted hover:border-border" onClick={closeMenu}>
                           <span className="text-xl flex-shrink-0 mt-0.5">{item.icon}</span>
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold text-white">{item.label}</span>
+                              <span className="text-sm font-semibold text-foreground">{item.label}</span>
                               {"badge" in item && item.badge && (
                                 <span className="bg-green-500/20 text-green-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-green-500/30 flex items-center gap-1">
                                   <span className="w-1 h-1 bg-green-400 rounded-full animate-pulse" />
@@ -164,18 +165,18 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
                 )}
               </div>
             ))}
-            <Link href="/pricing" className={`group relative px-3 py-2 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${pathname === "/pricing" ? "text-white/95" : "text-white/55 hover:text-white/95"}`}>
+            <Link href="/pricing" className={`group relative px-3 py-2 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${pathname === "/pricing" ? "text-foreground/95" : "text-foreground/55 hover:text-foreground/95"}`}>
               Pricing
               <span className={`absolute bottom-[-4px] left-0 h-[1.5px] bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 ${pathname === "/pricing" ? "w-full" : "w-0 group-hover:w-full"}`} />
             </Link>
-            <Link href="/services" className={`group relative px-3 py-2 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${pathname.startsWith("/services") ? "text-white/95" : "text-white/55 hover:text-white/95"}`}>
+            <Link href="/services" className={`group relative px-3 py-2 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${pathname.startsWith("/services") ? "text-foreground/95" : "text-foreground/55 hover:text-foreground/95"}`}>
               Services
               <span className={`absolute bottom-[-4px] left-0 h-[1.5px] bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 ${pathname.startsWith("/services") ? "w-full" : "w-0 group-hover:w-full"}`} />
             </Link>
-            <Link href="/cart" className={`group relative px-3 py-2 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${pathname === "/cart" ? "text-white/95" : "text-white/55 hover:text-white/95"}`}>
+            <Link href="/cart" className={`group relative px-3 py-2 rounded-lg flex items-center gap-1 text-sm font-medium transition-colors ${pathname === "/cart" ? "text-foreground/95" : "text-foreground/55 hover:text-foreground/95"}`}>
               Cart
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center leading-none">
+                <span className="absolute -top-1 -right-1 bg-purple-500 text-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center leading-none">
                   {itemCount > 99 ? "99+" : itemCount}
                 </span>
               )}
@@ -186,7 +187,7 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
           {/* Right section */}
           <div className="hidden lg:flex items-center gap-2">
             {/* Search bar */}
-            <button className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3.5 py-1.5 cursor-pointer transition-all hover:bg-purple-500/5 hover:border-purple-500/40" onClick={() => setSearchOpen(true)}>
+            <button className="flex items-center gap-2 bg-muted border border-border rounded-xl px-3.5 py-1.5 cursor-pointer transition-all hover:bg-purple-500/5 hover:border-purple-500/40" onClick={() => setSearchOpen(true)}>
               <span className="text-zinc-600 text-sm">🔍</span>
               <span className="text-zinc-600 text-sm">Search...</span>
               <kbd className="ml-2 text-[10px] text-zinc-700 glass px-1.5 py-0.5 rounded">⌘K</kbd>
@@ -195,8 +196,8 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
 
             {isLoading ? (
               <div className="flex gap-2">
-                <div className="h-8 w-20 rounded-xl bg-white/5 animate-pulse" />
-                <div className="h-8 w-24 rounded-xl bg-white/5 animate-pulse" />
+                <div className="h-8 w-20 rounded-xl bg-muted animate-pulse" />
+                <div className="h-8 w-24 rounded-xl bg-muted animate-pulse" />
               </div>
             ) : isAuthenticated ? (
               <>
@@ -207,23 +208,23 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
                     </button>
                   </Link>
                 )}
-                <Link href="/dashboard"><button className="text-white/60 rounded-xl px-4 py-2 text-sm font-semibold transition-colors hover:text-white hover:bg-white/5">Dashboard</button></Link>
+                <Link href="/dashboard"><button className="text-foreground/60 rounded-xl px-4 py-2 text-sm font-semibold transition-colors hover:text-foreground hover:bg-muted">Dashboard</button></Link>
                 <UserButton showName />
               </>
             ) : (
               <>
-                <Link href="/login"><button className="text-white/60 rounded-xl px-4 py-2 text-sm font-semibold transition-colors hover:text-white hover:bg-white/5">Log in</button></Link>
-                <Link href="/register"><button className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white rounded-xl px-5 py-2 text-sm font-bold transition-all border border-purple-500/30 hover:scale-105 hover:shadow-[0_0_24px_rgba(139,92,246,0.4)]">Get started →</button></Link>
+                <Link href="/login"><button className="text-foreground/60 rounded-xl px-4 py-2 text-sm font-semibold transition-colors hover:text-foreground hover:bg-muted">Log in</button></Link>
+                <Link href="/register"><button className="bg-gradient-to-br from-indigo-500 to-purple-500 text-foreground rounded-xl px-5 py-2 text-sm font-bold transition-all border border-purple-500/30 hover:scale-105 hover:shadow-[0_0_24px_rgba(139,92,246,0.4)]">Get started →</button></Link>
               </>
             )}
           </div>
 
           {/* Mobile hamburger */}
           <div className="lg:hidden flex items-center gap-2">
-            <button className="flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10" onClick={() => setSearchOpen(true)}>
+            <button className="flex items-center justify-center p-2 rounded-xl bg-muted border border-border" onClick={() => setSearchOpen(true)}>
               <span className="text-zinc-600">🔍</span>
             </button>
-            <button className="p-2 text-zinc-400 hover:text-white transition-colors" onClick={() => setMobileOpen(o => !o)} aria-label="Toggle menu">
+            <button className="p-2 text-zinc-400 hover:text-foreground transition-colors" onClick={() => setMobileOpen(o => !o)} aria-label="Toggle menu">
               <div className="space-y-1.5 w-6">
                 <span className={`block h-0.5 bg-current transition-all ${mobileOpen ? "rotate-45 translate-y-2" : ""}`} />
                 <span className={`block h-0.5 bg-current transition-all ${mobileOpen ? "opacity-0" : ""}`} />
@@ -236,15 +237,14 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="fixed inset-0 bg-[#040404]/98 backdrop-blur-2xl z-[100] flex flex-col p-6 overflow-y-auto animate-in fade-in slide-in-from-top-4 duration-200 lg:hidden">
+        <div className="fixed inset-0 bg-background/98 backdrop-blur-2xl z-[100] flex flex-col p-6 overflow-y-auto animate-in fade-in slide-in-from-top-4 duration-200 lg:hidden">
           <div className="flex justify-between items-center mb-6">
-            <span className="text-xl font-black"
-              style={{ background: "linear-gradient(135deg,#a78bfa,#60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+            <span className="brand-gradient text-xl font-black">
               ⬡ NexusAI
             </span>
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <button onClick={() => setMobileOpen(false)} className="text-zinc-500 hover:text-white text-2xl w-10 h-10 flex items-center justify-center">✕</button>
+              <button onClick={() => setMobileOpen(false)} className="text-zinc-500 hover:text-foreground text-2xl w-10 h-10 flex items-center justify-center">✕</button>
             </div>
           </div>
 
@@ -254,20 +254,20 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
                 <p className="text-xs font-bold text-zinc-600 uppercase tracking-widest px-3 py-2">{key}</p>
                 {menu.items.map(item => (
                   <Link key={item.href} href={item.href}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all">
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-foreground hover:bg-muted transition-all">
                     <span>{item.icon}</span>
                     <span className="text-sm font-medium">{item.label}</span>
                   </Link>
                 ))}
               </div>
             ))}
-            <Link href="/pricing" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all">
+            <Link href="/pricing" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-foreground hover:bg-muted transition-all">
               <span>💰</span><span className="text-sm font-medium">Pricing</span>
             </Link>
-            <Link href="/services" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all">
+            <Link href="/services" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-foreground hover:bg-muted transition-all">
               <span>🏢</span><span className="text-sm font-medium">Services</span>
             </Link>
-            <Link href="/cart" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all">
+            <Link href="/cart" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-300 hover:text-foreground hover:bg-muted transition-all">
               <span>🛒</span><span className="text-sm font-medium">Cart{itemCount > 0 ? ` (${itemCount})` : ""}</span>
             </Link>
           </nav>
@@ -282,15 +282,15 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
                     </button>
                   </Link>
                 )}
-                <Link href="/dashboard"><button className="w-full py-3 rounded-xl font-bold text-zinc-300 bg-white/5">Dashboard</button></Link>
+                <Link href="/dashboard"><button className="w-full py-3 rounded-xl font-bold text-zinc-300 bg-muted">Dashboard</button></Link>
                 <SignOutButton redirectUrl="/">
                   <button className="w-full py-3 rounded-xl font-bold text-red-400 bg-red-500/10">Sign out</button>
                 </SignOutButton>
               </>
             ) : (
               <>
-                <Link href="/login"><button className="w-full py-3 rounded-xl font-bold text-zinc-300 bg-white/5">Log in</button></Link>
-                <Link href="/register"><button className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white rounded-xl px-5 py-3 text-sm font-bold transition-all border border-purple-500/30 w-full text-center block">Get started free →</button></Link>
+                <Link href="/login"><button className="w-full py-3 rounded-xl font-bold text-zinc-300 bg-muted">Log in</button></Link>
+                <Link href="/register"><button className="bg-gradient-to-br from-indigo-500 to-purple-500 text-foreground rounded-xl px-5 py-3 text-sm font-bold transition-all border border-purple-500/30 w-full text-center block">Get started free →</button></Link>
               </>
             )}
           </div>

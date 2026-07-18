@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import AdminServicesClient from "./AdminServicesClient"
 import Link from "next/link"
 import { Plus, Shapes, ClipboardList } from "lucide-react"
+import { serializePrisma } from "@/lib/serialize-prisma"
 
 function toIso(val: Date | string | null | undefined): string | null {
   if (val == null) return null
@@ -74,7 +75,7 @@ export default async function AdminServicesPage({ searchParams }: { searchParams
           </Link>
         ))}
       </div>
-      <AdminServicesClient initialServices={serialized} />
+      <AdminServicesClient initialServices={serializePrisma(serialized)} />
     </div>
   )
 }

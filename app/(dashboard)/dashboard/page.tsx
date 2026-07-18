@@ -33,8 +33,8 @@ export default function DashboardOverview() {
     <div className="max-w-6xl mx-auto space-y-6 lg:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Overview</h1>
-          <p className="text-sm text-zinc-500 mt-1">Real-time metrics and activity across your account.</p>
+          <h1 className="text-2xl font-bold font-sans">Overview</h1>
+          <p className="text-sm text-muted-foreground mt-1">Real-time metrics and activity across your account.</p>
         </div>
       </div>
 
@@ -44,9 +44,9 @@ export default function DashboardOverview() {
           label="Active Subscriptions" 
           sub="Across all services" 
           icon="⬡" 
-          color="text-blue-400" 
-          border="border-blue-500/20" 
-          glow="rgba(59,130,246,0.05)" 
+          color="text-primary" 
+          border="border-primary/20" 
+          glow="rgba(234,88,12,0.05)" 
           statKey="activeSubs" 
         />
         <LiveMetricCard 
@@ -54,9 +54,9 @@ export default function DashboardOverview() {
           label="AI Usage" 
           sub="Tokens this month" 
           icon="✦" 
-          color="text-purple-400" 
-          border="border-purple-500/20" 
-          glow="rgba(168,85,247,0.05)" 
+          color="text-accent" 
+          border="border-accent/20" 
+          glow="rgba(253,186,116,0.05)" 
           statKey="aiTokensUsed" 
         />
         <LiveMetricCard 
@@ -64,9 +64,9 @@ export default function DashboardOverview() {
           label="Open Tickets" 
           sub="Requires attention" 
           icon="🎫" 
-          color="text-amber-400" 
-          border="border-amber-500/20" 
-          glow="rgba(245,158,11,0.05)" 
+          color="text-red-500" 
+          border="border-red-500/20" 
+          glow="rgba(239,68,68,0.05)" 
           statKey="openTickets" 
         />
         <LiveMetricCard 
@@ -74,7 +74,7 @@ export default function DashboardOverview() {
           label="Monthly Spend" 
           sub="Current billing cycle" 
           icon="💳" 
-          color="text-emerald-400" 
+          color="text-emerald-500" 
           border="border-emerald-500/20" 
           glow="rgba(16,185,129,0.05)" 
           statKey="monthlySpend" 
@@ -83,11 +83,11 @@ export default function DashboardOverview() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 dash-glass rounded-2xl p-6 border-white/5 min-h-[300px] flex items-center justify-center">
+        <div className="lg:col-span-2 dash-glass rounded-2xl p-6 min-h-[300px] flex items-center justify-center border border-border">
           <div className="text-center">
             <span className="text-4xl">📈</span>
             <h3 className="text-sm font-medium mt-3">Usage Analytics</h3>
-            <p className="text-xs text-zinc-500 mt-1">Detailed charts are being generated.</p>
+            <p className="text-xs text-muted-foreground mt-1">Detailed charts are being generated.</p>
           </div>
         </div>
         <div>
