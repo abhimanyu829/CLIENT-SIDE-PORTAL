@@ -1,9 +1,9 @@
-import { requireSuperAdmin } from "@/lib/admin-auth"
+import { requireAdmin } from "@/lib/admin-auth"
 import { db } from "@/lib/db"
 import EmailCenterClient from "@/components/admin/EmailCenterClient"
 
 export default async function AdminEmailsPage() {
-  await requireSuperAdmin()
+  await requireAdmin()
 
   const campaigns = await db.emailCampaign.findMany({
     orderBy: { createdAt: "desc" },

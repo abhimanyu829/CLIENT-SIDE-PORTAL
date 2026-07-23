@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       expires: credentialSession.expiresAt,
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, redirectUrl: credentialSession.landingPath })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid admin credentials"
     const status = message === "ADMIN_CREDENTIALS_LOCKED" ? 423 : 401

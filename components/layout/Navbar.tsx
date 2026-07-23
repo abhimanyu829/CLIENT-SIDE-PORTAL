@@ -56,9 +56,12 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
   const isAuthenticated = !!clerkUser
   const isLoading = !clerkLoaded || (isAuthenticated && internalUserLoading)
   const userRole = internalUser?.role
-  const canAccessAdmin =
+  const canSeeAdminPanel =
     userRole === "SUPER_ADMIN" ||
-    (userRole === "SUB_ADMIN" && internalUser?.adminAccess?.allowed === true)
+    (userRole === "SUB_ADMIN" && internalUser?.adminAccess?.panelEligible === true)
+  const adminPanelHref = internalUser?.adminAccess?.allowed
+    ? internalUser.adminAccess.landingPath ?? "/admin"
+    : "/admin-access"
   const pathname = usePathname()
   const { itemCount } = useCart()
   const [scrolled, setScrolled] = useState(false)
@@ -201,8 +204,8 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
               </div>
             ) : isAuthenticated ? (
               <>
-                {canAccessAdmin && (
-                  <Link href="/admin">
+                {canSeeAdminPanel && (
+                  <Link href={adminPanelHref}>
                     <button className="text-amber-400/80 rounded-xl px-4 py-2 text-sm font-semibold transition-colors hover:text-amber-400 hover:bg-amber-400/10">
                       Admin Panel
                     </button>
@@ -275,8 +278,8 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
           <div className="flex flex-col gap-3 pt-6 border-t border-white/5">
             {isAuthenticated ? (
               <>
-                {canAccessAdmin && (
-                  <Link href="/admin">
+                {canSeeAdminPanel && (
+                  <Link href={adminPanelHref}>
                     <button className="w-full py-3 rounded-xl font-bold text-amber-400 bg-amber-400/10">
                       Admin Panel
                     </button>

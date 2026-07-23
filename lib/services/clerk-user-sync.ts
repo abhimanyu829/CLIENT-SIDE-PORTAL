@@ -18,6 +18,33 @@ export type ClerkUserProfile = {
   imageUrl?: string | null
 }
 
+function isTransientDatabaseError(error: unknown) {
+  if (!error || typeof error !== "object") return false
+  const value = error as { code?: string; message?: string; constructor?: { name?: string } }
+  return (
+    value.code === "P1001" ||
+    value.code === "P1017" ||
+    value.constructor?.name === "PrismaClientInitializationError" ||
+    value.message?.includes("Can't reach database server") === true ||
+    value.message?.includes("Connection refused") === true
+  )
+}
+
+async function retryClerkDatabaseSync<T>(operation: () => Promise<T>): Promise<T> {
+  const maxAttempts = 3
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await operation()
+    } catch (error) {
+      if (!isTransientDatabaseError(error) || attempt === maxAttempts) throw error
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1000))
+    }
+  }
+
+  throw new Error("CLERK_USER_SYNC_RETRY_EXHAUSTED")
+}
+
 export function profileFromCurrentClerkUser(clerkUser: any): ClerkUserProfile | null {
   const email =
     clerkUser?.primaryEmailAddress?.emailAddress ??
@@ -62,52 +89,54 @@ export async function syncClerkUserToDatabase(
     [profile.firstName, profile.lastName].filter(Boolean).join(" ") ||
     email
 
-  return db.$transaction(async (tx) => {
-    const [byClerkId, byEmail] = await Promise.all([
-      tx.user.findUnique({
-        where: { clerkUserId: profile.id },
-        include: userWithPermissions,
-      }),
-      tx.user.findUnique({
-        where: { email },
-        include: userWithPermissions,
-      }),
-    ])
+  return retryClerkDatabaseSync(() =>
+    db.$transaction(async (tx) => {
+      const [byClerkId, byEmail] = await Promise.all([
+        tx.user.findUnique({
+          where: { clerkUserId: profile.id },
+          include: userWithPermissions,
+        }),
+        tx.user.findUnique({
+          where: { email },
+          include: userWithPermissions,
+        }),
+      ])
 
-    if (byClerkId && byEmail && byClerkId.id !== byEmail.id) {
-      throw new Error("CLERK_EMAIL_ALREADY_LINKED")
-    }
+      if (byClerkId && byEmail && byClerkId.id !== byEmail.id) {
+        throw new Error("CLERK_EMAIL_ALREADY_LINKED")
+      }
 
-    const existing = byClerkId ?? byEmail
+      const existing = byClerkId ?? byEmail
 
-    if (existing?.isBanned) {
-      return existing
-    }
+      if (existing?.isBanned) {
+        return existing
+      }
 
-    const sharedData = {
-      clerkUserId: profile.id,
-      name: displayName,
-      isVerified: true,
-      ...(profile.imageUrl && !existing?.avatarUrl ? { avatarUrl: profile.imageUrl } : {}),
-      ...(options.updateLastLogin ? { lastLoginAt: new Date() } : {}),
-    }
+      const sharedData = {
+        clerkUserId: profile.id,
+        name: displayName,
+        isVerified: true,
+        ...(profile.imageUrl && !existing?.avatarUrl ? { avatarUrl: profile.imageUrl } : {}),
+        ...(options.updateLastLogin ? { lastLoginAt: new Date() } : {}),
+      }
 
-    if (existing) {
-      return tx.user.update({
-        where: { id: existing.id },
-        data: sharedData,
+      if (existing) {
+        return tx.user.update({
+          where: { id: existing.id },
+          data: sharedData,
+          include: userWithPermissions,
+        })
+      }
+
+      return tx.user.create({
+        data: {
+          email,
+          ...sharedData,
+        },
         include: userWithPermissions,
       })
-    }
-
-    return tx.user.create({
-      data: {
-        email,
-        ...sharedData,
-      },
-      include: userWithPermissions,
     })
-  })
+  )
 }
 
 export async function anonymizeDeletedClerkUser(clerkUserId: string) {

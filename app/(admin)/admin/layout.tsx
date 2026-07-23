@@ -8,6 +8,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   return (
     <AdminLayoutClient
       isSuperAdmin={admin.isSuperAdmin}
+      allowedPermissions={admin.permissions}
       userName={admin.name}
       userEmail={admin.email}
     >

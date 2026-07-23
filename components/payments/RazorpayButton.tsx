@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useSession } from "next-auth/react"
+import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { QrCode, Link as LinkIcon } from "lucide-react"
 
@@ -55,7 +55,7 @@ function loadRazorpayScript(timeout = 10000): Promise<boolean> {
 
 export function RazorpayButton({ tierId, productId, mode = "buy_now", paymentMethod = "checkout" }: RazorpayButtonProps) {
   const router = useRouter()
-  const { data: session } = useSession()
+  const { user } = useUser()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -97,12 +97,12 @@ export function RazorpayButton({ tierId, productId, mode = "buy_now", paymentMet
         image: "/logo.png",
         order_id: data.razorpayOrder.id,
         prefill: {
-          name: session?.user?.name ?? "",
-          email: session?.user?.email ?? "",
+          name: user?.fullName ?? user?.username ?? "",
+          email: user?.primaryEmailAddress?.emailAddress ?? "",
         },
         notes: {
           orderId: data.order.id,
-          userId: session?.user?.id ?? "",
+          userId: user?.id ?? "",
           tierId,
           productId: productId ?? "",
           checkoutMode: mode,

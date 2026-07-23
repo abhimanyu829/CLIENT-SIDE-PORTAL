@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { requireSuperAdmin } from "@/lib/admin-auth"
-import { ADMIN_ACTIONS, ADMIN_RESOURCES, createSubadminAccount } from "@/lib/subadmin-workforce"
+import { createSubadminAccount } from "@/lib/subadmin-workforce"
+import { isSubadminAction, isSubadminResource } from "@/lib/subadmin-permission-policy"
 
 const permissionSchema = z.object({
-  resource: z.string().refine((value) => ADMIN_RESOURCES.includes(value)),
-  action: z.string().refine((value) => ADMIN_ACTIONS.includes(value)),
+  resource: z.string().refine(isSubadminResource),
+  action: z.string().refine(isSubadminAction),
 })
 
 const createSchema = z.object({

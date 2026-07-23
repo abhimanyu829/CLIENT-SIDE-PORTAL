@@ -6,28 +6,20 @@ import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/resend"
 import { createNotification } from "@/lib/notifications"
 import type { AdminSession } from "@/lib/admin-auth"
+import {
+  SUBADMIN_ACTIONS,
+  SUBADMIN_RESOURCES,
+  firstAdminPathForPermissions,
+  type SubadminAction,
+  type SubadminPermission,
+  type SubadminResource,
+} from "@/lib/subadmin-permission-policy"
 
 export const SUBADMIN_SESSION_COOKIE = "nexusai_subadmin_admin_session"
 export const SUBADMIN_SESSION_DAYS = 1
 
-export const ADMIN_RESOURCES = [
-  "Products",
-  "Services",
-  "Users",
-  "Orders",
-  "Payments",
-  "Refunds",
-  "Analytics",
-  "Email Center",
-  "Support",
-  "Media",
-  "Blogs",
-  "Marketing",
-  "CRM",
-  "Documentation",
-]
-
-export const ADMIN_ACTIONS = ["VIEW", "CREATE", "EDIT", "DELETE", "APPROVE", "PUBLISH"]
+export const ADMIN_RESOURCES = SUBADMIN_RESOURCES
+export const ADMIN_ACTIONS = SUBADMIN_ACTIONS
 
 function prisma() {
   return db as any
@@ -478,9 +470,15 @@ export async function updateSubadminStatus(input: {
   return account
 }
 
-export async function validateSubadminCredentialSession(userId: string, role: string) {
-  if (role === "SUPER_ADMIN") return { allowed: true, reason: null }
-  if (role !== "SUB_ADMIN") return { allowed: false, reason: "NOT_ADMIN" }
+export async function validateSubadminCredentialSession(userId: string, role: string): Promise<{
+  allowed: boolean
+  reason: string | null
+  permissions: SubadminPermission[]
+  panelEligible: boolean
+  landingPath: string | null
+}> {
+  if (role === "SUPER_ADMIN") return { allowed: true, reason: null, permissions: [], panelEligible: true, landingPath: "/admin" }
+  if (role !== "SUB_ADMIN") return { allowed: false, reason: "NOT_ADMIN", permissions: [], panelEligible: false, landingPath: null }
 
   const account = await prisma().subadminAccount.findFirst({
     where: {
@@ -491,16 +489,43 @@ export async function validateSubadminCredentialSession(userId: string, role: st
     select: {
       id: true,
       forceLogoutVersion: true,
-      permissions: { where: { revokedAt: null }, select: { id: true } },
+      application: { select: { status: true } },
+      permissions: { where: { revokedAt: null }, select: { resource: true, action: true } },
     },
   })
 
-  if (!account) return { allowed: false, reason: "NO_ACTIVE_SUBADMIN_ACCOUNT" }
-  if (account.permissions.length === 0) return { allowed: false, reason: "NO_PERMISSIONS" }
+  if (!account) return { allowed: false, reason: "NO_ACTIVE_SUBADMIN_ACCOUNT", permissions: [], panelEligible: false, landingPath: null }
+  // An account can be provisioned directly by a Super Admin or from an
+  // application. Linked applications must be approved; a direct account is
+  // itself an explicit Super Admin approval.
+  if (account.application && account.application.status !== "APPROVED") {
+    return { allowed: false, reason: "SUBADMIN_APPLICATION_NOT_APPROVED", permissions: [], panelEligible: false, landingPath: null }
+  }
+  if (account.permissions.length === 0) return { allowed: false, reason: "NO_PERMISSIONS", permissions: [], panelEligible: false, landingPath: null }
+
+  const permissions = account.permissions
+    .filter(
+      (permission) =>
+        SUBADMIN_RESOURCES.includes(permission.resource as SubadminResource) &&
+        SUBADMIN_ACTIONS.includes(permission.action as SubadminAction)
+    )
+    .map((permission) => ({
+      resource: permission.resource as SubadminResource,
+      action: permission.action as SubadminAction,
+    }))
+
+  if (permissions.length === 0) {
+    return { allowed: false, reason: "NO_PERMISSIONS", permissions: [], panelEligible: false, landingPath: null }
+  }
+
+  const landingPath = firstAdminPathForPermissions(permissions)
+  if (!landingPath) {
+    return { allowed: false, reason: "NO_VIEWABLE_ADMIN_ROUTE", permissions, panelEligible: false, landingPath: null }
+  }
 
   const cookieStore = await cookies()
   const token = cookieStore.get(SUBADMIN_SESSION_COOKIE)?.value
-  if (!token) return { allowed: false, reason: "ADMIN_CREDENTIAL_LOGIN_REQUIRED" }
+  if (!token) return { allowed: false, reason: "ADMIN_CREDENTIAL_LOGIN_REQUIRED", permissions, panelEligible: true, landingPath }
 
   const tokenHash = sha256(token)
   const session = await prisma().subadminSession.findUnique({
@@ -515,7 +540,7 @@ export async function validateSubadminCredentialSession(userId: string, role: st
     session.expiresAt <= new Date() ||
     session.forceLogoutVersion !== account.forceLogoutVersion
   ) {
-    return { allowed: false, reason: "ADMIN_CREDENTIAL_SESSION_INVALID" }
+    return { allowed: false, reason: "ADMIN_CREDENTIAL_SESSION_INVALID", permissions, panelEligible: true, landingPath }
   }
 
   await prisma().subadminSession.update({
@@ -523,7 +548,13 @@ export async function validateSubadminCredentialSession(userId: string, role: st
     data: { lastSeenAt: new Date() },
   }).catch(() => null)
 
-  return { allowed: true, reason: null }
+  return {
+    allowed: true,
+    reason: null,
+    permissions,
+    panelEligible: true,
+    landingPath,
+  }
 }
 
 export async function createCredentialSession(input: {
@@ -539,11 +570,17 @@ export async function createCredentialSession(input: {
       status: "ACTIVE",
       credentialsActive: true,
     },
-    include: { permissions: { where: { revokedAt: null } } },
+    include: {
+      application: { select: { status: true } },
+      permissions: { where: { revokedAt: null } },
+    },
   })
 
   if (!account || !account.passwordHash) {
     throw new Error("INVALID_ADMIN_CREDENTIALS")
+  }
+  if (account.application && account.application.status !== "APPROVED") {
+    throw new Error("SUBADMIN_APPLICATION_NOT_APPROVED")
   }
   if (account.lockedUntil && account.lockedUntil > new Date()) {
     throw new Error("ADMIN_CREDENTIALS_LOCKED")
@@ -551,7 +588,19 @@ export async function createCredentialSession(input: {
   if (account.userId && account.userId !== input.userId) {
     throw new Error("ADMIN_EMAIL_MISMATCH")
   }
-  if (account.permissions.length === 0) {
+  const permissions = account.permissions
+    .filter(
+      (permission: { resource: string; action: string }) =>
+        SUBADMIN_RESOURCES.includes(permission.resource as SubadminResource) &&
+        SUBADMIN_ACTIONS.includes(permission.action as SubadminAction)
+    )
+    .map((permission: { resource: string; action: string }) => ({
+      resource: permission.resource as SubadminResource,
+      action: permission.action as SubadminAction,
+    }))
+  const landingPath = firstAdminPathForPermissions(permissions)
+
+  if (permissions.length === 0 || !landingPath) {
     throw new Error("NO_ADMIN_PERMISSIONS")
   }
 
@@ -603,5 +652,5 @@ export async function createCredentialSession(input: {
     metadata: { username: input.username },
   })
 
-  return { token, expiresAt }
+  return { token, expiresAt, landingPath }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { assertCustomServiceRequestAccess } from "@/lib/custom-service-portal"
 
 export async function POST(req: Request) {
   try {
@@ -23,7 +24,14 @@ export async function POST(req: Request) {
 
     // Only allow users to auth their own private channel
     const expectedChannel = `private-user-${session.user.id}`
-    if (channelName !== expectedChannel && channelName !== "private-dashboard") {
+    const serviceRequestMatch = channelName.match(/^private-service-request-(.+)$/)
+    if (serviceRequestMatch) {
+      try {
+        await assertCustomServiceRequestAccess(serviceRequestMatch[1], session.user.id)
+      } catch {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
+    } else if (channelName !== expectedChannel && channelName !== "private-dashboard") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 

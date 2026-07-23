@@ -22,6 +22,16 @@ const RESOURCES = [
 
 const ACTIONS = ["VIEW", "CREATE", "EDIT", "DELETE", "APPROVE", "PUBLISH"]
 const STATUSES = ["ACTIVE", "PENDING", "SUSPENDED", "DISABLED", "REVOKED"]
+const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("en-IN", {
+  dateStyle: "medium",
+  timeStyle: "medium",
+  hour12: true,
+  timeZone: "Asia/Kolkata",
+})
+
+function formatDateTime(value: string | Date) {
+  return DATE_TIME_FORMATTER.format(new Date(value))
+}
 
 export default function SubadminManagementClient({ initialData }: { initialData: any }) {
   const [data, setData] = useState(initialData)
@@ -159,6 +169,9 @@ export default function SubadminManagementClient({ initialData }: { initialData:
                   <div>
                     <p className="font-semibold">{application.name}</p>
                     <p className="text-sm text-muted-foreground">{application.email} · {application.country || "No country"}</p>
+                    {application.status === "APPROVED" && application.account?.username && (
+                      <p className="mt-1 text-sm font-medium text-foreground">Username: {application.account.username}</p>
+                    )}
                     <p className="mt-2 text-sm">{application.skills?.join(", ")}</p>
                     <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{application.motivation}</p>
                   </div>
@@ -259,7 +272,7 @@ export default function SubadminManagementClient({ initialData }: { initialData:
             {data.activityLogs.map((log: any) => (
               <div key={log.id} className="rounded-xl border border-border bg-background p-4 text-sm">
                 <p className="font-medium">{log.action}</p>
-                <p className="text-muted-foreground">{log.actor?.email ?? "System"} · {new Date(log.createdAt).toLocaleString()}</p>
+                <p className="text-muted-foreground">{log.actor?.email ?? "System"} · {formatDateTime(log.createdAt)}</p>
               </div>
             ))}
           </div>

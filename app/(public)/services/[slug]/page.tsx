@@ -5,6 +5,7 @@ import ServiceRequestForm from "./ServiceRequestForm"
 import { CheckCircle2, ChevronRight, Briefcase, Layers3, Sparkles, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { ServiceDiscoveryTracker } from "@/components/services/ServiceDiscoveryTracker"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -48,6 +49,7 @@ export default async function ServiceDetailsPage({ params }: { params: Promise<{
 
   return (
     <div className="min-h-screen bg-black text-white">
+      <ServiceDiscoveryTracker servicePageId={service.id} />
       {/* Hero Section */}
       <div className="relative border-b border-gray-800 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-black to-black z-0 pointer-events-none" />

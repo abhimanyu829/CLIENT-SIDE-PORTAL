@@ -1,6 +1,7 @@
 import { db } from "@/lib/db"
 import Link from "next/link"
 import { ArrowRight, Briefcase, Layers3, Sparkles } from "lucide-react"
+import { ServiceDiscoveryShelf } from "@/components/services/ServiceDiscoveryShelf"
 
 type Props = {
   searchParams: Promise<{ category?: string }>
@@ -61,6 +62,7 @@ export default async function ServicesDirectoryPage({ searchParams }: Props) {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-16 space-y-12">
+        <ServiceDiscoveryShelf />
         <section className="space-y-4">
           <div className="flex flex-wrap gap-2">
             <Link

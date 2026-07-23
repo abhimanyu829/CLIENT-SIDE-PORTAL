@@ -10,7 +10,7 @@ function isPusherConfigured(): boolean {
   const key = process.env.NEXT_PUBLIC_PUSHER_KEY
   const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER
   _pusherAvailable = !!(key && cluster)
-  if (!_pusherAvailable) {
+  if (!_pusherAvailable && process.env.NEXT_PUBLIC_PUSHER_DEBUG === "true") {
     console.warn("[PUSHER] ⚠️ Pusher public credentials not configured — realtime events will be skipped on client.")
   }
   return _pusherAvailable

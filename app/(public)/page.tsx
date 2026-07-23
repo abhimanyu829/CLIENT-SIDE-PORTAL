@@ -2,7 +2,8 @@ import Link from "next/link"
 import { db } from "@/lib/db"
 import { ProductStatus, ProductType, SubStatus, CampaignStatus } from "@prisma/client"
 import { unstable_cache } from "next/cache"
-import OfferBanner from "@/components/marketplace/OfferBanner"
+import SmartCampaignBanner from "@/components/marketplace/SmartCampaignBanner"
+
 import ActivityFeed from "@/components/marketplace/ActivityFeed"
 import ProductCard from "@/components/marketplace/ProductCard"
 import { CtaVideoBackground } from "@/components/effects/CtaVideoBackground"
@@ -150,16 +151,8 @@ export default async function HomePage() {
     getTestimonials(),
   ])
 
-  const campaignForBanner = campaign ? {
-    id: campaign.id,
-    bannerText: campaign.bannerText,
-    ctaText: campaign.ctaText,
-    ctaUrl: campaign.ctaUrl,
-    bannerImageUrl: campaign.bannerImageUrl,
-    endsAt: campaign.endsAt.toISOString(),
-    discountPercent: campaign.discountPercent,
-    type: campaign.type,
-  } : null
+
+
 
   const COLLECTIONS = [
     { title: "Best AI Agents", href: "/ai-agents", icon: "🤖", count: stats.agents, color: "from-purple-600/20 to-blue-600/20", border: "border-purple-500/20" },
@@ -190,8 +183,9 @@ export default async function HomePage() {
         .badge-new{background:#ea580c;font-size:.65rem;font-weight:800;padding:.125rem .5rem;border-radius:9999px;color:#fff;letter-spacing:.05em}
       `}</style>
 
-      {/* ── SECTION 3: Campaign Offer Banner ── */}
-      <OfferBanner campaign={campaignForBanner} />
+      {/* ── Campaign banner — audience-targeted, resolves client-side ── */}
+      <SmartCampaignBanner />
+
 
       {/* ── SECTION 1: HERO ──────────────────────────────────────────────────── */}
       <section className="aurora-dashboard-bg relative min-h-[80vh] flex items-center justify-center overflow-hidden py-20">

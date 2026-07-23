@@ -10,9 +10,11 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import type { ProductServiceProfileView } from "@/lib/product-service-profile"
 import {
   ExternalLink, KeyRound, RefreshCw, ShoppingBag, Clock, CalendarDays,
   Package, Layers, CheckCircle2, XCircle, PauseCircle, AlertTriangle,
+  Server, Gift, PlusCircle, ArrowUpRight, BookOpen, LifeBuoy,
 } from "lucide-react"
 
 interface Entitlement {
@@ -42,6 +44,7 @@ interface Entitlement {
   subscriptionStatus?: string | null
   subscriptionExpiry?: string | null
   hasPendingCredentialRequest: boolean
+  serviceProfile?: ProductServiceProfileView | null
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -74,6 +77,194 @@ function CountdownBadge({ until }: { until: string }) {
 }
 
 // ─── Credential Request Dialog ───────────────────────────────────────────────
+function isEnabled<T extends { enabled?: boolean }>(item: T) {
+  return item.enabled !== false
+}
+
+function ServiceDetailsSection({ profile }: { profile: ProductServiceProfileView }) {
+  const hidden = new Set(profile.hiddenFields)
+  const capacity = profile.capacity
+    .filter((group) => group.items?.some(isEnabled))
+    .filter(() => !hidden.has("capacity"))
+  const freeServices = profile.freeServices.filter(isEnabled).filter(() => !hidden.has("freeServices"))
+  const paidAddons = profile.paidAddons.filter(isEnabled).filter(() => !hidden.has("paidAddons"))
+  const upgradePaths = profile.upgradePaths.filter(isEnabled).filter(() => !hidden.has("upgradePaths"))
+  const documentation = profile.documentation.filter(isEnabled).filter(() => !hidden.has("documentation"))
+  const tutorials = profile.tutorials.filter(isEnabled).filter(() => !hidden.has("tutorials"))
+  const supportBenefits = profile.supportBenefits.filter(isEnabled).filter(() => !hidden.has("supportBenefits"))
+
+  const hasDetails = capacity.length || freeServices.length || paidAddons.length || upgradePaths.length || documentation.length || tutorials.length || supportBenefits.length
+  if (!hasDetails) return null
+
+  return (
+    <details className="rounded-xl border border-border/60 bg-muted/25 p-3 text-sm">
+      <summary className="cursor-pointer list-none font-semibold">
+        <span className="inline-flex items-center gap-2">
+          <Server className="h-4 w-4 text-primary" />
+          {profile.headline ?? "Service details and plan information"}
+        </span>
+      </summary>
+
+      <div className="mt-3 space-y-4">
+        {profile.summary && <p className="text-xs leading-5 text-muted-foreground">{profile.summary}</p>}
+
+        {capacity.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Plan capacity</p>
+            <div className="grid gap-2">
+              {capacity.map((group) => (
+                <div key={group.title} className="rounded-lg border bg-background/70 p-3">
+                  <p className="text-xs font-semibold">{group.title}</p>
+                  <div className="mt-2 grid gap-1">
+                    {group.items.filter(isEnabled).map((item) => (
+                      <div key={`${group.title}-${item.label}`} className="flex justify-between gap-3 text-xs">
+                        <span className="text-muted-foreground">{item.label}</span>
+                        <span className="text-right font-medium">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {freeServices.length > 0 && (
+          <CompactList
+            icon={<Gift className="h-3.5 w-3.5" />}
+            title="Free services included"
+            items={freeServices.map((item) => ({ title: item.name, description: item.description }))}
+          />
+        )}
+
+        {paidAddons.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Paid add-ons</p>
+            <div className="grid gap-2">
+              {paidAddons.map((addon) => (
+                <div key={addon.name} className="rounded-lg border bg-background/70 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold">{addon.name}</p>
+                      {addon.description && <p className="mt-1 text-xs text-muted-foreground">{addon.description}</p>}
+                    </div>
+                    <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
+                      {addon.price}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                    <span>{addon.billingType}</span>
+                    {addon.availability && <span>{addon.availability}</span>}
+                    {addon.activationTime && <span>{addon.activationTime}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {upgradePaths.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Upgrade opportunities</p>
+            {upgradePaths.map((path) => (
+              <div key={`${path.currentPlan}-${path.upgradeTo}`} className="rounded-lg border bg-background/70 p-3">
+                <p className="text-xs font-semibold">{path.currentPlan} to {path.upgradeTo}</p>
+                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                  {path.benefits.map((benefit) => <li key={benefit}>+ {benefit}</li>)}
+                </ul>
+                {path.ctaHref && (
+                  <a href={path.ctaHref} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                    {path.ctaLabel ?? "Request upgrade"} <ArrowUpRight className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {(documentation.length > 0 || tutorials.length > 0 || supportBenefits.length > 0) && (
+          <div className="grid gap-3 md:grid-cols-3">
+            {documentation.length > 0 && (
+              <ResourceList icon={<BookOpen className="h-3.5 w-3.5" />} title="Documentation" items={documentation} />
+            )}
+            {tutorials.length > 0 && (
+              <ResourceList icon={<PlusCircle className="h-3.5 w-3.5" />} title="Tutorials" items={tutorials} />
+            )}
+            {supportBenefits.length > 0 && (
+              <CompactList
+                icon={<LifeBuoy className="h-3.5 w-3.5" />}
+                title="Support"
+                items={supportBenefits.map((item) => ({ title: item.name, description: item.description }))}
+              />
+            )}
+          </div>
+        )}
+      </div>
+    </details>
+  )
+}
+
+function CompactList({
+  icon,
+  title,
+  items,
+}: {
+  icon: React.ReactNode
+  title: string
+  items: { title: string; description?: string }[]
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {icon}{title}
+      </p>
+      <div className="grid gap-1">
+        {items.map((item) => (
+          <div key={item.title} className="rounded-lg border bg-background/70 p-2.5">
+            <p className="text-xs font-medium">{item.title}</p>
+            {item.description && <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ResourceList({
+  icon,
+  title,
+  items,
+}: {
+  icon: React.ReactNode
+  title: string
+  items: { title: string; description?: string; url: string }[]
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {icon}{title}
+      </p>
+      <div className="grid gap-1">
+        {items.map((item) => (
+          <a
+            key={item.url}
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg border bg-background/70 p-2.5 transition-colors hover:bg-background"
+          >
+            <span className="flex items-center justify-between gap-2 text-xs font-medium">
+              {item.title}
+              <ArrowUpRight className="h-3 w-3" />
+            </span>
+            {item.description && <span className="mt-1 block text-xs text-muted-foreground">{item.description}</span>}
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function CredentialRequestDialog({
   entitlementId, productName, open, onClose, onSuccess,
 }: { entitlementId: string; productName: string; open: boolean; onClose: () => void; onSuccess: () => void }) {
@@ -285,6 +476,10 @@ export default function MyProductsClient({ entitlements }: { entitlements: Entit
             <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2.5 border border-border/30">
               📋 {ent.productAccessNotes}
             </div>
+          )}
+
+          {isActive && ent.serviceProfile && (
+            <ServiceDetailsSection profile={ent.serviceProfile} />
           )}
 
           {/* Actions */}

@@ -28,7 +28,7 @@ export default function AdminAccessClient() {
       return
     }
 
-    router.replace("/admin")
+    router.replace(typeof data.redirectUrl === "string" ? data.redirectUrl : "/admin")
     router.refresh()
   }
 

@@ -7,7 +7,7 @@ import { SignOutButton, UserAvatar, useClerk, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,45 +20,68 @@ import {
   LayoutDashboard, Users, CreditCard, ShoppingCart, Package,
   Tag, BarChart3, Bot, ShieldCheck, Settings, LogOut,
   ChevronLeft, ChevronRight, Menu, Bell, Sun, Moon, User,
-  ExternalLink, Webhook, Store, ScanSearch, Eye, WalletCards, Briefcase, KeyRound
+  ExternalLink, Webhook, Store, ScanSearch, Eye, WalletCards, Briefcase, KeyRound, Megaphone, ClipboardList
 } from "lucide-react"
 import { Toaster } from "@/components/ui/toaster"
 import RealtimeAdminProvider from "@/components/admin/RealtimeAdminProvider"
+import type { SubadminPermission, SubadminResource } from "@/lib/subadmin-permission-policy"
 
-const NAV_ITEMS = [
-  { name: "Revenue Dashboard",   path: "/admin",             icon: LayoutDashboard },
-  { name: "Ecosystem Control",   path: "/admin/ecosystem",   icon: Store },
-  { name: "User Management",     path: "/admin/users",       icon: Users },
+type NavigationItem = {
+  name: string
+  path: string
+  icon: any
+  resource?: SubadminResource
+  superAdminOnly?: boolean
+}
+
+const NAV_ITEMS: NavigationItem[] = [
+  { name: "Revenue Dashboard",   path: "/admin",             icon: LayoutDashboard, resource: "Analytics" },
+  { name: "Ecosystem Control",   path: "/admin/ecosystem",   icon: Store, resource: "Marketing" },
+  { name: "User Management",     path: "/admin/users",       icon: Users, resource: "Users" },
   { name: "Subadmin Management", path: "/admin/subadmins",   icon: ShieldCheck, superAdminOnly: true },
-  { name: "Subscriptions",       path: "/admin/subscriptions", icon: CreditCard },
-  { name: "Orders & Payments",  path: "/admin/orders",      icon: ShoppingCart },
-  { name: "Payment Inspection",  path: "/admin/payments",    icon: ScanSearch },
+  { name: "Subscriptions",       path: "/admin/subscriptions", icon: CreditCard, resource: "Orders" },
+  { name: "Orders & Payments",  path: "/admin/orders",      icon: ShoppingCart, resource: "Orders" },
+  { name: "Payment Inspection",  path: "/admin/payments",    icon: ScanSearch, resource: "Payments" },
   { name: "Manual Verifications", path: "/admin/payments/verifications", icon: WalletCards, superAdminOnly: true },
-  { name: "Products & Plans",   path: "/admin/products",    icon: Package },
-  { name: "Service Offerings",  path: "/admin/services",    icon: Briefcase },
-  { name: "Preview Center",    path: "/admin/previews",     icon: Eye },
-  { name: "Credential Requests", path: "/admin/credential-requests", icon: KeyRound },
-  { name: "Offers & Coupons",   path: "/admin/coupons",     icon: Tag },
-  { name: "Email Center",       path: "/admin/emails",      icon: Settings, superAdminOnly: true },
-  { name: "Analytics",           path: "/admin/analytics",   icon: BarChart3 },
-  { name: "AI Monitoring",       path: "/admin/ai-monitoring", icon: Bot },
+  { name: "Products & Plans",   path: "/admin/products",    icon: Package, resource: "Products" },
+  { name: "Product Services",   path: "/admin/products/service-management", icon: Settings, resource: "Products" },
+  { name: "Service Offerings",  path: "/admin/services",    icon: Briefcase, resource: "Services" },
+  { name: "Service Requests",   path: "/admin/service-requests", icon: ClipboardList, resource: "Services" },
+  { name: "Service Campaigns",  path: "/admin/service-campaigns", icon: Megaphone, resource: "Marketing" },
+  { name: "Preview Center",    path: "/admin/previews",     icon: Eye, resource: "Media" },
+  { name: "Credential Requests", path: "/admin/credential-requests", icon: KeyRound, resource: "Users" },
+  { name: "Offers & Coupons",   path: "/admin/coupons",     icon: Tag, resource: "Marketing" },
+  { name: "Email Center",       path: "/admin/emails",      icon: Settings, resource: "Email Center" },
+  { name: "Analytics",           path: "/admin/analytics",   icon: BarChart3, resource: "Analytics" },
+  { name: "AI Monitoring",       path: "/admin/ai-monitoring", icon: Bot, resource: "Analytics" },
   { name: "Webhooks & Events",  path: "/admin/webhooks",    icon: Webhook },
-  { name: "Security & Audit",   path: "/admin/audit",       icon: ShieldCheck },
+  { name: "Security & Audit",   path: "/admin/audit",       icon: ShieldCheck, superAdminOnly: true },
   { name: "Platform Settings",   path: "/admin/settings",    icon: Settings },
 ]
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes
+
+function isNavigationAllowed(
+  item: NavigationItem,
+  isSuperAdmin: boolean | undefined,
+  permissions: SubadminPermission[]
+) {
+  if (isSuperAdmin) return true
+  if (item.superAdminOnly || !item.resource) return false
+  return permissions.some((permission) => permission.resource === item.resource && permission.action === "VIEW")
+}
 
 interface AdminSidebarProps {
   collapsed: boolean
   onToggle: () => void
   onSignOut: (url?: string) => void
   isSuperAdmin?: boolean
+  allowedPermissions?: SubadminPermission[]
   userName?: string
   userEmail?: string
 }
 
-function AdminSidebar({ collapsed, onToggle, onSignOut, isSuperAdmin, userName, userEmail }: AdminSidebarProps) {
+function AdminSidebar({ collapsed, onToggle, onSignOut, isSuperAdmin, allowedPermissions = [], userName, userEmail }: AdminSidebarProps) {
   const pathname = usePathname()
   const { signOut: clerkSignOut } = useClerk()
 
@@ -99,7 +122,7 @@ function AdminSidebar({ collapsed, onToggle, onSignOut, isSuperAdmin, userName, 
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
-        {NAV_ITEMS.filter((item) => !("superAdminOnly" in item) || !item.superAdminOnly || isSuperAdmin).map((item) => {
+        {NAV_ITEMS.filter((item) => isNavigationAllowed(item, isSuperAdmin, allowedPermissions)).map((item) => {
           const isActive = item.path === "/admin"
             ? pathname === "/admin"
             : pathname.startsWith(item.path)
@@ -169,11 +192,12 @@ function AdminSidebar({ collapsed, onToggle, onSignOut, isSuperAdmin, userName, 
 interface AdminLayoutClientProps {
   children: React.ReactNode
   isSuperAdmin?: boolean
+  allowedPermissions?: SubadminPermission[]
   userName?: string
   userEmail?: string
 }
 
-export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail }: AdminLayoutClientProps) {
+export function AdminLayoutClient({ children, isSuperAdmin, allowedPermissions = [], userName, userEmail }: AdminLayoutClientProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [darkMode, setDarkMode] = useState(true)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -228,6 +252,7 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
         onToggle={() => setCollapsed((v) => !v)}
         onSignOut={handleSignOut}
         isSuperAdmin={isSuperAdmin}
+        allowedPermissions={allowedPermissions}
         userName={displayName}
         userEmail={displayEmail}
       />
@@ -235,6 +260,7 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
       {/* Mobile Sidebar */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-64 p-0 bg-zinc-950 border-zinc-800">
+          <SheetTitle className="sr-only">Admin Navigation Menu</SheetTitle>
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between border-b border-zinc-800 h-16 px-4">
               <Link href="/admin" className="text-lg font-extrabold text-white" onClick={() => setMobileOpen(false)}>
@@ -242,7 +268,7 @@ export function AdminLayoutClient({ children, isSuperAdmin, userName, userEmail 
               </Link>
             </div>
             <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
-              {NAV_ITEMS.filter((item) => !("superAdminOnly" in item) || !item.superAdminOnly || isSuperAdmin).map((item) => {
+              {NAV_ITEMS.filter((item) => isNavigationAllowed(item, isSuperAdmin, allowedPermissions)).map((item) => {
                 const isActive = item.path === "/admin"
                   ? pathname === "/admin"
                   : pathname.startsWith(item.path)

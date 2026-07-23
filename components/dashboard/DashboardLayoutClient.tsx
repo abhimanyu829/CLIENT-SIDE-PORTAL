@@ -9,14 +9,15 @@ import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 import { usePaymentSync } from "@/hooks/usePaymentSync"
 
 const NAV = [
-  { name: "Overview",      path: "/dashboard",                icon: "◈", color: "text-violet-400" },
-  { name: "My Products",  path: "/dashboard/my-products",   icon: "◆", color: "text-green-400" },
-  { name: "Subscriptions", path: "/dashboard/subscriptions", icon: "⬡", color: "text-blue-400" },
-  { name: "Projects",      path: "/dashboard/projects",      icon: "◻", color: "text-emerald-400" },
-  { name: "Vendor Studio", path: "/dashboard/vendor",        icon: "Store", color: "text-fuchsia-400" },
-  { name: "Invoices",      path: "/dashboard/invoices",      icon: "◑", color: "text-amber-400" },
-  { name: "Support",       path: "/dashboard/tickets",       icon: "◎", color: "text-red-400",    badge: true },
-  { name: "AI Chat",       path: "/dashboard/chat",          icon: "✦", color: "text-purple-400", live: true },
+  { name: "Overview",          path: "/dashboard",                   icon: "◈", color: "text-violet-400" },
+  { name: "My Products",       path: "/dashboard/my-products",       icon: "◆", color: "text-green-400" },
+  { name: "Subscriptions",     path: "/dashboard/subscriptions",     icon: "⬡", color: "text-blue-400" },
+  { name: "Projects",          path: "/dashboard/projects",          icon: "◻", color: "text-emerald-400" },
+  { name: "Vendor Studio",     path: "/dashboard/vendor",            icon: "Store", color: "text-fuchsia-400" },
+  { name: "Invoices",          path: "/dashboard/invoices",          icon: "◑", color: "text-amber-400" },
+  { name: "Service Requests",  path: "/dashboard/service-requests",  icon: "◐", color: "text-orange-400" },
+  { name: "Support",           path: "/dashboard/tickets",           icon: "◎", color: "text-red-400",    badge: true },
+  { name: "AI Chat",           path: "/dashboard/chat",              icon: "✦", color: "text-purple-400", live: true },
 ]
 
 type SearchResult = {
@@ -87,7 +88,7 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
                 </button>
               ))}
               <p className="text-[10px] text-muted-foreground px-3 py-2 uppercase tracking-widest border-t border-border mt-1">Quick Actions</p>
-              {[["✦ Open AI Chat", "/dashboard/chat"],["◎ New Ticket", "/dashboard/tickets"],["⬡ Browse Plans", "/dashboard/subscriptions"],["↗ Marketplace", "/marketplace"]].map(([l,h])=>(
+              {[["✦ Open AI Chat", "/dashboard/chat"],["◎ New Ticket", "/dashboard/tickets"],["⬡ Browse Plans", "/dashboard/subscriptions"],["↗ Marketplace", "/marketplace"],["◐ Service Request", "/request-service"]].map(([l,h])=>(
                 <button key={h} onClick={() => go(h)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-accent/5 text-left">
                   <span className="text-sm text-muted-foreground">{l}</span>
                 </button>
@@ -220,6 +221,7 @@ export default function DashboardLayout({
   userName,
   userRole,
   canAccessAdmin,
+  adminPanelHref = "/admin",
   isVerified,
 }: {
   children: ReactNode
@@ -227,6 +229,7 @@ export default function DashboardLayout({
   userName: string
   userRole?: string
   canAccessAdmin?: boolean
+  adminPanelHref?: string
   isVerified?: boolean
 }) {
   const { signOut: clerkSignOut } = useClerk()
@@ -380,7 +383,7 @@ export default function DashboardLayout({
 
             {showAdminPanel && (
               <Link
-                href="/admin"
+                href={adminPanelHref}
                 className="hidden sm:flex items-center bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/15 transition-colors font-mono"
               >
                 Admin Panel
@@ -420,7 +423,7 @@ export default function DashboardLayout({
                 <div className="absolute right-0 top-12 w-48 bg-card border border-border rounded-xl z-50 overflow-hidden shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="p-1.5">
                     {showAdminPanel && (
-                      <Link href="/admin" onClick={() => setUserOpen(false)}>
+                      <Link href={adminPanelHref} onClick={() => setUserOpen(false)}>
                         <div className="w-full text-left px-3 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors font-mono">
                           Admin Panel
                         </div>

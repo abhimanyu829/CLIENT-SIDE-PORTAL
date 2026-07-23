@@ -2,6 +2,7 @@ import { clerkMiddleware } from "@clerk/nextjs/server"
 import { NextRequest, NextResponse } from "next/server"
 import { Ratelimit } from "@upstash/ratelimit"
 import { redis } from "@/lib/redis"
+import { actionForAdminRequest, resourceForAdminApiPath, resourceForAdminPath } from "@/lib/subadmin-permission-policy"
 
 const ratelimit = redis
   ? new Ratelimit({
@@ -30,6 +31,23 @@ const refundRatelimit = redis
 export default clerkMiddleware(
   async (clerkAuth, req: NextRequest) => {
     const path = req.nextUrl.pathname
+    const isAdminRequest = path.startsWith("/admin") || path.startsWith("/api/admin/")
+
+    const withAdminPermissionContext = () => {
+      if (!isAdminRequest) return NextResponse.next()
+
+      const requestHeaders = new Headers(req.headers)
+      const resource = path.startsWith("/api/admin/")
+        ? resourceForAdminApiPath(path)
+        : resourceForAdminPath(path)
+      const action = actionForAdminRequest(path, req.method, requestHeaders.has("next-action"))
+
+      requestHeaders.set("x-nexusai-admin-permission-scope", "true")
+      if (resource) requestHeaders.set("x-nexusai-admin-resource", resource)
+      if (resource) requestHeaders.set("x-nexusai-admin-action", action)
+
+      return NextResponse.next({ request: { headers: requestHeaders } })
+    }
 
     if (path === "/api/webhooks/clerk") {
       return NextResponse.next()
@@ -122,6 +140,10 @@ export default clerkMiddleware(
       }
     }
 
+    if (path === "/admin/subadmin") {
+      return NextResponse.redirect(new URL("/admin/subadmins", req.url))
+    }
+
     if (/^\/api\/entitlements\/[^/]+\/credentials/.test(path)) {
       if (!isAuthenticated) {
         return NextResponse.json(
@@ -161,7 +183,7 @@ export default clerkMiddleware(
       }
     }
 
-    return NextResponse.next()
+    return withAdminPermissionContext()
   },
   { clockSkewInMs: 60000 }
 )
@@ -170,6 +192,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/admin/:path*",
+    "/admin-access",
     "/checkout/:path*",
     "/cart/:path*",
     "/login(.*)",
@@ -177,5 +200,9 @@ export const config = {
     "/sso-callback",
     "/sso-callback/:path*",
     "/api/:path*",
+    "/request-service",
+    "/request-service/:path*",
+    "/custom-service",
+    "/custom-service/:path*",
   ],
 }

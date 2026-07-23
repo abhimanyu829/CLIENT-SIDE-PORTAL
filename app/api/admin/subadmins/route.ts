@@ -11,7 +11,11 @@ export async function GET() {
   await requireSuperAdmin()
 
   const [applications, accounts, activityLogs, approvalRequests, portalSetting] = await Promise.all([
-    prisma().subadminApplication.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
+    prisma().subadminApplication.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { account: { select: { username: true, status: true } } },
+      take: 100,
+    }),
     prisma().subadminAccount.findMany({
       orderBy: { createdAt: "desc" },
       include: {

@@ -1,8 +1,10 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
+import { headers } from "next/headers"
 import type { Role } from "@prisma/client"
 import { db } from "@/lib/db"
 import { validateSubadminCredentialSession } from "@/lib/subadmin-workforce"
+import { canUseSubadminPermission, type SubadminPermission } from "@/lib/subadmin-permission-policy"
 
 export interface AdminSession {
   userId: string
@@ -10,6 +12,7 @@ export interface AdminSession {
   email: string
   role: Role
   isSuperAdmin: boolean
+  permissions: SubadminPermission[]
 }
 
 /**
@@ -46,12 +49,26 @@ export async function requireAdmin(): Promise<AdminSession> {
     redirect("/unauthorized")
   }
 
+  const requestHeaders = await headers()
+  const isProtectedAdminRequest = requestHeaders.get("x-nexusai-admin-permission-scope") === "true"
+  const resource = requestHeaders.get("x-nexusai-admin-resource")
+  const action = requestHeaders.get("x-nexusai-admin-action")
+
+  // The proxy supplies the current admin route metadata. This makes direct URLs
+  // and API requests use the same permission matrix as the sidebar.
+  if (role === "SUB_ADMIN" && isProtectedAdminRequest) {
+    if (!resource || !action || !canUseSubadminPermission(access.permissions, resource, action)) {
+      redirect("/unauthorized")
+    }
+  }
+
   return {
     userId: session.user.id,
     name: user.name ?? session.user.name ?? "Admin",
     email: user.email ?? session.user.email ?? "",
     role,
     isSuperAdmin: role === "SUPER_ADMIN",
+    permissions: access.permissions,
   }
 }
 
@@ -85,6 +102,7 @@ export async function requireSuperAdmin(): Promise<AdminSession> {
     email: user.email ?? session.user.email ?? "",
     role: user.role as Role,
     isSuperAdmin: true,
+    permissions: [],
   }
 }
 
@@ -113,6 +131,11 @@ async function hasPermission(userId: string, permissionName: string) {
 export async function requireServicePermission(permissionName: string): Promise<AdminSession> {
   const session = await requireAdmin()
   if (session.isSuperAdmin) return session
+
+  // Service-center pages use the older UserPermission grants. Subadmins are
+  // governed by the workforce matrix instead, so the Services VIEW grant is
+  // the canonical access check for their service routes.
+  if (canUseSubadminPermission(session.permissions, "Services", "VIEW")) return session
 
   const allowed = await hasPermission(session.userId, permissionName)
   if (!allowed) redirect("/unauthorized")

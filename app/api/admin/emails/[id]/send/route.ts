@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireSuperAdmin } from "@/lib/admin-auth"
+import { requireAdmin } from "@/lib/admin-auth"
 import { scheduleEmailCampaign } from "@/lib/email/service"
 import { logger } from "@/lib/logger"
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireSuperAdmin()
+    await requireAdmin()
     const { id } = await params
     const result = await scheduleEmailCampaign(id)
     return NextResponse.json({ success: true, data: result })

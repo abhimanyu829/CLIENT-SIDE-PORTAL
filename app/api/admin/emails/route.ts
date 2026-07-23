@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { requireSuperAdmin } from "@/lib/admin-auth"
+import { requireAdmin } from "@/lib/admin-auth"
 import { db } from "@/lib/db"
 import { EmailAudienceType, EmailCampaignStatus } from "@prisma/client"
 import { createEmailCampaign, scheduleEmailCampaign } from "@/lib/email/service"
@@ -20,7 +20,7 @@ const createSchema = z.object({
 
 export async function GET() {
   try {
-    await requireSuperAdmin()
+    await requireAdmin()
     const campaigns = await db.emailCampaign.findMany({
       orderBy: { createdAt: "desc" },
       take: 50,
@@ -46,7 +46,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const admin = await requireSuperAdmin()
+    const admin = await requireAdmin()
     const body = await req.json()
     const parsed = createSchema.safeParse(body)
     if (!parsed.success) {

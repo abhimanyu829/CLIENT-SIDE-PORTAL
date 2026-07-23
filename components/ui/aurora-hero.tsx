@@ -1,11 +1,13 @@
-"use client"
+"use client";
 
-import React from "react"
-import { cn } from "@/lib/utils"
+import React, { useState } from "react";
+import { cn } from "@/lib/utils";
 
 export interface AuroraHeroProps extends React.HTMLAttributes<HTMLDivElement> {
   /** The main title text to display with the glass displacement effect. */
-  title?: string
+  title?: string;
+  /** Whether to show the toggle switch for background modes. */
+  showSwitch?: boolean;
 }
 
 export function AuroraHero({
@@ -13,9 +15,9 @@ export function AuroraHero({
   className,
   ...props
 }: AuroraHeroProps) {
-  const filterImageHref =
-    "data:image/svg+xml," +
-    encodeURIComponent(`
+
+  // Safely URL-encoded SVG string for the fluted glass effect
+  const filterImageHref = "data:image/svg+xml," + encodeURIComponent(`
     <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' color-interpolation-filters='sRGB'>
       <g>
         <rect width='1' height='1' fill='black' />
@@ -38,82 +40,65 @@ export function AuroraHero({
         </radialGradient>
       </defs>
     </svg>
-  `)
+  `);
 
   return (
     <section
-      className={cn(
-        "aurora-hero-wrapper relative h-[500px] min-h-[400px] w-full overflow-hidden sm:h-[600px]",
-        className
-      )}
+      className={cn("aurora-hero-wrapper w-full min-h-[400px] h-[500px] sm:h-[600px] relative overflow-hidden", className)}
       {...props}
     >
       <style>{`
         .aurora-hero-wrapper {
-          background: #fbfaf7;
+          --stripe-color: #000;
+          --bg-filter: blur(10px) opacity(50%) saturate(200%);
+          background: var(--stripe-color);
           font-family: Inter, sans-serif;
         }
-        @keyframes auroraStripeDrift {
-          0% { background-position: 0 0, 0 0; }
-          50% { background-position: 0 0, 72px 0; }
-          100% { background-position: 0 0, 144px 0; }
+        :is(.dark) .aurora-hero-wrapper {
+          --stripe-color: #fff;
+          --bg-filter: blur(10px) invert(100%);
+        }
+        @keyframes smoothBg {
+          from { background-position: 50% 50%, 50% 50%; }
+          to { background-position: 350% 50%, 350% 50%; }
         }
         .aurora-hero-bg {
           width: 100%;
           height: 100%;
           position: absolute;
           inset: 0;
-          background:
-            linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.96) 20%, rgba(255,255,255,0.54) 38%, rgba(255,255,255,0.08) 60%, rgba(255,255,255,0.0) 100%),
-            repeating-linear-gradient(
-              90deg,
-              rgba(248, 247, 244, 0.96) 0px,
-              rgba(248, 247, 244, 0.96) 18px,
-              rgba(196, 220, 174, 0.9) 19px,
-              rgba(196, 220, 174, 0.9) 28px,
-              rgba(255, 247, 224, 0.94) 29px,
-              rgba(255, 247, 224, 0.94) 38px,
-              rgba(255, 173, 140, 0.88) 39px,
-              rgba(255, 173, 140, 0.88) 49px,
-              rgba(255, 117, 132, 0.94) 50px,
-              rgba(255, 117, 132, 0.94) 63px,
-              rgba(255, 255, 255, 0.9) 64px,
-              rgba(255, 255, 255, 0.9) 78px,
-              rgba(213, 230, 188, 0.9) 79px,
-              rgba(213, 230, 188, 0.9) 88px,
-              rgba(240, 173, 96, 0.9) 89px,
-              rgba(240, 173, 96, 0.9) 100px,
-              rgba(255, 114, 128, 0.96) 101px,
-              rgba(255, 114, 128, 0.96) 115px,
-              rgba(255, 250, 238, 0.92) 116px,
-              rgba(255, 250, 238, 0.92) 132px
-            );
-          background-size: auto, 132px 100%;
-          filter: blur(2px) saturate(145%);
-          transform: scale(1.03);
-          animation: auroraStripeDrift 18s linear infinite;
-        }
-        .aurora-hero-bg::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            90deg,
-            rgba(255,255,255,1) 0%,
-            rgba(255,255,255,0.98) 22%,
-            rgba(255,255,255,0.56) 40%,
-            rgba(255,255,255,0.1) 62%,
-            rgba(255,255,255,0) 100%
+          --stripes: repeating-linear-gradient(
+            100deg, 
+            var(--stripe-color) 0%, 
+            var(--stripe-color) 7%, 
+            transparent 10%, 
+            transparent 12%, 
+            var(--stripe-color) 16%
           );
+          --rainbow: repeating-linear-gradient(
+            100deg, 
+            #60a5fa 10%, 
+            #e879f9 15%, 
+            #60a5fa 20%, 
+            #5eead4 25%, 
+            #60a5fa 30%
+          );
+          background-image: var(--stripes), var(--rainbow);
+          background-size: 300%, 200%;
+          background-position: 50% 50%, 50% 50%;
+          filter: var(--bg-filter);
+          mask-image: radial-gradient(ellipse at 100% 0%, black 40%, transparent 70%);
+          -webkit-mask-image: radial-gradient(ellipse at 100% 0%, black 40%, transparent 70%);
         }
         .aurora-hero-bg::after {
           content: "";
           position: absolute;
           inset: 0;
-          background:
-            radial-gradient(ellipse at 12% 50%, rgba(255,255,255,0.66) 0%, rgba(255,255,255,0.28) 32%, transparent 55%),
-            radial-gradient(ellipse at 62% 48%, rgba(255, 222, 220, 0.18) 0%, transparent 45%),
-            radial-gradient(ellipse at 88% 48%, rgba(210, 228, 198, 0.16) 0%, transparent 42%);
+          background-image: var(--stripes), var(--rainbow);
+          background-size: 200%, 100%;
+          animation: smoothBg 60s linear infinite;
+          background-attachment: fixed;
+          mix-blend-mode: difference;
         }
         .aurora-content {
           position: absolute;
@@ -155,33 +140,23 @@ export function AuroraHero({
           -webkit-text-stroke: 1px white;
           display: flex;
           margin: auto;
-          z-index: 0;
+          z-index: 1;
           pointer-events: none;
         }
       `}</style>
 
-      <div className="aurora-hero-bg" />
+      <div className="aurora-hero-bg"></div>
 
-      {title ? (
-        <div className="aurora-content">
-          <h1 className="h1-scalingSize" data-text={title}>
-            {title}
-          </h1>
-        </div>
-      ) : null}
+      <div className="aurora-content">
+        <h1 className="h1-scalingSize" data-text={title}>{title}</h1>
+      </div>
 
       <svg
         version="1.1"
         xmlns="http://www.w3.org/2000/svg"
         xmlnsXlink="http://www.w3.org/1999/xlink"
         colorInterpolationFilters="sRGB"
-        style={{
-          position: "absolute",
-          opacity: 0,
-          height: 0,
-          width: 0,
-          pointerEvents: "none",
-        }}
+        style={{ position: "absolute", opacity: 0, height: 0, width: 0, pointerEvents: "none" }}
         aria-hidden="true"
         focusable="false"
       >
@@ -197,26 +172,12 @@ export function AuroraHero({
             height="1"
           />
           <feTile in="image_0" result="tile_0" />
-          <feGaussianBlur
-            stdDeviation=".0001"
-            edgeMode="none"
-            in="tile_0"
-            result="bar_smoothness"
-            x="0"
-            y="0"
-          />
-          <feDisplacementMap
-            scale=".08"
-            xChannelSelector="R"
-            yChannelSelector="G"
-            in="SourceGraphic"
-            in2="bar_smoothness"
-            result="displacement_0"
-          />
+          <feGaussianBlur stdDeviation=".0001" edgeMode="none" in="tile_0" result="bar_smoothness" x="0" y="0" />
+          <feDisplacementMap scale=".08" xChannelSelector="R" yChannelSelector="G" in="SourceGraphic" in2="bar_smoothness" result="displacement_0" />
         </filter>
       </svg>
     </section>
-  )
+  );
 }
 
-export default AuroraHero
+export default AuroraHero;

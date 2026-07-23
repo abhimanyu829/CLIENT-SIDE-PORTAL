@@ -16,6 +16,8 @@ export interface AppUser {
   adminAccess?: {
     allowed: boolean
     reason?: string | null
+    panelEligible?: boolean
+    landingPath?: string | null
   }
   avatarUrl?: string | null
   /** Clerk user ID — only for auth layer. Never use as FK in business tables. */

@@ -4,6 +4,11 @@ import type { AppSession } from "@/lib/auth-types"
 import { db } from "@/lib/db"
 import { profileFromCurrentClerkUser, syncClerkUserToDatabase, type SyncedClerkUser } from "@/lib/services/clerk-user-sync"
 
+export type AuthState =
+  | { session: AppSession; clerkAuthenticated: true; reason: "OK"; error?: never }
+  | { session: null; clerkAuthenticated: false; reason: "NO_CLERK_SESSION"; error?: unknown }
+  | { session: null; clerkAuthenticated: true; reason: "BANNED" | "SYNC_FAILED"; error?: unknown }
+
 function toAppSession(dbUser: SyncedClerkUser): AppSession {
   return {
     user: {
@@ -19,21 +24,29 @@ function toAppSession(dbUser: SyncedClerkUser): AppSession {
   }
 }
 
-export const auth = async (): Promise<AppSession | null> => {
+export const authState = async (): Promise<AuthState> => {
   try {
     const profile = profileFromCurrentClerkUser(await currentUser())
-    if (!profile) return null
+    if (!profile) return { session: null, clerkAuthenticated: false, reason: "NO_CLERK_SESSION" }
 
     const dbUser = await syncClerkUserToDatabase(profile, { updateLastLogin: true })
-    if (dbUser.isBanned) return null
+    if (dbUser.isBanned) return { session: null, clerkAuthenticated: true, reason: "BANNED" }
 
-    return toAppSession(dbUser)
+    return { session: toAppSession(dbUser), clerkAuthenticated: true, reason: "OK" }
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("Clerk auth failed:", error)
     }
-    return null
+    return { session: null, clerkAuthenticated: true, reason: "SYNC_FAILED", error }
   }
+}
+
+export const auth = async (): Promise<AppSession | null> => {
+  const state = await authState()
+  if (state.session) {
+    return state.session
+  }
+  return null
 }
 
 export const requireRole = async (allowedRoles: Role[]) => {

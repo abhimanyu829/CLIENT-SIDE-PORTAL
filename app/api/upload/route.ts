@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { generatePresignedPutUrl } from "@/lib/r2"
+import { generatePresignedPutUrl, isR2Configured } from "@/lib/r2"
 import { randomUUID } from "crypto"
+import { ALLOWED_ATTACHMENT_TYPES } from "@/lib/custom-service-portal"
 
 // POST /api/upload — create a presigned PUT URL for direct-to-R2 upload
 export async function POST(req: Request) {
+  // Return a clear 503 when R2 credentials are not configured on this server
+  if (!isR2Configured) {
+    return NextResponse.json(
+      { error: "File uploads are not available — storage is not configured on this server." },
+      { status: 503 }
+    )
+  }
   try {
+
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -16,6 +25,10 @@ export async function POST(req: Request) {
 
     if (!filename || !contentType) {
       return NextResponse.json({ error: "filename and contentType are required" }, { status: 400 })
+    }
+
+    if (folder === "service-requests" && !ALLOWED_ATTACHMENT_TYPES.has(contentType)) {
+      return NextResponse.json({ error: "Unsupported service-request attachment type" }, { status: 422 })
     }
 
     // Sanitize filename and create a unique key

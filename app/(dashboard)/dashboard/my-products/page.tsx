@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import MyProductsClient from "./MyProductsClient"
+import { normalizeProductServiceProfile } from "@/lib/product-service-profile"
 
 export const metadata = { title: "My Products — NexusAI" }
 
@@ -27,6 +28,7 @@ export default async function MyProductsPage() {
           productLoginUrl: true,
           productDashboardUrl: true,
           productAccessNotes: true,
+          serviceProfile: true,
         },
       },
       credentialRequests: {
@@ -88,6 +90,7 @@ export default async function MyProductsPage() {
       subscriptionStatus: sub?.status ?? null,
       subscriptionExpiry: sub?.currentPeriodEnd?.toISOString() ?? null,
       hasPendingCredentialRequest: e.credentialRequests.length > 0,
+      serviceProfile: normalizeProductServiceProfile(e.product.serviceProfile),
     }
   })
 

@@ -13,7 +13,7 @@ export async function GET() {
     const adminAccess =
       session.user.role === "SUPER_ADMIN" || session.user.role === "SUB_ADMIN"
         ? await validateSubadminCredentialSession(session.user.id, session.user.role)
-        : { allowed: false, reason: "NOT_ADMIN" }
+        : { allowed: false, reason: "NOT_ADMIN", permissions: [], panelEligible: false, landingPath: null }
 
     return NextResponse.json({ user: { ...session.user, adminAccess } })
   } catch (error) {

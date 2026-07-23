@@ -382,6 +382,12 @@ model User {
     requestedAdminApprovals SubadminApprovalRequest[] @relation("AdminApprovalRequestedBy")
     reviewedAdminApprovals  SubadminApprovalRequest[] @relation("AdminApprovalReviewedBy")
     adminPortalSettingUpdates AdminPortalSetting[] @relation("AdminPortalSettingUpdatedBy")
+    serviceDiscoveryEvents ServiceDiscoveryEvent[]
+    serviceInterestProfile ServiceInterestProfile?
+    serviceCampaignEvents ServiceCampaignEvent[]
+    customServiceRequests CustomServiceRequest[] @relation("CustomServiceRequestClient")
+    customServiceMessages CustomServiceDiscussionMessage[] @relation("CustomServiceMessageSender")
+    customServicePortalSettingUpdates CustomServicePortalSetting[] @relation("CustomServicePortalSettingUpdatedBy")
 
   @@index([email])
   @@index([role])
@@ -600,6 +606,7 @@ model Product {
   agentDeployments   AgentDeployment[]
   metricEvents       PlatformMetricEvent[]
   previewSessions    PreviewSession[]
+  serviceProfile     ProductServiceProfile?
 
   @@index([slug])
   @@index([vendorId])
@@ -711,6 +718,29 @@ model ProductTier {
 
   @@index([productId])
   @@index([isActive])
+}
+
+model ProductServiceProfile {
+  id              String   @id @default(cuid())
+  productId       String   @unique
+  headline        String?
+  summary         String?  @db.Text
+  capacity        Json     @default("{}")
+  freeServices    Json     @default("[]")
+  paidAddons      Json     @default("[]")
+  upgradePaths    Json     @default("[]")
+  documentation   Json     @default("[]")
+  tutorials       Json     @default("[]")
+  supportBenefits Json     @default("[]")
+  hiddenFields    String[]
+  isPublished     Boolean  @default(true)
+  updatedBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([isPublished])
+  @@index([updatedAt])
 }
 
 model ProductReview {
@@ -2144,6 +2174,256 @@ model ServicePage {
   serviceEntitlements  ServiceEntitlement[]
   mediaAssets      ServiceMediaAsset[]
   documents        ServiceDocument[]
+  discoveryTags    ServiceDiscoveryTagAssignment[]
+  discoveryCollectionItems ServiceDiscoveryCollectionItem[]
+  discoveryEvents  ServiceDiscoveryEvent[]
+  campaignEvents   ServiceCampaignEvent[]
+}
+
+// Service discovery is intentionally isolated from marketplace campaigns and orders.
+// It only references service catalog records and optional viewer identities.
+enum ServiceDiscoveryEventType {
+  VIEW
+  CLICK
+  SEARCH
+  WISHLIST_SIGNAL
+  CART_SIGNAL
+  PURCHASE_SIGNAL
+}
+
+enum ServiceCampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  COMPLETED
+}
+
+enum ServiceCampaignEventType {
+  IMPRESSION
+  CLICK
+  CONVERSION
+}
+
+model ServiceDiscoveryTag {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  assignments ServiceDiscoveryTagAssignment[]
+
+  @@index([isFeatured])
+}
+
+model ServiceDiscoveryTagAssignment {
+  servicePageId String
+  tagId         String
+  createdAt     DateTime @default(now())
+  servicePage   ServicePage          @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  tag           ServiceDiscoveryTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([servicePageId, tagId])
+  @@index([tagId])
+}
+
+model ServiceDiscoveryCollection {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  placement   String   @default("services")
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)
+  audience    Json     @default("{}")
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  items       ServiceDiscoveryCollectionItem[]
+
+  @@index([placement, isActive, priority])
+}
+
+model ServiceDiscoveryCollectionItem {
+  collectionId String
+  servicePageId String
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  collection   ServiceDiscoveryCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  servicePage  ServicePage @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, servicePageId])
+  @@index([servicePageId])
+}
+
+model ServiceDiscoveryCampaign {
+  id              String                @id @default(cuid())
+  name            String
+  slug            String                @unique
+  description     String?
+  status          ServiceCampaignStatus @default(DRAFT)
+  placement       String                @default("services")
+  bannerUrl       String?
+  thumbnailUrl    String?
+  backgroundUrl   String?
+  videoUrl        String?
+  ctaLabel        String?
+  landingUrl      String?
+  startsAt        DateTime?
+  endsAt          DateTime?
+  priority        Int                   @default(0)
+  targetAudience  Json                  @default("{}")
+  categorySlugs   String[]
+  relatedServiceIds String[]
+  relatedProductIds String[]
+  tags            String[]
+  createdById     String?
+  archivedAt      DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  events          ServiceCampaignEvent[]
+
+  @@index([status, placement, priority])
+  @@index([startsAt, endsAt])
+}
+
+model ServiceDiscoveryEvent {
+  id            String                    @id @default(cuid())
+  userId        String?
+  sessionKey    String?
+  servicePageId String?
+  eventType     ServiceDiscoveryEventType
+  query         String?
+  metadata      Json                      @default("{}")
+  occurredAt    DateTime                  @default(now())
+  user          User?                     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  servicePage   ServicePage?              @relation(fields: [servicePageId], references: [id], onDelete: SetNull)
+
+  @@index([userId, occurredAt])
+  @@index([sessionKey, occurredAt])
+  @@index([servicePageId, eventType, occurredAt])
+}
+
+model ServiceInterestProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  categoryScores Json     @default("{}")
+  tagScores      Json     @default("{}")
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ServiceCampaignEvent {
+  id          String                      @id @default(cuid())
+  campaignId  String
+  userId      String?
+  sessionKey  String?
+  servicePageId String?
+  eventType   ServiceCampaignEventType
+  value       Decimal?                    @db.Decimal(12, 2)
+  createdAt   DateTime                    @default(now())
+  campaign    ServiceDiscoveryCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user        User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  servicePage ServicePage?                @relation(fields: [servicePageId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, eventType, createdAt])
+  @@index([userId, createdAt])
+}
+
+// Standalone client-to-team project discovery portal. These records deliberately
+// do not participate in marketplace orders, service checkout, or service leads.
+enum CustomServiceRequestStatus {
+  NEW
+  UNDER_REVIEW
+  DISCUSSION
+  PROPOSAL_SENT
+  APPROVED
+  IN_DEVELOPMENT
+  COMPLETED
+  CLOSED
+}
+
+enum CustomServiceMessageSenderType {
+  CLIENT
+  ADMIN
+}
+
+model CustomServicePortalSetting {
+  id          String   @id @default("custom-service-portal")
+  isEnabled   Boolean  @default(true)
+  publicPath  String   @default("/request-service")
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedBy   User?    @relation("CustomServicePortalSettingUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+model CustomServiceRequest {
+  id              String                     @id @default(cuid())
+  requestNumber   String                     @unique
+  clientId        String
+  fullName        String
+  email           String
+  phone           String?
+  companyName     String?
+  serviceCategory String
+  projectTitle    String
+  ideaDescription String                     @db.Text
+  problemStatement String?                   @db.Text
+  requestedFeatures String?                  @db.Text
+  targetUsers     String?
+  expectedBudget  String?
+  expectedTimeline String?
+  additionalNotes String?                    @db.Text
+  status          CustomServiceRequestStatus @default(NEW)
+  lastActivityAt  DateTime                   @default(now())
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  client          User                       @relation("CustomServiceRequestClient", fields: [clientId], references: [id], onDelete: Cascade)
+  attachments     CustomServiceRequestAttachment[]
+  messages        CustomServiceDiscussionMessage[]
+
+  @@index([clientId, status])
+  @@index([status, lastActivityAt])
+  @@index([email])
+}
+
+model CustomServiceRequestAttachment {
+  id          String   @id @default(cuid())
+  requestId   String
+  messageId   String?
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  storageKey  String
+  url         String
+  createdAt   DateTime @default(now())
+  request     CustomServiceRequest          @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  message     CustomServiceDiscussionMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([messageId])
+}
+
+model CustomServiceDiscussionMessage {
+  id          String                         @id @default(cuid())
+  requestId   String
+  senderId    String
+  senderType  CustomServiceMessageSenderType
+  body        String                         @db.Text
+  isInternal  Boolean                        @default(false)
+  isRead      Boolean                        @default(false)
+  createdAt   DateTime                       @default(now())
+  request     CustomServiceRequest           @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sender      User                           @relation("CustomServiceMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  attachments CustomServiceRequestAttachment[]
+
+  @@index([requestId, createdAt])
+  @@index([senderId, createdAt])
 }
 
 model ServiceFeature {

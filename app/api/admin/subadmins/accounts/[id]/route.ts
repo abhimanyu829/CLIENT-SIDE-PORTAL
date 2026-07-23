@@ -3,12 +3,11 @@ import { z } from "zod"
 import { hash } from "bcryptjs"
 import { requireSuperAdmin } from "@/lib/admin-auth"
 import {
-  ADMIN_ACTIONS,
-  ADMIN_RESOURCES,
   logSubadminActivity,
   setSubadminPermissions,
   updateSubadminStatus,
 } from "@/lib/subadmin-workforce"
+import { isSubadminAction, isSubadminResource } from "@/lib/subadmin-permission-policy"
 import { db } from "@/lib/db"
 
 function prisma() {
@@ -25,8 +24,8 @@ const patchSchema = z.object({
   permissions: z
     .array(
       z.object({
-        resource: z.string().refine((value) => ADMIN_RESOURCES.includes(value)),
-        action: z.string().refine((value) => ADMIN_ACTIONS.includes(value)),
+        resource: z.string().refine(isSubadminResource),
+        action: z.string().refine(isSubadminAction),
       })
     )
     .optional(),
