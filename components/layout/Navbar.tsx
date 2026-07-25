@@ -101,7 +101,6 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
 
   return (
     <>
-
       {/* Announcement bar */}
       {announcement?.text && (
         <div className="bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-indigo-500/15 border-b border-purple-500/20 backdrop-blur-md py-2 px-4 text-center">

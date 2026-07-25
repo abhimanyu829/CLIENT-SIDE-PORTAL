@@ -10,7 +10,7 @@ import { notifyManualPaymentAdmin, logManualPaymentAudit, formatMoney } from "@/
 const submitProofSchema = z.object({
   orderId: z.string(),
   utrNumber: z.string().min(12).max(22), // UTR/transaction refs vary: IMPS=12, UPI/NEFT can be up to 22 chars
-  claimedAmount: z.number().positive(),
+  claimedAmount: z.number().positive().optional(),
   screenshot: z.string().optional().nullable(), // base64 data url
 })
 
@@ -21,7 +21,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: { message: "Unauthorized" } }, { status: 401 })
     }
 
-    const body = submitProofSchema.parse(await req.json())
+    let rawJson: any
+    try {
+      rawJson = await req.json()
+    } catch (parseErr) {
+      console.error("[SUBMIT PROOF JSON PARSE ERROR]", parseErr)
+      return NextResponse.json(
+        { success: false, error: { message: "Invalid request payload or image size is too large. Please upload a smaller screenshot." } },
+        { status: 400 }
+      )
+    }
+
+    const body = submitProofSchema.parse(rawJson)
 
     // 1. Fetch order and the current verification row atomically by ownership
     const order = await db.order.findFirst({
@@ -40,6 +51,8 @@ export async function POST(req: NextRequest) {
     if (!order) {
       return NextResponse.json({ success: false, error: { message: "Order not found" } }, { status: 404 })
     }
+
+    const claimedAmount = body.claimedAmount ?? Number(order.grandTotal)
 
     const existingVerification = await db.paymentVerification.findUnique({
       where: { orderId: order.id },
@@ -93,7 +106,7 @@ export async function POST(req: NextRequest) {
             where: { id: existingVerification.id },
             data: {
               utrNumber: body.utrNumber,
-              claimedAmount: body.claimedAmount,
+              claimedAmount,
               screenshotUrl,
               verificationStatus: "AWAITING_VERIFICATION",
               mismatchReason: null,
@@ -105,7 +118,7 @@ export async function POST(req: NextRequest) {
               orderId: order.id,
               userId: session.user.id,
               utrNumber: body.utrNumber,
-              claimedAmount: body.claimedAmount,
+              claimedAmount,
               screenshotUrl,
               verificationStatus: "AWAITING_VERIFICATION",
             },
@@ -134,7 +147,7 @@ export async function POST(req: NextRequest) {
       orderId: order.id,
       userId: session.user.id,
       utrNumber: body.utrNumber,
-      claimedAmount: body.claimedAmount,
+      claimedAmount,
       screenshotUrl,
       reviewAttemptCount: existingVerification?.reviewAttemptCount ?? 0,
       mismatchReason: existingVerification?.mismatchReason ?? null,
@@ -156,7 +169,7 @@ export async function POST(req: NextRequest) {
       verificationId: savedVerificationId ?? order.id,
       after: {
         utrNumber: body.utrNumber,
-        claimedAmount: formatMoney(body.claimedAmount),
+        claimedAmount: formatMoney(claimedAmount),
         screenshotUrl,
         verificationStatus: "AWAITING_VERIFICATION",
       },

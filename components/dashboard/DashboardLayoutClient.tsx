@@ -12,6 +12,7 @@ const NAV = [
   { name: "Overview",          path: "/dashboard",                   icon: "◈", color: "text-violet-400" },
   { name: "My Products",       path: "/dashboard/my-products",       icon: "◆", color: "text-green-400" },
   { name: "Subscriptions",     path: "/dashboard/subscriptions",     icon: "⬡", color: "text-blue-400" },
+  { name: "Premium Services",  path: "/dashboard/premium-services",  icon: "✦", color: "text-violet-400" },
   { name: "Projects",          path: "/dashboard/projects",          icon: "◻", color: "text-emerald-400" },
   { name: "Vendor Studio",     path: "/dashboard/vendor",            icon: "Store", color: "text-fuchsia-400" },
   { name: "Invoices",          path: "/dashboard/invoices",          icon: "◑", color: "text-amber-400" },

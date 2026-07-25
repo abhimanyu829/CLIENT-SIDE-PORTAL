@@ -103,6 +103,8 @@ export async function GET(req: NextRequest) {
         name: c.name,
         description: c.description,
         bannerUrl: c.bannerUrl,
+        backgroundUrl: c.backgroundUrl,
+        videoUrl: c.videoUrl,
         ctaLabel: c.ctaLabel,
         landingUrl: c.landingUrl,
         endsAt: c.endsAt?.toISOString() ?? null,

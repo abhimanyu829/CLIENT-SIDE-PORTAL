@@ -2,7 +2,6 @@ import Link from "next/link"
 import { db } from "@/lib/db"
 import { ProductStatus, ProductType, SubStatus, CampaignStatus } from "@prisma/client"
 import { unstable_cache } from "next/cache"
-import SmartCampaignBanner from "@/components/marketplace/SmartCampaignBanner"
 
 import ActivityFeed from "@/components/marketplace/ActivityFeed"
 import ProductCard from "@/components/marketplace/ProductCard"
@@ -182,10 +181,6 @@ export default async function HomePage() {
         .stat-pill{background:rgba(25, 28, 33, 0.05);border:1px solid rgba(25, 28, 33, 0.1);border-radius:9999px;padding:.25rem .875rem;display:inline-flex;align-items:center;gap:.5rem;font-size:.8125rem;color:inherit}
         .badge-new{background:#ea580c;font-size:.65rem;font-weight:800;padding:.125rem .5rem;border-radius:9999px;color:#fff;letter-spacing:.05em}
       `}</style>
-
-      {/* ── Campaign banner — audience-targeted, resolves client-side ── */}
-      <SmartCampaignBanner />
-
 
       {/* ── SECTION 1: HERO ──────────────────────────────────────────────────── */}
       <section className="aurora-dashboard-bg relative min-h-[80vh] flex items-center justify-center overflow-hidden py-20">

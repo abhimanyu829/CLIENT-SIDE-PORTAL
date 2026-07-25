@@ -20,7 +20,7 @@ import {
   LayoutDashboard, Users, CreditCard, ShoppingCart, Package,
   Tag, BarChart3, Bot, ShieldCheck, Settings, LogOut,
   ChevronLeft, ChevronRight, Menu, Bell, Sun, Moon, User,
-  ExternalLink, Webhook, Store, ScanSearch, Eye, WalletCards, Briefcase, KeyRound, Megaphone, ClipboardList
+  ExternalLink, Webhook, Store, ScanSearch, Eye, WalletCards, Briefcase, KeyRound, Megaphone, ClipboardList, Crown
 } from "lucide-react"
 import { Toaster } from "@/components/ui/toaster"
 import RealtimeAdminProvider from "@/components/admin/RealtimeAdminProvider"
@@ -40,6 +40,7 @@ const NAV_ITEMS: NavigationItem[] = [
   { name: "User Management",     path: "/admin/users",       icon: Users, resource: "Users" },
   { name: "Subadmin Management", path: "/admin/subadmins",   icon: ShieldCheck, superAdminOnly: true },
   { name: "Subscriptions",       path: "/admin/subscriptions", icon: CreditCard, resource: "Orders" },
+  { name: "Billing Center",      path: "/admin/billing-center", icon: Crown, superAdminOnly: true },
   { name: "Orders & Payments",  path: "/admin/orders",      icon: ShoppingCart, resource: "Orders" },
   { name: "Payment Inspection",  path: "/admin/payments",    icon: ScanSearch, resource: "Payments" },
   { name: "Manual Verifications", path: "/admin/payments/verifications", icon: WalletCards, superAdminOnly: true },

@@ -9,8 +9,8 @@ import { slugify } from "@/lib/utils"
 const campaignSchema = z.object({
   name: z.string().trim().min(2).max(120), slug: z.string().trim().max(140).optional(), description: z.string().trim().max(1000).optional(),
   status: z.enum(["DRAFT", "SCHEDULED", "ACTIVE", "PAUSED", "ARCHIVED", "COMPLETED"]).default("DRAFT"),
-  placement: z.string().trim().min(1).max(80).default("services"), bannerUrl: z.string().url().optional().or(z.literal("")),
-  thumbnailUrl: z.string().url().optional().or(z.literal("")), backgroundUrl: z.string().url().optional().or(z.literal("")), videoUrl: z.string().url().optional().or(z.literal("")),
+  placement: z.string().trim().min(1).max(80).default("services"), bannerUrl: z.string().optional().or(z.literal("")),
+  thumbnailUrl: z.string().optional().or(z.literal("")), backgroundUrl: z.string().optional().or(z.literal("")), videoUrl: z.string().optional().or(z.literal("")),
   ctaLabel: z.string().trim().max(80).optional(), landingUrl: z.string().trim().max(500).optional(),
   startsAt: z.string().datetime().optional(), endsAt: z.string().datetime().optional(), priority: z.number().int().min(-100).max(1000).default(0),
   targetAudience: z.record(z.unknown()).default({}), categorySlugs: z.array(z.string().max(80)).default([]),
@@ -68,4 +68,47 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ success: false, error: "Unsupported discovery entity" }, { status: 422 })
   } catch (error) { return NextResponse.json({ success: false, error: error instanceof z.ZodError ? error.issues[0]?.message : "Unable to create discovery content" }, { status: error instanceof Error && error.message === "FORBIDDEN" ? 403 : 500 }) }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    await admin()
+    const body = await request.json()
+    const entity = body?.entity
+    const id = body?.id
+    if (!id) return NextResponse.json({ success: false, error: "Campaign ID is required for edit" }, { status: 400 })
+
+    if (entity === "campaign") {
+      const input = campaignSchema.parse(body.data)
+      const startsAt = input.startsAt ? new Date(input.startsAt) : null
+      const endsAt = input.endsAt ? new Date(input.endsAt) : null
+      if (startsAt && endsAt && endsAt <= startsAt) {
+        return NextResponse.json({ success: false, error: "Campaign end must be after its start" }, { status: 422 })
+      }
+      const campaign = await db.serviceDiscoveryCampaign.update({
+        where: { id },
+        data: {
+          ...input,
+          targetAudience: inputJson(input.targetAudience),
+          slug: input.slug || slugify(input.name),
+          description: nullIfEmpty(input.description),
+          bannerUrl: nullIfEmpty(input.bannerUrl),
+          thumbnailUrl: nullIfEmpty(input.thumbnailUrl),
+          backgroundUrl: nullIfEmpty(input.backgroundUrl),
+          videoUrl: nullIfEmpty(input.videoUrl),
+          ctaLabel: nullIfEmpty(input.ctaLabel),
+          landingUrl: nullIfEmpty(input.landingUrl),
+          startsAt,
+          endsAt,
+        },
+      })
+      return NextResponse.json({ success: true, data: campaign })
+    }
+    return NextResponse.json({ success: false, error: "Unsupported discovery entity" }, { status: 422 })
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: error instanceof z.ZodError ? error.issues[0]?.message : "Unable to update discovery content" },
+      { status: error instanceof Error && error.message === "FORBIDDEN" ? 403 : 500 }
+    )
+  }
 }

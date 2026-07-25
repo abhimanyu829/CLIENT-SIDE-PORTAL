@@ -50,6 +50,7 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   productionBrowserSourceMaps: true,
+  middlewareClientMaxBodySize: '100mb',
   typescript: {
     ignoreBuildErrors: true,
   },
