@@ -622,7 +622,10 @@ export async function createOrderFromActiveCart(input: {
 }) {
   console.log(`[COMMERCE] Creating order from cart: userId=${input.userId}, cartId=${input.cartId ?? "latest"}, gateway=${input.gateway}`)
 
-  const order = await db.$transaction(async (tx) => {
+  let order: any
+  let reusedExistingOrder = false
+  try {
+    order = await db.$transaction(async (tx) => {
     const cart = await tx.cart.findFirstOrThrow({
       where: input.cartId
         ? { id: input.cartId, userId: input.userId, status: "ACTIVE" }
@@ -646,10 +649,18 @@ export async function createOrderFromActiveCart(input: {
     const platformFee = subtotal * PLATFORM_COMMISSION_RATE
     const vendorNetTotal = subtotal - platformFee
 
-    const pending = await tx.order.findFirst({
-      where: { cartId: cart.id, status: OrderStatus.PENDING },
+    // cartId is a one-to-one checkout snapshot. Never create a second Order
+    // for it: either refresh the pending checkout or return its existing state.
+    const existingOrder = await tx.order.findUnique({
+      where: { cartId: cart.id },
       include: { items: true },
     })
+
+    if (existingOrder && existingOrder.status !== OrderStatus.PENDING) {
+      return existingOrder
+    }
+
+    const pending = existingOrder
 
     if (pending) {
       await tx.orderItem.deleteMany({ where: { orderId: pending.id } })
@@ -768,14 +779,34 @@ export async function createOrderFromActiveCart(input: {
     })
 
     return created
-  })
+    })
+  } catch (error: any) {
+    // Concurrent checkout retries can both observe an empty cart/order pair.
+    // cartId is unique, so recover the winner instead of leaking P2002 to UI.
+    if (error?.code === "P2002" && input.cartId) {
+      const existing = await db.order.findUnique({
+        where: { cartId: input.cartId },
+        include: { items: true },
+      })
+      if (existing?.userId === input.userId) {
+        order = existing
+        reusedExistingOrder = true
+      } else {
+        throw new Error("CART_UNAVAILABLE")
+      }
+    } else {
+      throw error
+    }
+  }
 
-  await emitEvent({
-    type: EVENTS.ORDER_CREATED,
-    timestamp: new Date().toISOString(),
-    actorId: input.userId,
-    payload: { orderId: order.id, orderNumber: order.orderNumber, amount: Number(order.grandTotal) },
-  })
+  if (!reusedExistingOrder) {
+    await emitEvent({
+      type: EVENTS.ORDER_CREATED,
+      timestamp: new Date().toISOString(),
+      actorId: input.userId,
+      payload: { orderId: order.id, orderNumber: order.orderNumber, amount: Number(order.grandTotal) },
+    })
+  }
 
   console.log(`[COMMERCE] ✅ Order created: ${order.orderNumber}, amount: ${order.grandTotal} ${order.currency}, items: ${order.items.length}`)
 
@@ -1102,31 +1133,18 @@ export async function markOrderPaid(orderId: string, gatewayPaymentId?: string, 
       }
     }
 
-    await tx.notification.create({
-      data: {
-        userId: order.userId,
-        type: "ORDER",
-        title: "Your NexusAI order is active",
-        body: `${order.orderNumber} has been paid and your entitlements are ready.`,
-        actionUrl: "/dashboard/subscriptions",
-        metadata: { orderId: order.id, orderNumber: order.orderNumber },
-      },
-    })
-
-    await tx.platformMetricEvent.create({
-      data: {
-        type: MetricEventType.PURCHASE,
-        userId: order.userId,
-        orderId: order.id,
-        value: order.grandTotal,
-        metadata: { orderNumber: order.orderNumber },
-      },
-    })
-
     return { order: paidOrder, payment, alreadyProcessed: false }
-  })
+  }, { timeout: 30000 })
 
   if (result.alreadyProcessed) {
+    // Healing path: order already paid — ensure queue jobs exist (idempotent).
+    // Never throws: payment is already captured, callers must not 500.
+    try {
+      const lifecycle = await import("@/lib/services/service-lifecycle-service")
+      await lifecycle.createPurchasedServicesForOrder(result.order.id)
+    } catch (err) {
+      console.error(`[COMMERCE] ❌ Deployment queue creation failed for already-paid order ${result.order.orderNumber}:`, err)
+    }
     console.log(`[COMMERCE] ⏭️ Order ${result.order.orderNumber} already processed — skipping`)
     return result.order
   }
@@ -1189,11 +1207,29 @@ export async function markOrderPaid(orderId: string, gatewayPaymentId?: string, 
     payload: { orderId: processedOrder.id, orderNumber: processedOrder.orderNumber, amount: Number(processedOrder.grandTotal), gatewayPaymentId },
   })
 
+  // Record platform metric (outside tx — best-effort, never blocks payment)
+  try {
+    await db.platformMetricEvent.create({
+      data: {
+        type: MetricEventType.PURCHASE,
+        userId: orderUserId,
+        orderId: processedOrder.id,
+        value: processedOrder.grandTotal,
+        metadata: { orderNumber: processedOrder.orderNumber },
+      },
+    })
+  } catch {}
+
   // Post-purchase lifecycle: create purchased-service workspaces + deployment
-  // queue entries. Fire-and-forget — never blocks or breaks payment flow.
-  import("@/lib/services/service-lifecycle-service")
-    .then((m) => m.createPurchasedServicesForOrder(processedOrder.id))
-    .catch((err) => console.error("[markOrderPaid] purchased-service creation failed", err))
+  // queue entries. The payment tx already committed — a failure here must NOT
+  // fail the payment response. Log loudly; the verify/status/admin-retry
+  // healing paths re-run this idempotently.
+  try {
+    const lifecycle = await import("@/lib/services/service-lifecycle-service")
+    await lifecycle.createPurchasedServicesForOrder(processedOrder.id)
+  } catch (err) {
+    console.error(`[COMMERCE] ❌ Deployment queue creation failed for order ${processedOrder.orderNumber} — will be retried by healing paths:`, err)
+  }
 
   return processedOrder
 }
@@ -1228,9 +1264,10 @@ export async function fulfillOrder(orderId: string): Promise<void> {
               deliveryConfig: true,
               inventoryEnabled: true,
               inventoryCount: true,
+              serviceProfile: { select: { id: true } },
             },
           },
-          tier: { select: { id: true, name: true, interval: true } },
+          tier: { select: { id: true, name: true, interval: true, fulfillmentType: true } },
         },
       },
       user: { select: { id: true, email: true, name: true } },
@@ -1268,7 +1305,27 @@ export async function fulfillOrder(orderId: string): Promise<void> {
     }
   }
 
+  // OrderItem.fulfillmentType is frozen at checkout — fall back to the tier's
+  // current fulfillmentType so deployment-managed items are never treated as
+  // instant delivery (same rule as createPurchasedServicesForOrder).
+  const effectiveFulfillment = (item: (typeof order.items)[number]) =>
+    item.fulfillmentType === FulfillmentType.HOSTED && item.tier
+      ? item.tier.fulfillmentType
+      : item.fulfillmentType
+
+  const hasDeploymentManagedItems = order.items.some(
+    (item) =>
+      effectiveFulfillment(item) === FulfillmentType.SERVICE_DELIVERY ||
+      effectiveFulfillment(item) === FulfillmentType.ENTERPRISE_ONBOARDING ||
+      Boolean(item.product?.serviceProfile),
+  )
+
   for (const item of order.items) {
+    if (
+      effectiveFulfillment(item) === FulfillmentType.SERVICE_DELIVERY ||
+      effectiveFulfillment(item) === FulfillmentType.ENTERPRISE_ONBOARDING ||
+      item.product?.serviceProfile
+    ) continue
     const product = item.product
     if (!product) continue
 
@@ -1405,7 +1462,9 @@ export async function fulfillOrder(orderId: string): Promise<void> {
     }
   }
 
-  // Mark order as FULFILLED
+  if (hasDeploymentManagedItems) return
+
+  // Mark orders containing only immediate-delivery items as FULFILLED.
   await db.order.update({
     where: { id: orderId },
     data: { status: OrderStatus.FULFILLED },

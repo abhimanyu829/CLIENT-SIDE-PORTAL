@@ -38,6 +38,15 @@ function verifySignature(orderId: string, paymentId: string, signature: string) 
   }
 }
 
+async function resolvePostPaymentRedirect(orderId: string, userId: string) {
+  const service = await db.purchasedService.findFirst({
+    where: { orderId, userId },
+    select: { id: true },
+    orderBy: { createdAt: "asc" },
+  })
+  return service ? `/dashboard/services/${service.id}` : `/checkout/success?orderId=${orderId}`
+}
+
 export async function POST(req: NextRequest) {
   console.log("[RAZORPAY VERIFY] 📨 POST /api/payments/razorpay/verify — request received")
 
@@ -68,13 +77,19 @@ export async function POST(req: NextRequest) {
     // ── 2. Idempotency: if order is already PAID/FULFILLED, return success immediately ──
     if (order.status === "PAID" || order.status === "FULFILLED") {
       console.log(`[RAZORPAY VERIFY] ✅ Order ${order.orderNumber} already ${order.status} — returning idempotent success`)
+      // Healing: a previous attempt may have paid the order without creating
+      // the deployment queue job. Re-run creation (idempotent per order item).
+      const lifecycle = await import("@/lib/services/service-lifecycle-service")
+      await lifecycle.createPurchasedServicesForOrder(order.id).catch((err) =>
+        logger.error({ err, orderId: order.id }, "deployment queue healing failed in verify route"),
+      )
       return NextResponse.json({
         success: true,
         data: {
           orderId: order.id,
           orderNumber: order.orderNumber,
           status: order.status,
-          redirectUrl: `/checkout/success?orderId=${order.id}`,
+          redirectUrl: await resolvePostPaymentRedirect(order.id, session.user.id),
         },
       })
     }
@@ -101,7 +116,7 @@ export async function POST(req: NextRequest) {
           orderId: order.id,
           orderNumber: order.orderNumber,
           status: order.status,
-          redirectUrl: `/checkout/success?orderId=${order.id}`,
+          redirectUrl: await resolvePostPaymentRedirect(order.id, session.user.id),
         },
       })
     }
@@ -121,7 +136,7 @@ export async function POST(req: NextRequest) {
         orderId: paid.id,
         orderNumber: paid.orderNumber,
         status: paid.status,
-        redirectUrl: `/checkout/success?orderId=${paid.id}`,
+        redirectUrl: await resolvePostPaymentRedirect(paid.id, session.user.id),
       },
     })
   } catch (error) {

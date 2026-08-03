@@ -63,10 +63,23 @@ export async function POST(req: NextRequest) {
   }
 
   if (payment.status === "SUCCESS") {
+    // Payment is fine, but the deployment queue job may be missing (earlier
+    // failure or a tier fixed after checkout). Heal idempotently.
+    let healedServices = 0
+    if (payment.orderId) {
+      try {
+        const lifecycle = await import("@/lib/services/service-lifecycle-service")
+        await lifecycle.createPurchasedServicesForOrder(payment.orderId)
+        healedServices = await db.purchasedService.count({ where: { orderId: payment.orderId } })
+      } catch (err) {
+        console.error("[ADMIN RETRY] Deployment queue healing failed:", err)
+      }
+    }
     return NextResponse.json({
       success: true,
       alreadyPaid: true,
-      message: "Payment is already marked as successful. No action required.",
+      message: "Payment is already marked as successful. Deployment queue verified.",
+      data: { orderId: payment.orderId, purchasedServices: healedServices },
     })
   }
 

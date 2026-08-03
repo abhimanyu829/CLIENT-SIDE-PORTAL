@@ -22,6 +22,11 @@ const ERROR_MESSAGES: Record<string, { title: string; description: string; icon:
     description: "You closed the payment popup. No charges were made — you can retry safely.",
     icon: X,
   },
+  PAYMENT_DENIED: {
+    title: "Payment Verification Failed",
+    description: "Your payment request has been denied because the submitted payment information could not be verified. If you believe this is a mistake or would like to submit additional payment proof, please contact our support team.",
+    icon: AlertTriangle,
+  },
   VERIFICATION_FAILED: {
     title: "Verification pending",
     description: "Your payment was processed but verification is still pending. We're confirming your order — check your dashboard shortly.",
@@ -84,7 +89,34 @@ function FailureContent() {
         <div className="mt-6 rounded-lg border border-white/10 bg-white/[0.03] p-6">
           <h2 className="font-bold mb-3">What you can do</h2>
           <ul className="space-y-3 text-sm text-zinc-400">
-            {canRetry && (
+            {errorCode === "PAYMENT_DENIED" ? (
+              <>
+                <li className="flex items-start gap-2">
+                  <span className="text-zinc-600 mt-0.5">1.</span>
+                  Double-check your UTR / transaction reference number — it must be exactly 12 digits and match your bank's record.
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-zinc-600 mt-0.5">2.</span>
+                  Make sure the payment amount matches the order total exactly.
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-zinc-600 mt-0.5">3.</span>
+                  Upload a clear, unedited screenshot showing the successful transaction.
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-zinc-600 mt-0.5">4.</span>
+                  If your payment was genuinely made, contact our support team with the bank receipt.
+                </li>
+                <li className="flex items-start gap-2 rounded-md border border-white/10 bg-white/[0.03] px-3 py-2">
+                  <span className="text-zinc-400">
+                    Support email:{" "}
+                    <a href="mailto:luckypal5002@gmail.com" className="font-mono text-indigo-400 hover:underline">
+                      luckypal5002@gmail.com
+                    </a>
+                  </span>
+                </li>
+              </>
+            ) : canRetry ? (
               <>
                 <li className="flex items-start gap-2">
                   <span className="text-zinc-600 mt-0.5">1.</span>
@@ -98,21 +130,34 @@ function FailureContent() {
                   <span className="text-zinc-600 mt-0.5">3.</span>
                   Contact your bank if the amount was debited but not confirmed.
                 </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-zinc-600 mt-0.5">4.</span>
+                  Reach out to our support team for assistance.
+                </li>
               </>
+            ) : (
+              <li className="flex items-start gap-2">
+                <span className="text-zinc-600 mt-0.5">1.</span>
+                Reach out to our support team for assistance.
+              </li>
             )}
-            <li className="flex items-start gap-2">
-              <span className="text-zinc-600 mt-0.5">{canRetry ? "4" : "1"}.</span>
-              Reach out to our support team for assistance.
-            </li>
           </ul>
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          {canRetry && (
+          {canRetry && errorCode !== "PAYMENT_DENIED" && (
             <Button asChild>
               <Link href={retryHref}>
                 <CreditCard className="mr-2 h-4 w-4" />
                 Try again
+              </Link>
+            </Button>
+          )}
+          {errorCode === "PAYMENT_DENIED" && orderId && (
+            <Button asChild>
+              <Link href={`/checkout?resubmit=${orderId}`}>
+                <CreditCard className="mr-2 h-4 w-4" />
+                Resubmit payment proof
               </Link>
             </Button>
           )}

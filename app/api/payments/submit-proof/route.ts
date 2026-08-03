@@ -109,8 +109,16 @@ export async function POST(req: NextRequest) {
               claimedAmount,
               screenshotUrl,
               verificationStatus: "AWAITING_VERIFICATION",
+              // Fresh review cycle: clear all prior review state so a resubmit
+              // after DENY is judged on its own merits (stale attempt counts
+              // would otherwise trigger instant auto-fail on first mismatch).
               mismatchReason: null,
               lastReviewedAt: null,
+              reviewAttemptCount: 0,
+              adminTransactionId: null,
+              adminActualAmount: null,
+              verifiedAt: null,
+              verifiedBy: null,
             },
           })
         : await tx.paymentVerification.create({
@@ -149,8 +157,8 @@ export async function POST(req: NextRequest) {
       utrNumber: body.utrNumber,
       claimedAmount,
       screenshotUrl,
-      reviewAttemptCount: existingVerification?.reviewAttemptCount ?? 0,
-      mismatchReason: existingVerification?.mismatchReason ?? null,
+      reviewAttemptCount: 0, // review state was reset above — fresh cycle
+      mismatchReason: null,
       verificationStatus: "AWAITING_VERIFICATION",
     }
 

@@ -130,21 +130,146 @@ export async function getQueuePosition(deployment: { status: ServiceDeploymentSt
 }
 
 // ── Creation: hook point after payment ───────────────────────────────────────
+// THE ONLY place deployment queue jobs are created. Razorpay verify, Razorpay
+// webhook, Stripe webhook, and manual UPI approval all converge on
+// markOrderPaid(), which calls this once per order. Idempotent per order item —
+// never creates a duplicate queue job, never runs before payment verification.
+
+/// Non-secret deliveryConfig keys the deployment team needs. Raw credentials
+/// inside deliveryConfig are NEVER copied into the deployment package.
+const DEPLOYMENT_META_KEYS = [
+  "dockerImage", "image", "imageVersion", "deploymentTemplate", "template",
+  "repository", "gitRepository", "branch", "resources", "requiredResources",
+  "database", "requiredDatabase", "environmentVariables", "env",
+  "port", "region", "startCommand",
+] as const
+
+async function resolveDeliveryMeta(value: unknown): Promise<Record<string, unknown>> {
+  if (!value) return {}
+  let raw: Record<string, unknown> = {}
+  if (typeof value === "object") {
+    raw = value as Record<string, unknown>
+  } else if (typeof value === "string") {
+    const { decrypt } = await import("@/lib/encryption")
+    try {
+      raw = JSON.parse(decrypt(value))
+    } catch {
+      try {
+        raw = JSON.parse(value)
+      } catch {
+        raw = {}
+      }
+    }
+  }
+  const meta: Record<string, unknown> = {}
+  for (const key of DEPLOYMENT_META_KEYS) {
+    if (raw[key] !== undefined) meta[key] = raw[key]
+  }
+  return meta
+}
 
 export async function createPurchasedServicesForOrder(orderId: string) {
   const order = await db.order.findUnique({
     where: { id: orderId },
-    include: { items: { include: { tier: true } }, purchasedServices: true },
+    include: {
+      user: { select: { id: true, name: true, email: true, phone: true } },
+      payments: { orderBy: { createdAt: "desc" }, take: 1 },
+      invoices: { orderBy: { issuedAt: "desc" }, take: 1 },
+      items: {
+        include: {
+          tier: true,
+          product: {
+            select: {
+              id: true, name: true, slug: true, version: true, type: true,
+              deliveryConfig: true,
+              serviceProfile: {
+                select: { id: true, capacity: true, freeServices: true, paidAddons: true, supportBenefits: true },
+              },
+            },
+          },
+        },
+      },
+      purchasedServices: true,
+    },
   })
   if (!order) return
 
   const existingItemIds = new Set(order.purchasedServices.map((s) => s.orderItemId))
+  const payment = order.payments[0] ?? null
+  const invoice = order.invoices[0] ?? null
 
   for (const item of order.items) {
-    if (existingItemIds.has(item.id)) continue // idempotent
+    // EVERY paid order item enters the deployment queue — the deployment team
+    // must see the complete purchase regardless of fulfillment type. Products
+    // with instant-delivery configs still get queued; fulfillOrder handles the
+    // credential email side separately.
+    if (existingItemIds.has(item.id)) continue // idempotent — queue job created exactly once
 
     const interval = item.tier?.interval
     const expiryDate = computeExpiry(interval)
+    const deliveryMeta = await resolveDeliveryMeta(item.product.deliveryConfig)
+
+    // Sibling line items in the same order are part of the same purchase
+    // (e.g. add-on products bought together with the main service).
+    const purchasedAddons = order.items
+      .filter((sibling) => sibling.id !== item.id)
+      .map((sibling) => ({
+        orderItemId: sibling.id,
+        name: sibling.name,
+        tierName: sibling.tier?.name ?? null,
+        quantity: sibling.quantity,
+        unitPrice: sibling.unitPrice.toString(),
+        currency: sibling.currency,
+      }))
+
+    const deploymentPackage = {
+      customer: {
+        id: order.user.id,
+        name: order.user.name,
+        email: order.user.email,
+        phone: order.user.phone ?? null,
+      },
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        invoiceId: invoice?.id ?? null,
+        invoiceNumber: invoice?.number ?? null,
+        purchaseDate: (order.paidAt ?? order.createdAt).toISOString(),
+        paymentMethod: payment?.gateway ?? order.gateway ?? null,
+        paymentStatus: payment?.status ?? "SUCCESS",
+        amount: order.grandTotal.toString(),
+        currency: order.currency,
+      },
+      product: {
+        id: item.product.id,
+        name: item.product.name,
+        slug: item.product.slug,
+        version: item.product.version,
+        type: item.product.type,
+        fulfillmentType: item.fulfillmentType,
+      },
+      plan: {
+        tierId: item.tierId,
+        name: item.tier?.name ?? null,
+        interval: interval ?? null,
+        price: item.unitPrice.toString(),
+        currency: item.currency,
+        features: item.tier?.features ?? [],
+        limits: item.tier?.limits ?? {},
+        supportLevel: item.tier?.supportLevel ?? null,
+        expiryDate: expiryDate?.toISOString() ?? null,
+      },
+      purchasedAddons,
+      freeServices: item.product.serviceProfile?.freeServices ?? [],
+      catalogAddons: item.product.serviceProfile?.paidAddons ?? [],
+      supportBenefits: item.product.serviceProfile?.supportBenefits ?? [],
+      deployment: {
+        ...deliveryMeta,
+        capacity: item.product.serviceProfile?.capacity ?? {},
+      },
+      priority: 0,
+      createdAt: new Date().toISOString(),
+    }
 
     const service = await db.purchasedService.create({
       data: {
@@ -156,11 +281,12 @@ export async function createPurchasedServicesForOrder(orderId: string) {
         status: "PENDING_DEPLOYMENT",
         expiryDate,
         renewalDate: expiryDate,
+        config: { deploymentPackage },
         deployment: { create: { status: "PENDING", statusHistory: [{ status: "PENDING", at: new Date().toISOString() }] } },
         timeline: {
           create: [
-            { type: TIMELINE.PAYMENT_RECEIVED, message: `Payment received for ${item.name}`, metadata: { orderId: order.id, orderNumber: order.orderNumber } },
-            { type: TIMELINE.DEPLOYMENT_QUEUED, message: "Deployment request queued", metadata: {} },
+            { type: TIMELINE.PAYMENT_RECEIVED, message: `Payment received for ${item.name}`, metadata: { orderId: order.id, orderNumber: order.orderNumber, paymentMethod: deploymentPackage.order.paymentMethod } },
+            { type: TIMELINE.DEPLOYMENT_QUEUED, message: "Deployment request queued", metadata: { addons: purchasedAddons.length, freeServices: Array.isArray(deploymentPackage.freeServices) ? deploymentPackage.freeServices.length : 0 } },
           ],
         },
       },
@@ -209,8 +335,9 @@ export async function advanceDeploymentStatus(
     include: { deployment: true, orderItem: { select: { name: true } } },
   })
   if (!service?.deployment) throw new Error("Service or deployment not found")
+  const deployment = service.deployment
 
-  const current = service.deployment.status
+  const current = deployment.status
   if (current === "COMPLETED" || current === "FAILED") throw new Error("Deployment already finalized")
 
   if (status !== "FAILED") {
@@ -219,7 +346,7 @@ export async function advanceDeploymentStatus(
     if (nextIdx <= currentIdx) throw new Error(`Cannot move deployment from ${current} back to ${status}`)
   }
 
-  const history = Array.isArray(service.deployment.statusHistory) ? (service.deployment.statusHistory as any[]) : []
+  const history = Array.isArray(deployment.statusHistory) ? (deployment.statusHistory as any[]) : []
   history.push({ status, at: new Date().toISOString(), by: adminId })
 
   const isStart = current === "PENDING"
@@ -228,11 +355,11 @@ export async function advanceDeploymentStatus(
   await db.$transaction(
     async (tx) => {
       await tx.serviceDeployment.update({
-        where: { id: service.deployment.id },
+        where: { id: deployment.id },
         data: {
           status,
           statusHistory: history,
-          startedAt: service.deployment.startedAt ?? (isStart ? new Date() : undefined),
+          startedAt: deployment.startedAt ?? (isStart ? new Date() : undefined),
           completedAt: status === "COMPLETED" || status === "FAILED" ? new Date() : undefined,
           adminNotes: notes ?? undefined,
         },

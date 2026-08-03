@@ -85,7 +85,8 @@ type CheckoutState =
 
 const SDK_LOAD_TIMEOUT_MS = 15_000
 const VERIFY_TIMEOUT_MS = 30_000
-const ORDER_CREATE_TIMEOUT_MS = 30_000
+// Keep cold development compilation from aborting a valid server checkout.
+const ORDER_CREATE_TIMEOUT_MS = 60_000
 
 const trustSignals: Array<{ Icon: typeof ShieldCheck; label: string }> = [
   { Icon: ShieldCheck, label: "Server-verified signatures and webhooks" },
@@ -306,12 +307,29 @@ export default function CheckoutClient({
       const json = await res.json()
 
       if (!res.ok || !json.success) {
+        const checkoutError = json.error?.message ?? json.error?.code
+        if (
+          json.error?.code === "ORDER_ALREADY_COMPLETED" ||
+          checkoutError === "CART_ALREADY_CHECKED_OUT"
+        ) {
+          const redirectUrl = json.data?.redirectUrl ?? "/dashboard/my-products"
+          setState({ phase: "SUCCESS", redirectUrl })
+          router.push(redirectUrl)
+          return
+        }
         const errorMsg = json.error?.message ?? json.error?.code ?? "Unable to start secure checkout."
         const msg = typeof errorMsg === "string" ? errorMsg : "Unable to start secure checkout. Please try again."
         throw new Error(msg)
       }
 
       const data = json.data
+
+      if (data?.alreadyCompleted) {
+        const redirectUrl = data.redirectUrl ?? "/dashboard/my-products"
+        setState({ phase: "SUCCESS", redirectUrl })
+        router.push(redirectUrl)
+        return
+      }
 
       if (selectedGateway === "PHONEPE" || selectedGateway === "PAYTM") {
         // ── UPI Manual Gateway Flow ─────────────────────────────────────────
@@ -494,6 +512,8 @@ export default function CheckoutClient({
         userMessage = "This product is not available for purchase at this time."
       } else if (message.includes("ZERO_TOTAL")) {
         userMessage = "This checkout has no payable amount."
+      } else if (message.includes("CART_UNAVAILABLE")) {
+        userMessage = "This cart is no longer available for checkout. Please refresh your cart and try again."
       } else if (err instanceof DOMException && err.name === "AbortError") {
         userMessage = "Checkout request timed out. Please check your connection and try again."
       } else {
@@ -527,19 +547,19 @@ export default function CheckoutClient({
       const res = await fetch("/api/payments/submit-proof", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, utrNumber, screenshot: base64Screenshot }),
+        body: JSON.stringify({ orderId, utrNumber, claimedAmount: state.phase === "MANUAL_UPI" ? state.amount : undefined, screenshot: base64Screenshot }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error?.message || "Failed to submit verification.")
 
-      setState({ phase: "SUCCESS", redirectUrl: "/dashboard/orders" })
-      router.push("/dashboard/orders")
+      setState({ phase: "SUCCESS", redirectUrl: `/checkout/success?orderId=${orderId}` })
+      router.push(`/checkout/success?orderId=${orderId}`)
     } catch (err: any) {
       alert(err.message)
     } finally {
       setSubmittingUtr(false)
     }
-  }, [utrNumber, screenshot, router])
+  }, [utrNumber, screenshot, router, state])
 
   // ── Derived UI state ────────────────────────────────────────────────────────
   const isLoading = state.phase === "LOADING_CART" || state.phase === "LOADING_SDK" || state.phase === "CREATING_ORDER" || state.phase === "VERIFYING"
@@ -589,7 +609,7 @@ export default function CheckoutClient({
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen overflow-x-hidden overflow-y-auto bg-zinc-950 pb-12 text-white">
       {/* Header */}
       <div className="border-b border-white/10 bg-zinc-950/80">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
@@ -601,7 +621,7 @@ export default function CheckoutClient({
         </div>
       </div>
 
-      <main className="mx-auto grid max-w-7xl gap-8 px-4 py-8 lg:grid-cols-[1fr_420px]">
+      <main className="mx-auto grid max-w-7xl gap-8 px-4 py-8 pb-24 lg:grid-cols-[1fr_420px]">
         <section className="space-y-5">
           {/* Step indicator */}
           <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">

@@ -35,6 +35,7 @@ export default async function CheckoutSuccessPage({
     id: order.id,
     orderNumber: order.orderNumber,
     status: order.status,
+    gateway: order.gateway,
     currency: order.currency,
     grandTotal: Number(order.grandTotal),
     paidAt: order.paidAt?.toISOString() ?? null,

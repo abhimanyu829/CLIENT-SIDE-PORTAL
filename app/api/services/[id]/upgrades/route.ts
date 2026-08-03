@@ -7,17 +7,19 @@ import { addTimelineEvent, TIMELINE } from "@/lib/services/service-lifecycle-ser
 
 const upgradeSchema = z.object({
   addonId: z.string().min(1),
+  orderId: z.string().optional(), // internal order ID from addon-order payment
 })
 
 /// Customer purchases an add-on: creates an upgrade request for the admin.
-/// Payment confirmation (any gateway) flips it to PAID; admin applies it.
+/// If orderId is provided (payment already completed), status is set to PAID immediately.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const { id } = await params
   try {
-    const { addonId } = upgradeSchema.parse(await req.json())
+    const body = upgradeSchema.parse(await req.json())
+    const { addonId, orderId } = body
 
     const service = await db.purchasedService.findFirst({
       where: { id, userId: session.user.id },
@@ -39,23 +41,34 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     })
     if (existing) return NextResponse.json({ error: "This upgrade is already in progress" }, { status: 409 })
 
+    // If orderId provided, verify the order belongs to this user & is paid
+    let upgradeStatus: "PENDING" | "PAID" = "PENDING"
+    if (orderId) {
+      const order = await db.order.findFirst({
+        where: { id: orderId, userId: session.user.id, status: { in: ["PAID", "FULFILLED"] } },
+        select: { id: true },
+      })
+      if (order) upgradeStatus = "PAID"
+    }
+
     const upgrade = await db.serviceUpgrade.create({
       data: {
         purchasedServiceId: service.id,
         userId: session.user.id,
         addonId,
-        status: "PENDING",
+        status: upgradeStatus,
         snapshot: {
           name: addon.name,
           category: addon.category,
           price: addon.price.toString(),
           currency: addon.currency,
           specs: addon.specs,
+          orderId: orderId ?? null,
         },
       },
     })
 
-    await addTimelineEvent(service.id, TIMELINE.UPGRADE_PURCHASED, `Upgrade requested: ${addon.name}`, { upgradeId: upgrade.id, addonId }, session.user.id)
+    await addTimelineEvent(service.id, TIMELINE.UPGRADE_PURCHASED, `Upgrade ${upgradeStatus === "PAID" ? "purchased & paid" : "requested"}: ${addon.name}`, { upgradeId: upgrade.id, addonId, status: upgradeStatus }, session.user.id)
     emailQueue
       .add(EMAIL_JOBS.SEND_UPGRADE_PURCHASED, { userId: session.user.id, serviceName: service.orderItem.name, addonName: addon.name, purchasedServiceId: service.id })
       .catch(() => {})

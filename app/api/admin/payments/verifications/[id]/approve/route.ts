@@ -7,6 +7,7 @@ import {
   logManualPaymentAudit,
   formatMoney,
 } from "@/lib/services/manual-payment-verification"
+import { createNotification } from "@/lib/notifications"
 import { z } from "zod"
 
 const reviewSchema = z.object({
@@ -131,10 +132,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             ...nextState,
           },
         })
+        // Revert to PENDING (not CANCELLED) so the customer can resubmit
+        // corrected payment proof — same rule as the DENY action.
         await tx.order.update({
           where: { id: verification.orderId },
           data: {
-            status: "CANCELLED",
+            status: "PENDING",
           },
         })
       })
@@ -208,6 +211,36 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Mark paid and fulfill
     await markOrderPaid(verification.orderId, `manual_${verification.utrNumber}`, `manual_${verification.orderId}`)
     await fulfillOrder(verification.orderId).catch(err => console.error("Fulfill error:", err))
+
+    // Notify the user their payment was approved + give them the deployment redirect
+    // (createPurchasedServicesForOrder is called inside markOrderPaid — query after a short settle)
+    const purchasedService = await db.purchasedService.findFirst({
+      where: { orderId: verification.orderId },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    })
+    const deploymentUrl = purchasedService ? `/dashboard/services/${purchasedService.id}` : null
+
+    // Notify the user in-app
+    await createNotification({
+      userId: verification.userId,
+      type: "PAYMENT",
+      title: "Payment approved — deployment starting",
+      body: `Your payment for order ${verification.order.orderNumber} has been verified. Service deployment is now in progress.`,
+      actionUrl: deploymentUrl ?? "/dashboard/subscriptions",
+    }).catch(() => {})
+
+    // Push real-time event so the waiting success page redirects instantly
+    try {
+      const { pusherServer } = await import("@/lib/pusher")
+      await pusherServer.trigger(`private-user-${verification.userId}`, "payment.approved", {
+        orderId: verification.orderId,
+        orderNumber: verification.order.orderNumber,
+        deploymentUrl,
+      })
+    } catch (pusherErr) {
+      console.error("[APPROVE UTR] Pusher trigger failed (non-fatal)", pusherErr)
+    }
 
     return NextResponse.json({
       success: true,

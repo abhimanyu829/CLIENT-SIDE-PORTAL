@@ -7,25 +7,27 @@ import { actionForAdminRequest, resourceForAdminApiPath, resourceForAdminPath } 
 const ratelimit = redis
   ? new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(100, "15 m"),
+      limiter: Ratelimit.slidingWindow(2000, "15 m"),
       analytics: true,
+      prefix: "rl:general",
     })
   : null
 
 const paymentRatelimit = redis
   ? new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(10, "60 s"),
+      limiter: Ratelimit.slidingWindow(20, "60 s"),
       analytics: true,
+      prefix: "rl:payment",
     })
   : null
 
 const refundRatelimit = redis
   ? new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(3, "60 m"),
-      analytics: true,
-    })
+    redis,
+    limiter: Ratelimit.slidingWindow(3, "60 m"),
+    analytics: true,
+  })
   : null
 
 export default clerkMiddleware(
@@ -57,38 +59,7 @@ export default clerkMiddleware(
       return NextResponse.next()
     }
 
-    if (path.startsWith("/api/") && ratelimit) {
-      const ip =
-        req.headers.get("x-real-ip") ??
-        req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
-        "127.0.0.1"
-
-      if (path.startsWith("/api/payments/") && paymentRatelimit) {
-        const { success } = await paymentRatelimit.limit(ip)
-        if (!success) {
-          return NextResponse.json(
-            { success: false, error: { code: "RATE_LIMITED", message: "Too many payment requests. Please wait a moment." } },
-            { status: 429 }
-          )
-        }
-      }
-
-      if (path === "/api/refunds/request" && refundRatelimit) {
-        const { success } = await refundRatelimit.limit(ip)
-        if (!success) {
-          return NextResponse.json(
-            { success: false, error: { code: "RATE_LIMITED", message: "Too many refund requests. Please try again later." } },
-            { status: 429 }
-          )
-        }
-      }
-
-      const { success } = await ratelimit.limit(ip)
-      if (!success) {
-        return NextResponse.json({ error: "Too Many Requests" }, { status: 429 })
-      }
-    }
-
+    // ── Auth first so we can key rate-limits by userId ──────────────────────
     let clerkUserId: string | null = null
     try {
       const clerkAuthObj = await clerkAuth()
@@ -98,6 +69,50 @@ export default clerkMiddleware(
           : null
     } catch {
       clerkUserId = null
+    }
+
+    // ── Traffic management ────────────────────────────────────────────────────
+    if (path.startsWith("/api/") && ratelimit) {
+      const isDev = process.env.NODE_ENV === "development"
+      const ip =
+        req.headers.get("x-real-ip") ??
+        req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+        "127.0.0.1"
+      const isLoopback = ip === "127.0.0.1" || ip === "::1"
+
+      // Skip rate-limiting for localhost dev to avoid spurious 429s
+      if (!isDev && !isLoopback) {
+        // Prefer user-scoped buckets so one user can't exhaust the shared IP quota
+        const identifier = clerkUserId ? `user:${clerkUserId}` : `ip:${ip}`
+
+        if (path.startsWith("/api/payments/") && paymentRatelimit) {
+          const { success } = await paymentRatelimit.limit(identifier)
+          if (!success) {
+            return NextResponse.json(
+              { success: false, error: { code: "RATE_LIMITED", message: "Too many payment requests. Please wait a moment." } },
+              { status: 429 }
+            )
+          }
+        }
+
+        if (path === "/api/refunds/request" && refundRatelimit) {
+          const { success } = await refundRatelimit.limit(identifier)
+          if (!success) {
+            return NextResponse.json(
+              { success: false, error: { code: "RATE_LIMITED", message: "Too many refund requests. Please try again later." } },
+              { status: 429 }
+            )
+          }
+        }
+
+        const { success } = await ratelimit.limit(identifier)
+        if (!success) {
+          return NextResponse.json(
+            { success: false, error: { code: "RATE_LIMITED", message: "Too many requests. Please slow down." } },
+            { status: 429 }
+          )
+        }
+      }
     }
 
     const isAuthenticated = !!clerkUserId

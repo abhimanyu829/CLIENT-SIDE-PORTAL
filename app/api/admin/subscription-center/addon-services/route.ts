@@ -52,6 +52,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     // Normalise display-text values that old cached clients may send
     if (typeof body.pricingType === "string") body.pricingType = body.pricingType.replace(/ /g, "_")
+    // Coerce empty strings to null for nullable fields
+    if (body.description === "") body.description = null
+    if (body.unitName === "") body.unitName = null
+    if (body.premiumServiceId === "") body.premiumServiceId = null
+    if (body.stripePriceId === "") body.stripePriceId = null
+    if (body.razorpayPlanId === "") body.razorpayPlanId = null
     const parsed = addonSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ success: false, error: parsed.error.flatten() }, { status: 400 })

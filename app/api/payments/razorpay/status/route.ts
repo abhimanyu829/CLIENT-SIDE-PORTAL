@@ -34,7 +34,8 @@ export async function GET(req: NextRequest) {
     include: {
       payments: { orderBy: { createdAt: "desc" } },
       invoices: { orderBy: { issuedAt: "desc" } },
-      items: true,
+      items: { select: { fulfillmentType: true, tier: { select: { fulfillmentType: true } }, product: { select: { serviceProfile: { select: { id: true } } } } } },
+      purchasedServices: { select: { id: true, status: true }, orderBy: { createdAt: "asc" }, take: 1 },
     },
   })
 
@@ -45,6 +46,65 @@ export async function GET(req: NextRequest) {
 
   // If order is already paid/fulfilled, return immediately
   if (order.status === "PAID" || order.status === "FULFILLED") {
+    const service = order.purchasedServices[0]
+
+    // Every paid order produces a deployment queue job (business rule:
+    // payment verified ⇒ deployment queued), so a missing service record
+    // always means "creation pending or failed" — never "not applicable".
+    const hasDeploymentItems = true
+
+    // Race condition guard: markOrderPaid fires billing.refresh before
+    // createPurchasedServicesForOrder completes. If the service record is
+    // not yet created, keep the client polling with DEPLOYMENT_QUEUED so
+    // it will pick up the deploymentUrl on the next cycle.
+    if (hasDeploymentItems && !service) {
+      console.log(`[RAZORPAY STATUS] ⏳ Order ${order.orderNumber} PAID but purchasedService not yet created — attempting queue creation heal`)
+      // Healing: order paid but queue job missing (earlier failure or a tier
+      // fixed after checkout). Creation is idempotent per order item.
+      const lifecycle = await import("@/lib/services/service-lifecycle-service")
+      await lifecycle.createPurchasedServicesForOrder(order.id).catch((err) =>
+        logger.error({ err, orderId: order.id }, "deployment queue healing failed in status route"),
+      )
+      const healed = await db.purchasedService.findFirst({
+        where: { orderId: order.id, userId: session.user.id },
+        select: { id: true },
+        orderBy: { createdAt: "asc" },
+      })
+      if (healed) {
+        return NextResponse.json({
+          success: true,
+          data: {
+            order: {
+              id: order.id,
+              orderNumber: order.orderNumber,
+              status: order.status,
+              amount: Number(order.grandTotal),
+              currency: order.currency,
+              paidAt: order.paidAt,
+              invoiceId: order.invoices[0]?.id ?? null,
+            },
+            paymentStatus: "SUCCESS",
+            deploymentUrl: `/dashboard/services/${healed.id}`,
+          },
+        })
+      }
+      return NextResponse.json({
+        success: true,
+        data: {
+          order: {
+            id: order.id,
+            orderNumber: order.orderNumber,
+            status: order.status,
+            amount: Number(order.grandTotal),
+            currency: order.currency,
+            paidAt: order.paidAt,
+            invoiceId: order.invoices[0]?.id ?? null,
+          },
+          paymentStatus: "DEPLOYMENT_QUEUED",
+        },
+      })
+    }
+
     console.log(`[RAZORPAY STATUS] ✅ Order ${order.orderNumber} already paid (status: ${order.status})`)
     return NextResponse.json({
       success: true,
@@ -59,6 +119,7 @@ export async function GET(req: NextRequest) {
           invoiceId: order.invoices[0]?.id ?? null,
         },
         paymentStatus: "SUCCESS",
+        deploymentUrl: service ? `/dashboard/services/${service.id}` : null,
       },
     })
   }
@@ -75,6 +136,11 @@ export async function GET(req: NextRequest) {
       if (captured?.id) {
         console.log(`[RAZORPAY STATUS] ✅ Found captured payment: ${captured.id} — marking order as paid`)
         const paid = await markOrderPaid(order.id, captured.id, latestPayment.gatewayOrderId)
+        const service = await db.purchasedService.findFirst({
+          where: { orderId: paid.id, userId: session.user.id },
+          select: { id: true },
+          orderBy: { createdAt: "asc" },
+        })
         return NextResponse.json({
           success: true,
           data: {
@@ -88,6 +154,7 @@ export async function GET(req: NextRequest) {
             },
             paymentStatus: "SUCCESS",
             gatewayPaymentId: captured.id,
+            deploymentUrl: service ? `/dashboard/services/${service.id}` : null,
           },
         })
       }
@@ -95,6 +162,34 @@ export async function GET(req: NextRequest) {
       console.warn("[RAZORPAY STATUS] ⚠️ Unable to reconcile Razorpay order status:", error)
       logger.warn({ error, orderId }, "Unable to reconcile Razorpay order status")
     }
+  }
+
+  // Check if manual payment verification was REJECTED
+  const rejectedVerification = await db.paymentVerification.findFirst({
+    where: { orderId: order.id, verificationStatus: "REJECTED" },
+    orderBy: { lastReviewedAt: "desc" },
+  })
+
+  if (rejectedVerification) {
+    console.log(`[RAZORPAY STATUS] ❌ Order ${order.orderNumber} has a REJECTED verification`)
+    return NextResponse.json({
+      success: true,
+      data: {
+        order: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          amount: Number(order.grandTotal),
+          currency: order.currency,
+          paidAt: order.paidAt,
+          invoiceId: order.invoices[0]?.id ?? null,
+        },
+        paymentStatus: "REJECTED",
+        rejectionReason: rejectedVerification.mismatchReason ?? "Rejected by admin",
+        redirectUrl: `/checkout/failure?error=PAYMENT_DENIED&orderId=${order.id}&message=${encodeURIComponent(rejectedVerification.mismatchReason ?? "Your payment was rejected by admin")}`,
+        gatewayOrderId: latestPayment?.gatewayOrderId ?? null,
+      },
+    })
   }
 
   // Return current status

@@ -17,6 +17,8 @@ import {
 const orderSchema = z.object({
   mode: z.enum(["cart", "buy_now"]).default("cart"),
   productId: z.string().optional(),
+  premiumServiceId: z.string().optional(),
+  serviceSlug: z.string().optional(),
   tierId: z.string().optional(),
   quantity: z.number().int().positive().max(999).optional(),
   couponCode: z.string().optional(),
@@ -171,23 +173,75 @@ export async function POST(req: NextRequest) {
 
     if (body.mode === "buy_now") {
       let productId = body.productId
+
+      // 1. Resolve productId from tierId
       if (!productId && body.tierId) {
         const tier = await db.productTier.findUnique({
           where: { id: body.tierId },
           select: { id: true, productId: true, isActive: true },
         })
-        if (!tier) {
-          console.error(`[RAZORPAY ORDER] ❌ Tier not found: ${body.tierId}`)
-          return NextResponse.json(
-            { success: false, error: { code: "TIER_NOT_FOUND", message: "Selected pricing tier does not exist." } },
-            { status: 400 },
-          )
-        }
-        productId = tier.productId
+        if (tier) productId = tier.productId
       }
+
+      // 2. Auto-resolve / create Product from PremiumService
+      if (!productId && (body.premiumServiceId || body.serviceSlug)) {
+        const premService = await db.premiumService.findFirst({
+          where: body.premiumServiceId ? { id: body.premiumServiceId } : { slug: body.serviceSlug },
+        })
+        if (premService) {
+          const intervalMap: Record<string, string> = {
+            MONTHLY: "MONTHLY", YEARLY: "YEARLY", WEEKLY: "WEEKLY",
+            LIFETIME: "ONE_TIME", USAGE_BASED: "USAGE_BASED",
+          }
+          const syncedProd = await db.product.upsert({
+            where: { slug: premService.slug },
+            update: {
+              name: premService.name,
+              status: "AVAILABLE",
+              iconUrl: premService.iconUrl ?? undefined,
+              bannerUrl: premService.bannerUrl ?? undefined,
+              // Heal tiers synced before deployment management existed — premium
+              // services are always admin-deployed, never instant HOSTED delivery.
+              tiers: { updateMany: { where: {}, data: { fulfillmentType: "SERVICE_DELIVERY" } } },
+            },
+            create: {
+              slug: premService.slug,
+              name: premService.name,
+              tagline: premService.shortDescription,
+              description: premService.fullDescription ?? premService.shortDescription,
+              type: "SAAS",
+              status: "AVAILABLE",
+              features: [],
+              createdBy: session.user.id,
+              iconUrl: premService.iconUrl ?? undefined,
+              bannerUrl: premService.bannerUrl ?? undefined,
+              tiers: {
+                create: {
+                  name: premService.name,
+                  price: premService.basePrice,
+                  currency: premService.currency,
+                  interval: (intervalMap[premService.billingCycle] ?? "MONTHLY") as any,
+                  fulfillmentType: "SERVICE_DELIVERY",
+                  isActive: true,
+                },
+              },
+            },
+          })
+          productId = syncedProd.id
+          if (!body.tierId) {
+            const tier = await db.productTier.findFirst({
+              where: { productId: syncedProd.id, isActive: true },
+              orderBy: { price: "asc" },
+              select: { id: true },
+            })
+            body.tierId = tier?.id
+          }
+        }
+      }
+
       if (!productId) {
         return NextResponse.json(
-          { success: false, error: { code: "BAD_REQUEST", message: "productId or tierId is required for Buy Now." } },
+          { success: false, error: { code: "BAD_REQUEST", message: "productId, premiumServiceId, or tierId is required." } },
           { status: 400 },
         )
       }
@@ -265,12 +319,62 @@ export async function POST(req: NextRequest) {
 
     // ── 7. Create order from cart (server-side pricing) ──────────────────────
     console.log(`[RAZORPAY ORDER] 📦 Creating order from cart: ${cartId}`)
+    // A browser can abort during a cold build after the server has created and
+    // attached a Razorpay order. Reuse it on retry before touching cartId again.
+    const cartPendingOrder = await db.order.findFirst({
+      where: { cartId, userId: session.user.id, status: OrderStatus.PENDING },
+      include: { payments: true },
+    })
+    const cartPendingPayment = cartPendingOrder?.payments.find(
+      (payment) => payment.gateway === PaymentGateway.RAZORPAY && payment.gatewayOrderId,
+    )
+
+    if (cartPendingOrder && cartPendingPayment?.gatewayOrderId) {
+      try {
+        const razorpayOrder = await client.orders.fetch(cartPendingPayment.gatewayOrderId)
+        return NextResponse.json({
+          success: true,
+          data: {
+            keyId: env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? env.RAZORPAY_KEY_ID,
+            order: {
+              id: cartPendingOrder.id,
+              orderNumber: cartPendingOrder.orderNumber,
+              amount: Number(cartPendingOrder.grandTotal),
+              currency: cartPendingOrder.currency,
+              status: cartPendingOrder.status,
+            },
+            razorpayOrder: {
+              id: cartPendingPayment.gatewayOrderId,
+              amount: razorpayOrder.amount,
+              currency: razorpayOrder.currency,
+            },
+          },
+        })
+      } catch (error) {
+        console.warn("[RAZORPAY ORDER] Existing gateway order could not be reused", error)
+      }
+    }
+
     const order = await createOrderFromActiveCart({
       userId: session.user.id,
       cartId,
       gateway: PaymentGateway.RAZORPAY,
       couponCode: body.couponCode,
     })
+
+    if (order.status !== OrderStatus.PENDING) {
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            alreadyCompleted: true,
+            redirectUrl: "/dashboard/my-products",
+            order: { id: order.id, orderNumber: order.orderNumber, status: order.status },
+          },
+        },
+        { status: 200 },
+      )
+    }
 
     const grandTotal = Number(order.grandTotal)
     console.log(`[RAZORPAY ORDER] ✅ Order created: ${order.orderNumber}, grandTotal: ${grandTotal} ${order.currency}`)
