@@ -39,6 +39,7 @@ type RoutePolicy = {
 }
 
 const ADMIN_LANDING_ROUTES: Array<{ path: string; resource: SubadminResource }> = [
+  { path: "/admin/deployment-center", resource: "Services" },
   { path: "/admin", resource: "Analytics" },
   { path: "/admin/ecosystem", resource: "Marketing" },
   { path: "/admin/users", resource: "Users" },
@@ -61,6 +62,7 @@ const ADMIN_LANDING_ROUTES: Array<{ path: string; resource: SubadminResource }> 
 // Keep the workforce permission vocabulary independent from the marketplace domain.
 // Each entry covers both the page route and its matching /api/admin route.
 const ROUTE_POLICIES: RoutePolicy[] = [
+  { prefix: "/admin/deployment-center", resource: "Services" },
   { prefix: "/admin/users", resource: "Users" },
   { prefix: "/admin/credential-requests", resource: "Users" },
   { prefix: "/admin/subscriptions", resource: "Orders" },
@@ -81,6 +83,7 @@ const ROUTE_POLICIES: RoutePolicy[] = [
 ]
 
 const API_RESOURCE_PREFIXES: Array<{ prefix: string; resource: SubadminResource }> = [
+  { prefix: "/api/admin/deployment-center", resource: "Services" },
   { prefix: "/api/admin/users", resource: "Users" },
   { prefix: "/api/admin/credential-requests", resource: "Users" },
   { prefix: "/api/admin/subscriptions", resource: "Orders" },

@@ -35,6 +35,7 @@ type NavigationItem = {
 }
 
 const NAV_ITEMS: NavigationItem[] = [
+  { name: "Deployment Center", path: "/admin/deployment-center", icon: Briefcase, resource: "Services" },
   { name: "Revenue Dashboard",   path: "/admin",             icon: LayoutDashboard, resource: "Analytics" },
   { name: "Ecosystem Control",   path: "/admin/ecosystem",   icon: Store, resource: "Marketing" },
   { name: "User Management",     path: "/admin/users",       icon: Users, resource: "Users" },

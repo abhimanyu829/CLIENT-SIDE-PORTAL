@@ -24,9 +24,13 @@ function isTransientDatabaseError(error: unknown) {
   return (
     value.code === "P1001" ||
     value.code === "P1017" ||
+    value.code === "P2028" ||
     value.constructor?.name === "PrismaClientInitializationError" ||
     value.message?.includes("Can't reach database server") === true ||
-    value.message?.includes("Connection refused") === true
+    value.message?.includes("Connection refused") === true ||
+    value.message?.includes("Transaction already closed") === true ||
+    value.message?.includes("Transaction not found") === true ||
+    value.message?.includes("Unable to start a transaction") === true
   )
 }
 
@@ -90,70 +94,76 @@ export async function syncClerkUserToDatabase(
     email
 
   return retryClerkDatabaseSync(() =>
-    db.$transaction(async (tx) => {
-      const [byClerkId, byEmail] = await Promise.all([
-        tx.user.findUnique({
-          where: { clerkUserId: profile.id },
-          include: userWithPermissions,
-        }),
-        tx.user.findUnique({
-          where: { email },
-          include: userWithPermissions,
-        }),
-      ])
+    db.$transaction(
+      async (tx) => {
+        const [byClerkId, byEmail] = await Promise.all([
+          tx.user.findUnique({
+            where: { clerkUserId: profile.id },
+            include: userWithPermissions,
+          }),
+          tx.user.findUnique({
+            where: { email },
+            include: userWithPermissions,
+          }),
+        ])
 
-      if (byClerkId && byEmail && byClerkId.id !== byEmail.id) {
-        throw new Error("CLERK_EMAIL_ALREADY_LINKED")
-      }
+        if (byClerkId && byEmail && byClerkId.id !== byEmail.id) {
+          throw new Error("CLERK_EMAIL_ALREADY_LINKED")
+        }
 
-      const existing = byClerkId ?? byEmail
+        const existing = byClerkId ?? byEmail
 
-      if (existing?.isBanned) {
-        return existing
-      }
+        if (existing?.isBanned) {
+          return existing
+        }
 
-      const sharedData = {
-        clerkUserId: profile.id,
-        name: displayName,
-        isVerified: true,
-        ...(profile.imageUrl && !existing?.avatarUrl ? { avatarUrl: profile.imageUrl } : {}),
-        ...(options.updateLastLogin ? { lastLoginAt: new Date() } : {}),
-      }
+        const sharedData = {
+          clerkUserId: profile.id,
+          name: displayName,
+          isVerified: true,
+          ...(profile.imageUrl && !existing?.avatarUrl ? { avatarUrl: profile.imageUrl } : {}),
+          ...(options.updateLastLogin ? { lastLoginAt: new Date() } : {}),
+        }
 
-      if (existing) {
-        return tx.user.update({
-          where: { id: existing.id },
-          data: sharedData,
+        if (existing) {
+          return tx.user.update({
+            where: { id: existing.id },
+            data: sharedData,
+            include: userWithPermissions,
+          })
+        }
+
+        return tx.user.create({
+          data: {
+            email,
+            ...sharedData,
+          },
           include: userWithPermissions,
         })
-      }
-
-      return tx.user.create({
-        data: {
-          email,
-          ...sharedData,
-        },
-        include: userWithPermissions,
-      })
-    })
+      },
+      { timeout: 30_000 } // 30s — Supabase cold-start can take up to ~20s
+    )
   )
 }
 
 export async function anonymizeDeletedClerkUser(clerkUserId: string) {
-  return db.$transaction(async (tx) => {
-    const user = await tx.user.findUnique({ where: { clerkUserId } })
-    if (!user) return null
+  return db.$transaction(
+    async (tx) => {
+      const user = await tx.user.findUnique({ where: { clerkUserId } })
+      if (!user) return null
 
-    return tx.user.update({
-      where: { id: user.id },
-      data: {
-        clerkUserId: null,
-        email: `deleted-${user.id}@nexus.local`,
-        name: "Deleted User",
-        isBanned: true,
-        bannedAt: new Date(),
-        banReason: "Clerk account deleted",
-      },
-    })
-  })
+      return tx.user.update({
+        where: { id: user.id },
+        data: {
+          clerkUserId: null,
+          email: `deleted-${user.id}@nexus.local`,
+          name: "Deleted User",
+          isBanned: true,
+          bannedAt: new Date(),
+          banReason: "Clerk account deleted",
+        },
+      })
+    },
+    { timeout: 30_000 }
+  )
 }

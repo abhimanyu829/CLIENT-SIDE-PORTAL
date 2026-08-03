@@ -6,6 +6,7 @@ generator client {
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
   extensions = [pgvector(map: "vector")]
 }
 
@@ -391,6 +392,8 @@ model User {
     userSubscriptions    UserSubscription[]
     subscriptionInvoices SubscriptionInvoice[]
     subscriptionPayments SubscriptionPayment[]
+    purchasedServices    PurchasedService[]
+    serviceUpgrades      ServiceUpgrade[]
 
   @@index([email])
   @@index([role])
@@ -610,6 +613,7 @@ model Product {
   metricEvents       PlatformMetricEvent[]
   previewSessions    PreviewSession[]
   serviceProfile     ProductServiceProfile?
+  purchasedServices  PurchasedService[]
 
   @@index([slug])
   @@index([vendorId])
@@ -965,6 +969,7 @@ model Order {
   invoices            Invoice[]
   entitlements        CustomerEntitlement[]
   metricEvents        PlatformMetricEvent[]
+  purchasedServices   PurchasedService[]
 
   @@index([userId])
   @@index([status])
@@ -996,6 +1001,7 @@ model OrderItem {
   order   Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product      @relation(fields: [productId], references: [id])
   tier    ProductTier? @relation(fields: [tierId], references: [id])
+  purchasedService PurchasedService[]
 
   @@index([orderId])
   @@index([productId])
@@ -2509,6 +2515,16 @@ enum ServicePlanType {
 enum ServiceRequestType {
   CANCELLATION
   REFUND
+  FEATURE
+  DESIGN_CHANGE
+  BUG_FIX
+  MIGRATION
+  CUSTOMIZATION
+  CONSULTATION
+  PERFORMANCE_UPGRADE
+  DATABASE_UPGRADE
+  SECURITY_UPGRADE
+  INFRASTRUCTURE_UPGRADE
 }
 
 enum ServiceRequestStatus {
@@ -2609,9 +2625,10 @@ model ServiceAddon {
 }
 
 model ServiceRequest {
-  id            String              @id @default(cuid())
+  id            String               @id @default(cuid())
   servicePageId String?
   serviceOrderId String?
+  purchasedServiceId String?
   type          ServiceRequestType
   status        ServiceRequestStatus @default(OPEN)
   name          String
@@ -3123,5 +3140,166 @@ model SubscriptionPayment {
   @@index([userSubscriptionId])
   @@index([subscriptionInvoiceId])
   @@index([gatewayTransactionId])
+}
+
+// ── Customer Service Management Platform ─────────────────────────────────────
+// Post-purchase lifecycle: one PurchasedService per paid order item. Backend is
+// the single source of truth for status, credentials, resources, and access.
+
+enum PurchasedServiceStatus {
+  PENDING_DEPLOYMENT
+  DEPLOYING
+  ACTIVE
+  PAUSED
+  SUSPENDED
+  EXPIRED
+  ARCHIVED
+  DELETED
+}
+
+enum ServiceDeploymentStatus {
+  PENDING
+  PREPARING
+  DEPLOYING
+  DATABASE_CONFIG
+  GENERATING_CREDENTIALS
+  QUALITY_CHECK
+  COMPLETED
+  FAILED
+}
+
+enum ServiceUpgradeStatus {
+  PENDING
+  PAID
+  APPLIED
+  REJECTED
+  CANCELLED
+}
+
+/// A customer's owned service instance — the "living workspace" created after payment.
+model PurchasedService {
+  id                    String                 @id @default(cuid())
+  userId                String
+  orderId               String
+  orderItemId           String
+  productId             String
+  tierId                String?
+  status                PurchasedServiceStatus @default(PENDING_DEPLOYMENT)
+  purchaseDate          DateTime               @default(now())
+  activationDate        DateTime?
+  expiryDate            DateTime?
+  renewalDate           DateTime?
+  autoRenew             Boolean                @default(false)
+  deploymentPriority    Int                    @default(0)
+  estimatedCompletionAt DateTime?
+  /// Admin-managed workspace config: URLs, credentials, resources, docker,
+  /// domain/SSL, env vars, support level, notes. Passwords encrypted at rest
+  /// inside this JSON via lib/encryption before persistence.
+  config                Json                   @default("{}")
+  renewalReminderSentAt DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  user       User      @relation(fields: [userId], references: [id])
+  order      Order     @relation(fields: [orderId], references: [id])
+  orderItem  OrderItem @relation(fields: [orderItemId], references: [id])
+  product    Product   @relation(fields: [productId], references: [id])
+  deployment ServiceDeployment?
+  timeline   ServiceTimelineEvent[]
+  upgrades   ServiceUpgrade[]
+
+  @@index([userId, status])
+  @@index([orderId])
+  @@index([orderItemId])
+  @@index([productId])
+  @@index([status, expiryDate])
+}
+
+/// Deployment request/state for a purchased service (admin deployment queue).
+model ServiceDeployment {
+  id                 String                  @id @default(cuid())
+  purchasedServiceId String                  @unique
+  status             ServiceDeploymentStatus @default(PENDING)
+  queuePosition      Int?
+  /// Ordered [{ status, at, by }] transition history.
+  statusHistory      Json                    @default("[]")
+  adminNotes         String?
+  failureReason      String?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  purchasedService PurchasedService @relation(fields: [purchasedServiceId], references: [id], onDelete: Cascade)
+
+  @@index([status, queuePosition])
+  @@index([status, createdAt])
+}
+
+/// Timestamped customer/service timeline (admin monitoring + audit).
+model ServiceTimelineEvent {
+  id                 String   @id @default(cuid())
+  purchasedServiceId String
+  /// e.g. PAYMENT_RECEIVED, DEPLOYMENT_STARTED, CREDENTIALS_GENERATED,
+  /// UPGRADE_PURCHASED, SERVICE_PAUSED, RENEWAL_COMPLETED, SUPPORT_REQUEST…
+  type               String
+  message            String
+  metadata           Json     @default("{}")
+  actorId            String?
+  createdAt          DateTime @default(now())
+
+  purchasedService PurchasedService @relation(fields: [purchasedServiceId], references: [id], onDelete: Cascade)
+
+  @@index([purchasedServiceId, createdAt])
+  @@index([type, createdAt])
+}
+
+/// An add-on / upgrade purchased (or requested) against an owned service.
+model ServiceUpgrade {
+  id                 String               @id @default(cuid())
+  purchasedServiceId String
+  userId             String
+  addonId            String
+  status             ServiceUpgradeStatus @default(PENDING)
+  paymentId          String?
+  orderId            String?
+  appliedAt          DateTime?
+  appliedBy          String?
+  /// Snapshot of the addon at purchase time (name, price, currency, specs).
+  snapshot           Json                 @default("{}")
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  purchasedService PurchasedService @relation(fields: [purchasedServiceId], references: [id], onDelete: Cascade)
+  user             User             @relation(fields: [userId], references: [id])
+
+  @@index([purchasedServiceId, status])
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+/// Admin-managed upgrade/add-on catalog. All pricing lives here — the frontend
+/// never hardcodes prices.
+model AddonCatalogItem {
+  id                    String   @id @default(cuid())
+  slug                  String   @unique
+  name                  String
+  description           String?
+  /// e.g. DOMAIN, STORAGE, DATABASE, COMPUTE, ACCOUNTS, AI_CREDITS, BRANDING,
+  /// INTEGRATIONS, ANALYTICS, SUPPORT
+  category              String   @default("GENERAL")
+  price                 Decimal  @db.Decimal(12, 2)
+  currency              String   @default("INR")
+  /// Free-form spec JSON shown to customers (e.g. { "storageGb": 50 }).
+  specs                 Json     @default("{}")
+  isActive              Boolean  @default(true)
+  isPopular             Boolean  @default(false)
+  /// Empty = applies to all products.
+  applicableProductIds  String[]
+  sortOrder             Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([isActive, category])
 }
 

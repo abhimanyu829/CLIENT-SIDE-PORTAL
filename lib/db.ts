@@ -26,33 +26,72 @@ const mockDb = new Proxy({} as any, {
 });
 
 // ── Supabase cold-start detection ────────────────────────────────────────────
-// Supabase free-tier pauses the DB after inactivity. The first query throws
-// PrismaClientInitializationError with "Can't reach database server".
-// We retry with backoff so Supabase has time to wake up before we surface an error.
+// Supabase free-tier pauses the DB after inactivity. Errors vary by Prisma
+// version and connection type. Match all known patterns.
 function isConnectionError(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;
   const e = err as any;
-  return (
+  if (
     e?.code === "P1001" ||
     e?.code === "P1017" ||
-    e?.constructor?.name === "PrismaClientInitializationError" ||
-    (typeof e?.message === "string" &&
-      (e.message.includes("Can't reach database server") ||
-        e.message.includes("Connection refused") ||
-        e.message.includes("ECONNREFUSED") ||
-        e.message.includes("connect ETIMEDOUT")))
-  );
+    e?.code === "P1002" ||
+    e?.constructor?.name === "PrismaClientInitializationError"
+  ) return true;
+  if (typeof e?.message === "string") {
+    const m = e.message;
+    return (
+      m.includes("Can't reach database server") ||
+      m.includes("Connection refused") ||
+      m.includes("ECONNREFUSED") ||
+      m.includes("ENOTFOUND") ||
+      m.includes("connect ETIMEDOUT") ||
+      m.includes("ETIMEDOUT") ||
+      m.includes("socket closed") ||
+      m.includes("Connection timed out") ||
+      m.includes("Error querying the database")
+    );
+  }
+  return false;
+}
+
+// ── Supabase REST wake-up ping ────────────────────────────────────────────────
+// Hitting the Supabase REST endpoint forces the DB out of pause/sleep mode.
+// This is faster than waiting for TCP to time out and retry.
+let wakeAttempted = false;
+async function wakeSupabase(): Promise<void> {
+  if (wakeAttempted) return;
+  wakeAttempted = true;
+  try {
+    // Extract project ref from DATABASE_URL
+    const url = process.env.DATABASE_URL ?? "";
+    const match = url.match(/db\.([a-z0-9]+)\.supabase\.co/);
+    const ref = match?.[1];
+    if (!ref) return;
+
+    // Supabase REST API — any request wakes the DB
+    const restUrl = `https://${ref}.supabase.co/rest/v1/`;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+    console.log("[DB] 🔔 Pinging Supabase REST to wake DB…");
+    await fetch(restUrl, {
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    // Ignore — wake ping is best-effort
+  }
 }
 
 // ── Retry-aware Prisma factory ────────────────────────────────────────────────
 function createPrismaClient(): PrismaClient {
   const client = new PrismaClient({
-    // Reduced log level — "query" floods the terminal in dev; use prisma studio or logs for query inspection
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 
-  const MAX_RETRIES = 3;
-  const BASE_DELAY_MS = 1500; // 1.5s, 3s — gives Supabase ~4.5s total to wake
+  const MAX_RETRIES = 5;
+  const BASE_DELAY_MS = 2000; // 2s, 4s, 8s, 16s — gives Supabase ~30s total
 
   // Wrap every model accessor (product, user, order, …) in a retry proxy
   return new Proxy(client, {
@@ -81,7 +120,11 @@ function createPrismaClient(): PrismaClient {
                 } catch (err) {
                   lastErr = err;
                   if (isConnectionError(err) && attempt < MAX_RETRIES) {
-                    const delay = attempt * BASE_DELAY_MS;
+                    // On first failure, ping Supabase REST to wake the DB
+                    if (attempt === 1) {
+                      void wakeSupabase();
+                    }
+                    const delay = Math.min(BASE_DELAY_MS * Math.pow(2, attempt - 1), 16_000);
                     console.warn(
                       `[DB] ⚡ Supabase cold-start detected (attempt ${attempt}/${MAX_RETRIES}). Retrying in ${delay}ms…`
                     );

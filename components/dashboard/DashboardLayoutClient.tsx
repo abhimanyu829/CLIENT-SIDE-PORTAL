@@ -9,6 +9,7 @@ import { useRealtimeChannel } from "@/hooks/useRealtimeChannel"
 import { usePaymentSync } from "@/hooks/usePaymentSync"
 
 const NAV = [
+  { name: "My Services",       path: "/dashboard/services",          icon: "S", color: "text-amber-500" },
   { name: "Overview",          path: "/dashboard",                   icon: "◈", color: "text-violet-400" },
   { name: "My Products",       path: "/dashboard/my-products",       icon: "◆", color: "text-green-400" },
   { name: "Subscriptions",     path: "/dashboard/subscriptions",     icon: "⬡", color: "text-blue-400" },

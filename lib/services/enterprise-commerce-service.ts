@@ -1189,6 +1189,12 @@ export async function markOrderPaid(orderId: string, gatewayPaymentId?: string, 
     payload: { orderId: processedOrder.id, orderNumber: processedOrder.orderNumber, amount: Number(processedOrder.grandTotal), gatewayPaymentId },
   })
 
+  // Post-purchase lifecycle: create purchased-service workspaces + deployment
+  // queue entries. Fire-and-forget — never blocks or breaks payment flow.
+  import("@/lib/services/service-lifecycle-service")
+    .then((m) => m.createPurchasedServicesForOrder(processedOrder.id))
+    .catch((err) => console.error("[markOrderPaid] purchased-service creation failed", err))
+
   return processedOrder
 }
 

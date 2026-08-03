@@ -107,6 +107,15 @@ export const EMAIL_JOBS = {
   SEND_LOGIN_ALERT:          "send-login-alert",
   SEND_SUSPICIOUS_ACTIVITY:  "send-suspicious-activity",
   SEND_INVOICE_READY:        "send-invoice-ready",
+  // Customer Service Management Platform
+  SEND_DEPLOYMENT_STARTED:   "send-deployment-started",
+  SEND_DEPLOYMENT_COMPLETED: "send-deployment-completed",
+  SEND_SERVICE_ACTIVATED:    "send-service-activated",
+  SEND_UPGRADE_PURCHASED:    "send-upgrade-purchased",
+  SEND_UPGRADE_APPLIED:      "send-upgrade-applied",
+  SEND_SERVICE_SUSPENDED:    "send-service-suspended",
+  SEND_SERVICE_REACTIVATED:  "send-service-reactivated",
+  SEND_RENEWAL_REMINDER:     "send-renewal-reminder",
 } as const
 
 export const PREVIEW_JOBS = {

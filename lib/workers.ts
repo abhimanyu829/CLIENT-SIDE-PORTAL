@@ -12,7 +12,10 @@ import { expireOverdueSubscriptions, markSubscriptionPastDue } from "@/lib/servi
 import { generateInvoiceArtifact, sendInvoiceEmail } from "@/lib/services/invoice-service"
 import { createNotification } from "@/lib/notifications"
 import { sendEmail } from "@/lib/resend"
+import * as React from "react"
 import { processEmailQueue, scheduleEmailCampaign } from "@/lib/email/service"
+import { sendRenewalReminders } from "@/lib/services/renewal-service"
+import { expireServices } from "@/lib/services/service-lifecycle-service"
 import WelcomeEmail from "@/emails/WelcomeEmail"
 import VerificationEmail from "@/emails/VerificationEmail"
 import PasswordResetEmail from "@/emails/PasswordResetEmail"
@@ -28,6 +31,12 @@ import RefundConfirmationEmail from "@/emails/RefundConfirmationEmail"
 import RefundRequestedAdminEmail from "@/emails/RefundRequestedAdminEmail"
 import LoginAlertEmail from "@/emails/LoginAlertEmail"
 import InvoiceReadyEmail from "@/emails/InvoiceReadyEmail"
+import CommunicationEmail from "@/emails/CommunicationEmail"
+import {
+  DeploymentStartedEmail, DeploymentCompletedEmail, ServiceActivatedEmail,
+  UpgradePurchasedEmail, UpgradeAppliedEmail, ServiceSuspendedEmail,
+  ServiceReactivatedEmail, RenewalReminderEmail,
+} from "@/emails/ServiceLifecycleEmail"
 
 const connection = { url: env.REDIS_URL }
 
@@ -66,7 +75,12 @@ export function startWorkers() {
   const workers = [
     startWorker("subscription", async (job) => {
       if (job.name === SUBSCRIPTION_JOBS.EXPIRE_OVERDUE || job.name === SUBSCRIPTION_JOBS.RECONCILE) {
-        return expireOverdueSubscriptions()
+        const [subscriptions, expiredServices, reminders] = await Promise.all([
+          expireOverdueSubscriptions(),
+          expireServices(),
+          sendRenewalReminders(),
+        ])
+        return { subscriptions, expiredServices, reminders }
       }
       if (job.name === SUBSCRIPTION_JOBS.DUNNING_STEP) {
         const { subscriptionId, userId, attempt = 1 } = job.data as { subscriptionId: string; userId: string; attempt?: number }
@@ -411,6 +425,44 @@ export function startWorkers() {
               issuedAt: data.issuedAt ?? new Date().toISOString(),
               invoiceUrl: data.invoiceUrl,
               dashboardUrl: data.dashboardUrl ?? `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+            }),
+          })
+        }
+        return
+      }
+
+      const lifecycleTemplates: Record<string, { title: string; component: (props: any) => React.ReactElement }> = {
+        [EMAIL_JOBS.SEND_DEPLOYMENT_STARTED]: { title: "Deployment started", component: DeploymentStartedEmail },
+        [EMAIL_JOBS.SEND_DEPLOYMENT_COMPLETED]: { title: "Deployment completed", component: DeploymentCompletedEmail },
+        [EMAIL_JOBS.SEND_SERVICE_ACTIVATED]: { title: "Service activated", component: ServiceActivatedEmail },
+        [EMAIL_JOBS.SEND_UPGRADE_PURCHASED]: { title: "Upgrade purchased", component: UpgradePurchasedEmail },
+        [EMAIL_JOBS.SEND_UPGRADE_APPLIED]: { title: "Upgrade applied", component: UpgradeAppliedEmail },
+        [EMAIL_JOBS.SEND_SERVICE_SUSPENDED]: { title: "Service suspended", component: ServiceSuspendedEmail },
+        [EMAIL_JOBS.SEND_SERVICE_REACTIVATED]: { title: "Service reactivated", component: ServiceReactivatedEmail },
+        [EMAIL_JOBS.SEND_RENEWAL_REMINDER]: { title: "Subscription expiring soon", component: RenewalReminderEmail },
+      }
+      const lifecycleEmail = lifecycleTemplates[jobName]
+
+      if (lifecycleEmail) {
+        const user = data.userId
+          ? await db.user.findUnique({ where: { id: data.userId }, select: { email: true, name: true } })
+          : null
+        const to = data.to ?? user?.email
+        if (to) {
+          const workspaceUrl = data.purchasedServiceId
+            ? `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/dashboard/services/${data.purchasedServiceId}`
+            : `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/dashboard/services`
+          await sendEmail({
+            to,
+            subject: `${lifecycleEmail.title} | NexusAI`,
+            react: lifecycleEmail.component({
+              name: user?.name ?? data.name ?? "there",
+              serviceName: data.serviceName ?? "Your service",
+              addonName: data.addonName,
+              reason: data.reason,
+              daysLeft: data.daysLeft,
+              expiryDate: data.expiryDate ? new Date(data.expiryDate).toDateString() : undefined,
+              workspaceUrl,
             }),
           })
         }
