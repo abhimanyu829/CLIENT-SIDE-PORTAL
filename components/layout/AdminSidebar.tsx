@@ -84,7 +84,7 @@ export default function AdminSidebar() {
                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                 isActive
                   ? "bg-primary text-white"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                  : "text-gray-400 hover:bg-white/10 hover:text-white"
               )}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />

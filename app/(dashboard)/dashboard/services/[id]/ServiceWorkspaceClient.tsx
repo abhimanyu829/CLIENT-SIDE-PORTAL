@@ -82,7 +82,7 @@ export default function ServiceWorkspaceClient({ serviceId }: { serviceId: strin
         key: keyId,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        name: "Auralis Neural",
+        name: "ABHIBHIDEVELOPERS",
         description: `Add-on: ${addon.name}`,
         order_id: razorpayOrder.id,
         handler: async function (response: any) {

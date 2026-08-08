@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef, useTransition } from "react"
+import { useState, useCallback, useRef, useTransition, lazy, Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -13,6 +13,9 @@ import {
   updateProductSEO, restoreProductVersion, addProductVersion,
   deleteTier, duplicateProduct, republishProduct
 } from "./actions"
+
+// Lazy-load stock panel to keep initial bundle small
+const StockManagementPanel = lazy(() => import("./StockManagementPanel"))
 import {
   Package, Plus, Settings2, Tag, Eye, EyeOff, Edit, X,
   Globe, Sparkles, DollarSign, Star, Zap, Crown, TrendingUp,
@@ -602,6 +605,17 @@ export default function AdminProductsClient({ initialProducts }: Props) {
               {product.isBestSeller && <span className="text-[9px] bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 font-bold px-1.5 py-0.5 rounded uppercase flex items-center gap-0.5"><Award className="h-2.5 w-2.5" />Bestseller</span>}
               {product.isPinned && <span className="text-[9px] bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 font-bold px-1.5 py-0.5 rounded uppercase flex items-center gap-0.5"><Pin className="h-2.5 w-2.5" />Pinned</span>}
               {product.isPremium && <span className="text-[9px] bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400 font-bold px-1.5 py-0.5 rounded uppercase flex items-center gap-0.5"><Crown className="h-2.5 w-2.5" />Premium</span>}
+              {/* Stock badge — shown when stock record exists */}
+              {(product as any).stock?.isOutOfStock && (
+                <span className="text-[9px] bg-red-900/40 text-red-300 border border-red-700/40 font-bold px-1.5 py-0.5 rounded uppercase flex items-center gap-0.5">
+                  <AlertTriangle className="h-2.5 w-2.5" />Out of Stock
+                </span>
+              )}
+              {(product as any).stock && !(product as any).stock.isOutOfStock && (product as any).stock.availableStock <= (product as any).stock.lowStockThreshold && (
+                <span className="text-[9px] bg-amber-900/40 text-amber-300 border border-amber-700/40 font-bold px-1.5 py-0.5 rounded uppercase flex items-center gap-0.5">
+                  <AlertTriangle className="h-2.5 w-2.5" />Low Stock · {(product as any).stock.availableStock}
+                </span>
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">{product.tagline}</p>
             <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
@@ -781,6 +795,21 @@ export default function AdminProductsClient({ initialProducts }: Props) {
                 </table>
               </div>
             )}
+
+            {/* ── Stock Management Panel ─────────────────────────────────────── */}
+            <div className="border-t border-border/40 px-5 pb-5">
+              <Suspense fallback={
+                <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 text-center">
+                  <p className="text-xs text-zinc-600">Loading stock manager…</p>
+                </div>
+              }>
+                <StockManagementPanel
+                  productId={product.id}
+                  productName={product.name}
+                  initialStock={(product as any).stock ?? null}
+                />
+              </Suspense>
+            </div>
           </div>
         )}
       </div>

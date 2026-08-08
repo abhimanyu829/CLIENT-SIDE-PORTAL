@@ -6,8 +6,8 @@ import { clerkAppearance } from "@/lib/clerk"
 
 export const metadata: Metadata = {
   title: {
-    default: "OpenClaude - AI SaaS Platform",
-    template: "%s - OpenClaude",
+    default: "ABHIBHIDEVELOPERS GROUP - AI SaaS Platform",
+    template: "%s - ABHIBHIDEVELOPERS GROUP",
   },
   description:
     "Deploy AI agents, manage subscriptions, and automate your business workflows with OpenClaude.",

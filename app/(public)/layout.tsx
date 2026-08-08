@@ -6,7 +6,7 @@ import { db } from "@/lib/db"
 import { CampaignStatus } from "@prisma/client"
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-const APP_NAME = "NexusAI"
+const APP_NAME = "ABHIBHIDEVELOPERS GROUP"
 const APP_DESCRIPTION = "The world's most advanced AI SaaS marketplace. Deploy AI agents, SaaS tools, APIs, and automation workflows in one click."
 
 async function getActiveCampaign() {

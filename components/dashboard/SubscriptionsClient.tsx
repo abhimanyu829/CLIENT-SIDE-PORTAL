@@ -239,7 +239,14 @@ export default function SubscriptionsClient({ initialSubscriptions, availablePro
 
               return (
                 <div key={prod.id} className="dash-glass p-6 rounded-2xl border border-white/5 hover:border-white/15 transition-all flex flex-col">
-                  <div className="text-3xl mb-4">{prod.iconUrl ?? "📦"}</div>
+                  <div className="mb-4 h-12 w-12">
+                    {prod.iconUrl && (prod.iconUrl.startsWith("http") || prod.iconUrl.startsWith("data:") || prod.iconUrl.startsWith("/")) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={prod.iconUrl} alt={prod.name} className="h-12 w-12 rounded-xl object-cover" />
+                    ) : (
+                      <span className="text-3xl">{prod.iconUrl ?? "📦"}</span>
+                    )}
+                  </div>
                   <h3 className="font-bold text-xl mb-2">{prod.name}</h3>
                   <p className="text-sm text-zinc-400 mb-2 flex-1">{prod.tagline}</p>
 

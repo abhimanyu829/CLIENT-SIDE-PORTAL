@@ -76,8 +76,25 @@ export async function POST(req: NextRequest) {
     reasons.push("ALREADY_OWNED")
   }
 
-  // Check inventory
-  if (product.inventoryEnabled && (product.inventoryCount ?? 0) <= 0) {
+  // Check inventory via ProductStock (preferred) or legacy inventoryCount fallback
+  const stockRecord = await db.productStock.findUnique({
+    where: { productId },
+    select: {
+      availableStock: true,
+      isOutOfStock: true,
+      backOrdersEnabled: true,
+    },
+  })
+
+  if (stockRecord) {
+    // Full stock tracking: respect backOrdersEnabled
+    if (stockRecord.isOutOfStock && !stockRecord.backOrdersEnabled) {
+      reasons.push("SOLD_OUT")
+    } else if (!stockRecord.backOrdersEnabled && stockRecord.availableStock <= 0) {
+      reasons.push("SOLD_OUT")
+    }
+  } else if (product.inventoryEnabled && (product.inventoryCount ?? 0) <= 0) {
+    // Legacy fallback: no ProductStock record but old inventoryEnabled flag
     reasons.push("SOLD_OUT")
   }
 

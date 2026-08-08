@@ -20,6 +20,14 @@ const getProducts = unstable_cache(
           orderBy: { createdAt: "desc" },
           take: 20,
         },
+        stock: {
+          include: {
+            history: {
+              orderBy: { createdAt: "desc" },
+              take: 50,
+            },
+          },
+        },
         _count: { select: { subscriptions: true, reviews: true } }
       }
     })
@@ -48,6 +56,17 @@ export default async function AdminProductsPage() {
       ...v,
       createdAt: toIso(v.createdAt) ?? "",
     })),
+    stock: p.stock
+      ? {
+          ...p.stock,
+          createdAt: toIso(p.stock.createdAt) ?? "",
+          updatedAt: toIso(p.stock.updatedAt) ?? "",
+          history: (p.stock.history || []).map(h => ({
+            ...h,
+            createdAt: toIso(h.createdAt) ?? "",
+          })),
+        }
+      : null,
     scheduledAt: toIso(p.scheduledAt),
     createdAt: toIso(p.createdAt) ?? "",
     updatedAt: toIso(p.updatedAt) ?? "",

@@ -20,6 +20,7 @@ const NAV = [
   { name: "Service Requests",  path: "/dashboard/service-requests",  icon: "◐", color: "text-orange-400" },
   { name: "Support",           path: "/dashboard/tickets",           icon: "◎", color: "text-red-400",    badge: true },
   { name: "AI Chat",           path: "/dashboard/chat",              icon: "✦", color: "text-purple-400", live: true },
+  { name: "Join Our Team",     path: "http://localhost:3000/join-our-team", icon: "🤝", color: "text-pink-400" },
 ]
 
 type SearchResult = {
@@ -299,7 +300,7 @@ export default function DashboardLayout({
             <>
               <span className="text-primary text-lg font-black mr-2.5">⬡</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground leading-none">Auralis Neural</p>
+                <p className="text-sm font-medium text-foreground leading-none">ABHIBHIDEVELOPERS</p>
                 <p className="text-[10px] text-muted-foreground leading-none mt-0.5 font-mono uppercase">Client Portal</p>
               </div>
               <button onClick={() => setCollapsed(true)} className="text-muted-foreground hover:text-foreground transition-colors text-xs ml-2 shrink-0">◀</button>
@@ -382,6 +383,13 @@ export default function DashboardLayout({
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
               <span className="text-muted-foreground font-mono">Live</span>
             </div>
+
+            <a
+              href="http://localhost:3000/join-our-team"
+              className="flex items-center bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+            >
+              Join Our Team
+            </a>
 
             {showAdminPanel && (
               <Link

@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Download, Filter, RefreshCw, AlertTriangle, Eye, ShieldAlert,
   ChevronLeft, ChevronRight, CheckCircle2, XCircle, Clock, Undo2,
-  Mail, Settings, DollarSign, UploadCloud, X
+  Mail, Settings, DollarSign, UploadCloud, X, ShieldCheck
 } from "lucide-react"
 
 interface Payment {
@@ -28,6 +28,14 @@ interface Payment {
   paidAt: string | null
   createdAt: string
   user: { id: string; name: string; email: string }
+  billingEmailVerification?: {
+    billingEmail: string
+    verified: boolean
+    verifiedAt: string | null
+    attempts: number
+    maxAttempts: number
+    resendCount: number
+  } | null
   subscription: {
     product: { name: string }
     tier: { name: string }
@@ -451,6 +459,52 @@ export default function OrdersClient({
                 </div>
               </div>
             )}
+            {/* Billing Email Verification */}
+            <div className="border rounded-lg p-4 bg-muted/30 mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <ShieldCheck className="h-4 w-4 text-violet-400" />
+                <h3 className="font-semibold text-sm">Billing Email Verification</h3>
+              </div>
+              {selectedPayment.billingEmailVerification ? (
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-xs text-muted-foreground">Billing Email</span>
+                    <p className="font-mono text-xs mt-0.5">{selectedPayment.billingEmailVerification.billingEmail}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Status</span>
+                    <p className="mt-0.5">
+                      {selectedPayment.billingEmailVerification.verified ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> VERIFIED
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600">
+                          <AlertTriangle className="h-3.5 w-3.5" /> UNVERIFIED
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  {selectedPayment.billingEmailVerification.verifiedAt && (
+                    <div>
+                      <span className="text-xs text-muted-foreground">Verified At</span>
+                      <p className="text-xs mt-0.5">{new Date(selectedPayment.billingEmailVerification.verifiedAt).toLocaleString()}</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-xs text-muted-foreground">OTP Attempts</span>
+                    <p className="text-xs font-semibold mt-0.5">{selectedPayment.billingEmailVerification.attempts} / {selectedPayment.billingEmailVerification.maxAttempts}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Resend Count</span>
+                    <p className="text-xs mt-0.5">{selectedPayment.billingEmailVerification.resendCount}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No billing email OTP record found for this order.</p>
+              )}
+            </div>
+
           </div>
         </div>
       )}

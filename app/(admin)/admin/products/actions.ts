@@ -997,3 +997,307 @@ export async function updateProductInventory(
   await revalidateProductCaches()
   return product
 }
+
+// ─── Stock Management Actions ─────────────────────────────────────────────────
+//
+// All mutations write a StockHistory entry and call revalidateProductCaches.
+// Backend is sole source of truth for all stock values.
+
+export type StockMutationAction =
+  | "INCREASE"
+  | "DECREASE"
+  | "RESET"
+  | "RESTOCK"
+  | "MARK_OUT"
+  | "MARK_IN"
+  | "EDIT"
+  | "SET_TOTAL"
+  | "TOGGLE_VISIBILITY"
+  | "TOGGLE_BACKORDERS"
+  | "SET_THRESHOLD"
+  | "SET_WARNING"
+  | "SET_RESTOCK_QTY"
+  | "TOGGLE_AUTO_DISABLE"
+  | "TOGGLE_AUTO_ENABLE"
+
+/**
+ * Fetch stock record + last 50 history entries for a product.
+ * Returns null if no stock record exists yet (not yet initialised).
+ */
+export async function getProductStock(productId: string) {
+  await requireAdmin()
+
+  const stock = await db.productStock.findUnique({
+    where: { productId },
+    include: {
+      history: {
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      },
+    },
+  })
+  return stock
+}
+
+/**
+ * Initialise a ProductStock record for a product that doesn't have one yet.
+ */
+export async function initProductStock(
+  productId: string,
+  opts: {
+    totalStock?: number
+    availableStock?: number
+    lowStockThreshold?: number
+    restockQty?: number
+    stockVisible?: boolean
+    backOrdersEnabled?: boolean
+    warningMessage?: string | null
+    autoDisableOnZero?: boolean
+    autoEnableOnRestock?: boolean
+  } = {}
+) {
+  const admin = await requireAdmin()
+
+  const existing = await db.productStock.findUnique({ where: { productId } })
+  if (existing) return existing
+
+  const stock = await db.productStock.create({
+    data: {
+      productId,
+      totalStock: opts.totalStock ?? 0,
+      availableStock: opts.availableStock ?? 0,
+      lowStockThreshold: opts.lowStockThreshold ?? 5,
+      restockQty: opts.restockQty ?? 0,
+      stockVisible: opts.stockVisible ?? true,
+      backOrdersEnabled: opts.backOrdersEnabled ?? false,
+      warningMessage: opts.warningMessage ?? null,
+      autoDisableOnZero: opts.autoDisableOnZero ?? true,
+      autoEnableOnRestock: opts.autoEnableOnRestock ?? true,
+    },
+  })
+
+  await db.stockHistory.create({
+    data: {
+      productStockId: stock.id,
+      productId,
+      adminId: admin.userId,
+      adminEmail: admin.email,
+      action: "INIT",
+      field: "availableStock",
+      previousValue: 0,
+      updatedValue: opts.availableStock ?? 0,
+      reason: "Stock record initialised",
+    },
+  })
+
+  await revalidateProductCaches()
+  return stock
+}
+
+/**
+ * Core stock mutation. Handles all INCREASE / DECREASE / RESET / RESTOCK / MARK_OUT / MARK_IN / EDIT.
+ * Writes StockHistory entry and auto-manages product status.
+ */
+export async function updateStock(
+  productId: string,
+  action: StockMutationAction,
+  opts: {
+    qty?: number
+    value?: number | boolean | string | null
+    reason?: string
+    orderId?: string
+  } = {}
+) {
+  const admin = await requireAdmin()
+  const { qty = 0, reason, value } = opts
+
+  // Fetch product for slug (for cache revalidation)
+  const product = await db.product.findUnique({
+    where: { id: productId },
+    select: { id: true, slug: true, status: true, type: true },
+  })
+  if (!product) throw new Error("Product not found")
+
+  // Upsert — create stock record if first time
+  let stock = await db.productStock.upsert({
+    where: { productId },
+    create: { productId },
+    update: {},
+  })
+
+  const before = { ...stock }
+  let patch: Record<string, any> = {}
+  let historyField = "availableStock"
+  let prevVal = stock.availableStock
+  let nextVal = stock.availableStock
+
+  switch (action) {
+    case "INCREASE": {
+      const n = Math.max(0, Math.floor(qty))
+      nextVal = stock.availableStock + n
+      patch = {
+        availableStock: nextVal,
+        totalStock: stock.totalStock + n,
+        isOutOfStock: nextVal <= 0,
+      }
+      break
+    }
+    case "DECREASE": {
+      const n = Math.max(0, Math.floor(qty))
+      nextVal = Math.max(0, stock.availableStock - n)
+      patch = { availableStock: nextVal, isOutOfStock: nextVal <= 0 }
+      break
+    }
+    case "RESET":
+      nextVal = 0
+      patch = { availableStock: 0, reservedStock: 0, isOutOfStock: true }
+      break
+
+    case "RESTOCK": {
+      const rqty = Math.max(0, Math.floor(qty || stock.restockQty))
+      nextVal = stock.availableStock + rqty
+      patch = {
+        availableStock: nextVal,
+        totalStock: stock.totalStock + rqty,
+        isOutOfStock: false,
+      }
+      break
+    }
+    case "MARK_OUT":
+      historyField = "isOutOfStock"
+      prevVal = stock.isOutOfStock ? 1 : 0
+      nextVal = 1
+      patch = { isOutOfStock: true, availableStock: 0 }
+      break
+
+    case "MARK_IN":
+      historyField = "isOutOfStock"
+      prevVal = stock.isOutOfStock ? 1 : 0
+      nextVal = 0
+      patch = { isOutOfStock: false }
+      break
+
+    case "EDIT":
+      nextVal = typeof value === "number" ? Math.max(0, value) : stock.availableStock
+      patch = { availableStock: nextVal, isOutOfStock: nextVal <= 0 }
+      break
+
+    case "SET_TOTAL":
+      historyField = "totalStock"
+      prevVal = stock.totalStock
+      nextVal = typeof value === "number" ? Math.max(0, value) : stock.totalStock
+      patch = { totalStock: nextVal }
+      break
+
+    case "TOGGLE_VISIBILITY":
+      historyField = "stockVisible"
+      prevVal = stock.stockVisible ? 1 : 0
+      nextVal = stock.stockVisible ? 0 : 1
+      patch = { stockVisible: !stock.stockVisible }
+      break
+
+    case "TOGGLE_BACKORDERS":
+      historyField = "backOrdersEnabled"
+      prevVal = stock.backOrdersEnabled ? 1 : 0
+      nextVal = stock.backOrdersEnabled ? 0 : 1
+      patch = { backOrdersEnabled: !stock.backOrdersEnabled }
+      break
+
+    case "SET_THRESHOLD":
+      historyField = "lowStockThreshold"
+      prevVal = stock.lowStockThreshold
+      nextVal = typeof value === "number" ? Math.max(0, value) : stock.lowStockThreshold
+      patch = { lowStockThreshold: nextVal }
+      break
+
+    case "SET_WARNING":
+      historyField = "warningMessage"
+      prevVal = 0
+      nextVal = 0
+      patch = { warningMessage: typeof value === "string" ? value : null }
+      break
+
+    case "SET_RESTOCK_QTY":
+      historyField = "restockQty"
+      prevVal = stock.restockQty
+      nextVal = typeof value === "number" ? Math.max(0, value) : stock.restockQty
+      patch = { restockQty: nextVal }
+      break
+
+    case "TOGGLE_AUTO_DISABLE":
+      historyField = "autoDisableOnZero"
+      prevVal = stock.autoDisableOnZero ? 1 : 0
+      nextVal = stock.autoDisableOnZero ? 0 : 1
+      patch = { autoDisableOnZero: !stock.autoDisableOnZero }
+      break
+
+    case "TOGGLE_AUTO_ENABLE":
+      historyField = "autoEnableOnRestock"
+      prevVal = stock.autoEnableOnRestock ? 1 : 0
+      nextVal = stock.autoEnableOnRestock ? 0 : 1
+      patch = { autoEnableOnRestock: !stock.autoEnableOnRestock }
+      break
+
+    default:
+      throw new Error(`Unknown stock action: ${action}`)
+  }
+
+  // Auto-manage product status
+  const productPatch: Record<string, any> = {}
+  if (
+    stock.autoDisableOnZero &&
+    "availableStock" in patch &&
+    (patch.availableStock ?? nextVal) <= 0 &&
+    patch.isOutOfStock
+  ) {
+    productPatch.inventoryEnabled = true
+    productPatch.inventoryCount = 0
+  }
+  if (
+    stock.autoEnableOnRestock &&
+    action === "RESTOCK" &&
+    (patch.availableStock ?? nextVal) > 0
+  ) {
+    productPatch.inventoryCount = patch.availableStock ?? nextVal
+  }
+
+  // Transaction: update stock + write history + optionally update product
+  const updatedStock = await db.$transaction(async (tx) => {
+    const updated = await tx.productStock.update({ where: { productId }, data: patch })
+
+    await tx.stockHistory.create({
+      data: {
+        productStockId: stock.id,
+        productId,
+        adminId: admin.userId,
+        adminEmail: admin.email ?? null,
+        action,
+        field: historyField,
+        previousValue: prevVal,
+        updatedValue: nextVal,
+        reason: reason ?? null,
+      },
+    })
+
+    if (Object.keys(productPatch).length > 0) {
+      await tx.product.update({ where: { id: productId }, data: productPatch })
+    }
+
+    return updated
+  })
+
+  await db.auditLog.create({
+    data: {
+      userId: admin.userId,
+      action: `STOCK_${action}`,
+      entity: "ProductStock",
+      entityId: stock.id,
+      beforeJson: before as any,
+      afterJson: updatedStock as any,
+    },
+  })
+
+  await revalidateProductCaches(product.type, product.slug)
+  return updatedStock
+}
+

@@ -195,3 +195,67 @@
   100% { transform: translateX(200%); }
 }
 
+/* Clerk Auth Portal Explicit High-Visibility Styling */
+.cl-card,
+.cl-rootBox,
+.cl-cardBox {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+}
+
+.cl-socialButtonsBlockButton {
+  background-color: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  color: #111827 !important;
+  opacity: 1 !important;
+}
+
+.cl-socialButtonsBlockButtonText,
+.cl-socialButtonsBlockButton span {
+  color: #111827 !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+.cl-socialButtonsBlockButton:hover {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+}
+
+.cl-footer {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-top: 1px solid #f3f4f6 !important;
+}
+
+.cl-footerActionText,
+.cl-footerActionText * {
+  color: #4b5563 !important;
+  font-weight: 500 !important;
+}
+
+.cl-footerActionLink {
+  color: #d97706 !important;
+  font-weight: 700 !important;
+}
+
+.cl-footerActionLink:hover {
+  color: #b45309 !important;
+}
+
+.cl-devModeNotice,
+.cl-devModeNotice * {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  color: #d97706 !important;
+}
+
+.cl-footerPages,
+.cl-footerPageLink {
+  background-color: #ffffff !important;
+  color: #4b5563 !important;
+}
+

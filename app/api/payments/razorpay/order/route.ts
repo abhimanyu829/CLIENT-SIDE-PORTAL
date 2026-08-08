@@ -110,7 +110,47 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── 5. Duplicate order prevention ────────────────────────────────────────
+    // ── 5. Email verification gate ──────────────────────────────────────────
+    // Billing email must be verified via /api/auth/billing-email-otp before
+    // any payment order is created. Client flag is a hint; DB is authoritative.
+    const billing = (body.billingAddress ?? {}) as Record<string, unknown>
+    const billingEmail = typeof billing.billingEmail === "string" ? billing.billingEmail : ""
+    const sessionId = body.checkoutSessionId ?? ""
+
+    if (!billing.emailVerified || !billingEmail || !sessionId) {
+      console.warn(`[RAZORPAY ORDER] ❌ Email not verified for user: ${user.email}`)
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "EMAIL_NOT_VERIFIED",
+            message: "Billing email verification is required before payment. Please complete OTP verification in the billing step.",
+          },
+        },
+        { status: 403 },
+      )
+    }
+
+    // DB-level authoritative check — prevents client-side bypass
+    const emailOtpRecord = await db.billingEmailOtp.findFirst({
+      where: { checkoutSessionId: sessionId, email: billingEmail, verified: true },
+      orderBy: { createdAt: "desc" },
+    })
+    if (!emailOtpRecord || emailOtpRecord.expiresAt < new Date()) {
+      console.warn(`[RAZORPAY ORDER] ❌ No valid email OTP record for session: ${sessionId}`)
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "EMAIL_NOT_VERIFIED",
+            message: "Billing email verification expired or not found. Please verify your email again.",
+          },
+        },
+        { status: 403 },
+      )
+    }
+
+    // ── 6. Duplicate order prevention ─────────────────────────────────────────
     // If the client sends a pendingOrderId, check if that order is still PENDING
     // and reuse its Razorpay order instead of creating a new one.
     if (body.pendingOrderId) {

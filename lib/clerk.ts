@@ -1,40 +1,58 @@
 export const clerkAppearance: any = {
   variables: {
     colorPrimary: "#7c3aed",
-    colorBackground: "#0a0a0a",
-    colorText: "#f8fafc",
-    colorTextSecondary: "#a1a1aa",
-    colorInputBackground: "rgba(255,255,255,0.04)",
-    colorInputText: "#f8fafc",
-    colorNeutral: "#27272a",
+    colorBackground: "#ffffff",
+    colorText: "#171717",
+    colorTextSecondary: "#525252",
+    colorInputBackground: "#f9fafb",
+    colorInputText: "#171717",
+    colorNeutral: "#e5e7eb",
     colorDanger: "#ef4444",
     borderRadius: "0.875rem",
     fontFamily:
       'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
+  elements: {
+    userButtonPopoverCard: "bg-white shadow-lg border border-gray-200",
+    userButtonPopoverActionButton: "hover:bg-gray-100 text-gray-800",
+    userButtonPopoverActionButtonText: "text-gray-800",
+    userButtonPopoverFooter: "bg-white border-t border-gray-200",
+  },
 }
 
 export const clerkAuralisAppearance: any = {
   variables: {
-    colorPrimary: "#EA580C", // Auralis Primary
-    colorBackground: "transparent",
-    colorText: "#111827", // Auralis text-primary
-    colorTextSecondary: "#4B5563", // Auralis text-secondary
-    colorInputBackground: "rgba(255,255,255,0.8)",
+    colorPrimary: "#d97706",
+    colorBackground: "#ffffff",
+    colorText: "#111827",
+    colorTextSecondary: "#4b5563",
+    colorInputBackground: "#ffffff",
     colorInputText: "#111827",
-    colorNeutral: "#E5E7EB", // Auralis border
+    colorNeutral: "#e5e7eb",
     colorDanger: "#dc2626",
-    borderRadius: "0.5rem",
+    borderRadius: "0.75rem",
     fontFamily: '"Geist", "Inter", sans-serif',
   },
   elements: {
-    card: "bg-transparent shadow-none w-full border-none",
+    card: "bg-transparent shadow-none w-full border-none p-0",
     headerTitle: "hidden",
     headerSubtitle: "hidden",
-    socialButtonsBlockButton: "border-border hover:bg-slate-50 transition-colors",
-    formButtonPrimary: "bg-primary hover:bg-primary/90 text-white font-medium shadow-none transition-colors",
-    formFieldInput: "bg-white border-border text-foreground shadow-sm focus:ring-primary focus:border-primary",
-    footerActionLink: "text-primary hover:text-primary/90 font-medium",
+    socialButtonsBlockButton: "bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold shadow-sm transition-all flex items-center justify-center gap-2 py-2.5 rounded-xl",
+    socialButtonsBlockButtonText: "text-gray-900 font-semibold text-sm",
+    formButtonPrimary: "bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md transition-all rounded-xl py-2.5 text-sm",
+    formButtonPrimaryText: "text-white font-bold",
+    formFieldInput: "bg-white border border-gray-200 text-gray-900 shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 rounded-xl px-3.5 py-2.5 text-sm",
+    formFieldLabel: "text-gray-700 font-semibold text-xs mb-1",
+    dividerLine: "bg-gray-200",
+    dividerText: "text-gray-400 text-xs font-semibold uppercase tracking-wider",
+    footer: "bg-white border-t border-gray-100 rounded-b-2xl py-3 px-4 text-center",
+    footerAction: "bg-white text-gray-600 text-sm font-medium",
+    footerActionText: "text-gray-600 font-medium",
+    footerActionLink: "text-amber-600 hover:text-amber-700 font-bold transition-colors",
+    devModeNotice: "bg-white text-amber-600 font-mono text-[11px] font-semibold tracking-wide border-t border-gray-100 py-2 text-center w-full",
+    identityPreviewText: "text-gray-800 font-semibold",
+    identityPreviewEditButton: "text-amber-600 hover:text-amber-700 font-semibold",
   }
 }
+
 

@@ -59,11 +59,46 @@ export default async function OrdersPage({
   })
 
   // Format payments for serializability in Next.js Server-to-Client boundary
+  // Also batch-fetch billing email OTP verification data for admin display
+  const userIds = [...new Set(payments.map((p) => p.userId))]
+  let billingOtpByUser: Record<string, {
+    billingEmail: string
+    verified: boolean
+    verifiedAt: string | null
+    attempts: number
+    maxAttempts: number
+    resendCount: number
+  }> = {}
+
+  try {
+    const otpRecords = await db.billingEmailOtp.findMany({
+      where: { userId: { in: userIds } },
+      orderBy: { createdAt: "desc" },
+    })
+    // Keep most recent OTP record per userId
+    for (const rec of otpRecords) {
+      if (rec.userId && !billingOtpByUser[rec.userId]) {
+        billingOtpByUser[rec.userId] = {
+          billingEmail: rec.email,
+          verified: rec.verified,
+          verifiedAt: rec.verifiedAt?.toISOString() ?? null,
+          attempts: rec.attempts,
+          maxAttempts: rec.maxAttempts,
+          resendCount: rec.resendCount,
+        }
+      }
+    }
+  } catch {
+    // Table may not be available yet — gracefully skip
+    billingOtpByUser = {}
+  }
+
   const formattedPayments = payments.map((p) => ({
     ...p,
     amount: String(p.amount),
     createdAt: p.createdAt.toISOString(),
     paidAt: p.paidAt?.toISOString() ?? null,
+    billingEmailVerification: billingOtpByUser[p.userId] ?? null,
     subscription: p.subscription
       ? {
           ...p.subscription,

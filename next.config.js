@@ -54,9 +54,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  turbopack: {
-    root: __dirname,
-  },
   async headers() {
     return [
       {
@@ -75,6 +72,7 @@ const nextConfig = {
         ]
       : [],
   },
+  allowedDevOrigins: ['10.105.162.180'],
 };
 
 module.exports = nextConfig;

@@ -36,6 +36,12 @@ export default function DashboardOverview() {
           <h1 className="text-2xl font-bold font-sans">Overview</h1>
           <p className="text-sm text-muted-foreground mt-1">Real-time metrics and activity across your account.</p>
         </div>
+        <a
+          href="http://localhost:3000/join-our-team"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow transition-colors hover:bg-primary/90"
+        >
+          <span>🤝</span> Join Our Team
+        </a>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

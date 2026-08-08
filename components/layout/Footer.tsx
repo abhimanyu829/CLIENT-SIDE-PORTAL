@@ -112,7 +112,7 @@ export default function Footer() {
           <div className="lg:col-span-2 space-y-6">
             <Link href="/" className="flex items-center gap-2 w-fit">
               <span className="brand-gradient text-xl font-black">
-                ⬡ NexusAI
+                ⬡ ABHIBHIDEVELOPERS GROUP
               </span>
             </Link>
             <p className="text-sm text-zinc-600 leading-relaxed">
@@ -170,7 +170,7 @@ export default function Footer() {
           {/* Bottom bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-zinc-700">
-              © {year} NexusAI Inc. All rights reserved. Built with ❤️ for AI developers worldwide.
+              © {year} ABHIBHIDEVELOPERS GROUP. All rights reserved. Built with ❤️ for AI developers worldwide.
             </p>
             <div className="flex gap-5">
               {[["Terms", "/terms"], ["Privacy", "/privacy"], ["Cookies", "/cookies"], ["Security", "/security"]].map(([l, h]) => (

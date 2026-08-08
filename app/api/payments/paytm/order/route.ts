@@ -50,6 +50,42 @@ export async function POST(req: NextRequest) {
 
     const body = orderSchema.parse(await req.json())
 
+    // ── Email verification gate ──────────────────────────────────────────────
+    const billing = (body.billingAddress ?? {}) as Record<string, unknown>
+    const billingEmail = typeof billing.billingEmail === "string" ? billing.billingEmail : ""
+    const sessionId = body.checkoutSessionId ?? ""
+
+    if (!billing.emailVerified || !billingEmail || !sessionId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "EMAIL_NOT_VERIFIED",
+            message: "Billing email verification is required before payment.",
+          },
+        },
+        { status: 403 }
+      )
+    }
+
+    // DB-level authoritative check
+    const emailOtpRecord = await db.billingEmailOtp.findFirst({
+      where: { checkoutSessionId: sessionId, email: billingEmail, verified: true },
+      orderBy: { createdAt: "desc" },
+    })
+    if (!emailOtpRecord || emailOtpRecord.expiresAt < new Date()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "EMAIL_NOT_VERIFIED",
+            message: "Billing email verification expired or not found. Please verify your email again.",
+          },
+        },
+        { status: 403 }
+      )
+    }
+
     // ── 1. Create the internal order ─────────────────────────────────────────
     let internalOrder
     if (body.mode === "buy_now") {

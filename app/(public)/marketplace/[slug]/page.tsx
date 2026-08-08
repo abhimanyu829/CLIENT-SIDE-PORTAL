@@ -34,6 +34,18 @@ async function getProduct(slug: string) {
             logoUrl: true,
           },
         },
+        stock: {
+          select: {
+            availableStock: true,
+            totalStock: true,
+            soldStock: true,
+            lowStockThreshold: true,
+            isOutOfStock: true,
+            backOrdersEnabled: true,
+            stockVisible: true,
+            warningMessage: true,
+          },
+        },
         _count: { select: { reviews: true, subscriptions: true } },
       },
     })
@@ -245,6 +257,18 @@ export default async function ProductDetailPage({ params }: Props) {
       endsAt: campaign.endsAt.toISOString(),
       flatDiscount: campaign.flatDiscount ? Number(campaign.flatDiscount) : null,
     } : null,
+    stock: product.stock
+      ? {
+          availableStock: product.stock.availableStock,
+          totalStock: product.stock.totalStock,
+          soldStock: product.stock.soldStock,
+          lowStockThreshold: product.stock.lowStockThreshold,
+          isOutOfStock: product.stock.isOutOfStock,
+          backOrdersEnabled: product.stock.backOrdersEnabled,
+          stockVisible: product.stock.stockVisible,
+          warningMessage: product.stock.warningMessage,
+        }
+      : null,
     related: related.map(r => ({
       id: r.id,
       slug: r.slug,

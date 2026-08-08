@@ -400,6 +400,27 @@ model User {
   @@index([createdAt])
 }
 
+model BillingEmailOtp {
+  id                String    @id @default(cuid())
+  checkoutSessionId String
+  email             String
+  otpHash           String
+  expiresAt         DateTime
+  attempts          Int       @default(0)
+  maxAttempts       Int       @default(5)
+  verified          Boolean   @default(false)
+  verifiedAt        DateTime?
+  resendCount       Int       @default(0)
+  lastResendAt      DateTime?
+  userId            String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([checkoutSessionId])
+  @@index([email])
+  @@index([checkoutSessionId, email])
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -614,6 +635,7 @@ model Product {
   previewSessions    PreviewSession[]
   serviceProfile     ProductServiceProfile?
   purchasedServices  PurchasedService[]
+  stock              ProductStock?
 
   @@index([slug])
   @@index([vendorId])
@@ -621,6 +643,60 @@ model Product {
   @@index([averageRating])
   @@index([isFeatured])
   @@index([category, type])
+}
+
+// ── Product Stock Management ──────────────────────────────────────────────────
+// Full inventory tracking: total / available / reserved / sold.
+// Linked 1:1 to Product. Backend is sole source of truth.
+model ProductStock {
+  id                String         @id @default(cuid())
+  productId         String         @unique
+  totalStock        Int            @default(0)
+  availableStock    Int            @default(0)
+  reservedStock     Int            @default(0)
+  soldStock         Int            @default(0)
+  lowStockThreshold Int            @default(5)
+  isOutOfStock      Boolean        @default(false)
+  restockQty        Int            @default(0)
+  stockVisible      Boolean        @default(true)
+  backOrdersEnabled Boolean        @default(false)
+  autoDisableOnZero Boolean        @default(true)
+  autoEnableOnRestock Boolean      @default(true)
+  warningMessage    String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  product  Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  history  StockHistory[]
+
+  @@index([productId])
+  @@index([isOutOfStock])
+  @@index([availableStock])
+}
+
+// Immutable audit log for every stock mutation.
+model StockHistory {
+  id             String   @id @default(cuid())
+  productStockId String
+  productId      String
+  adminId        String
+  adminEmail     String?
+  action         String
+  // INCREASE | DECREASE | RESET | RESTOCK | MARK_OUT | MARK_IN
+  // EDIT | PURCHASE_DEDUCT | BACKORDER
+  field          String   @default("availableStock")
+  previousValue  Int
+  updatedValue   Int
+  reason         String?
+  orderId        String?
+  createdAt      DateTime @default(now())
+
+  stock ProductStock @relation(fields: [productStockId], references: [id], onDelete: Cascade)
+
+  @@index([productStockId])
+  @@index([productId])
+  @@index([adminId])
+  @@index([createdAt])
 }
 
 // ── Preview Sessions (DB-persisted, user+product scoped) ──────────────────────

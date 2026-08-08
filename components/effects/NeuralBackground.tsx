@@ -7,10 +7,17 @@ interface Point {
   y: number
   vx: number
   vy: number
+  radius: number
+  baseAlpha: number
 }
 
 export function NeuralBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const mouseRef = useRef<{ x: number; y: number; active: boolean }>({
+    x: -1000,
+    y: -1000,
+    active: false,
+  })
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -21,6 +28,18 @@ export function NeuralBackground() {
     let animationFrameId: number
     let points: Point[] = []
 
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        active: true,
+      }
+    }
+
+    const handleMouseLeave = () => {
+      mouseRef.current.active = false
+    }
+
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
@@ -28,14 +47,16 @@ export function NeuralBackground() {
     }
 
     const initPoints = () => {
-      const numPoints = Math.floor((canvas.width * canvas.height) / 8000) // Increased density
+      const numPoints = Math.floor((canvas.width * canvas.height) / 7000)
       points = []
       for (let i = 0; i < numPoints; i++) {
         points.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          vx: (Math.random() - 0.5) * 1.5,
-          vy: (Math.random() - 0.5) * 1.5,
+          vx: (Math.random() - 0.5) * 1.2,
+          vy: (Math.random() - 0.5) * 1.2,
+          radius: Math.random() * 1.8 + 1.2,
+          baseAlpha: Math.random() * 0.5 + 0.3,
         })
       }
     }
@@ -44,51 +65,97 @@ export function NeuralBackground() {
       if (!ctx || !canvas) return
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      // Pure bright white for visibility against dark Aurora theme
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 1)') 
-      gradient.addColorStop(1, 'rgba(255, 255, 255, 1)') 
-      ctx.fillStyle = gradient
-      ctx.lineWidth = 1.5
+      const mouse = mouseRef.current
+
+      // Draw cursor ambient glow spotlight
+      if (mouse.active) {
+        const spotGlow = ctx.createRadialGradient(
+          mouse.x,
+          mouse.y,
+          0,
+          mouse.x,
+          mouse.y,
+          250
+        )
+        spotGlow.addColorStop(0, 'rgba(161, 98, 7, 0.12)')
+        spotGlow.addColorStop(0.5, 'rgba(139, 92, 246, 0.05)')
+        spotGlow.addColorStop(1, 'rgba(0, 0, 0, 0)')
+        ctx.fillStyle = spotGlow
+        ctx.beginPath()
+        ctx.arc(mouse.x, mouse.y, 250, 0, Math.PI * 2)
+        ctx.fill()
+      }
 
       // Update and draw points
       for (let i = 0; i < points.length; i++) {
         const p = points[i]
-        
-        // Add brownian motion randomness
-        p.vx += (Math.random() - 0.5) * 0.15
-        p.vy += (Math.random() - 0.5) * 0.15
-        
-        // Limit max speed
+
+        // Add subtle wave turbulence
+        p.vx += (Math.random() - 0.5) * 0.08
+        p.vy += (Math.random() - 0.5) * 0.08
+
+        // Mouse attraction/repulsion interaction
+        if (mouse.active) {
+          const mdx = mouse.x - p.x
+          const mdy = mouse.y - p.y
+          const mdist = Math.sqrt(mdx * mdx + mdy * mdy)
+          if (mdist < 180 && mdist > 0) {
+            const force = (180 - mdist) / 180
+            p.vx += (mdx / mdist) * force * 0.3
+            p.vy += (mdy / mdist) * force * 0.3
+          }
+        }
+
+        // Limit speed
         const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy)
-        if (speed > 1.2) {
-          p.vx = (p.vx / speed) * 1.2
-          p.vy = (p.vy / speed) * 1.2
+        if (speed > 1.8) {
+          p.vx = (p.vx / speed) * 1.8
+          p.vy = (p.vy / speed) * 1.8
         }
 
         p.x += p.vx
         p.y += p.vy
 
-        // Bounce off edges
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1
+        // Bounce gently at borders
+        if (p.x < 0) { p.x = 0; p.vx *= -1 }
+        if (p.x > canvas.width) { p.x = canvas.width; p.vx *= -1 }
+        if (p.y < 0) { p.y = 0; p.vy *= -1 }
+        if (p.y > canvas.height) { p.y = canvas.height; p.vy *= -1 }
 
+        // Point rendering
         ctx.beginPath()
-        ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2) // Larger points
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(161, 98, 7, ${p.baseAlpha})`
         ctx.fill()
 
-        // Connect near points
+        // Draw node connections
         for (let j = i + 1; j < points.length; j++) {
           const p2 = points[j]
           const dx = p.x - p2.x
           const dy = p.y - p2.y
           const dist = Math.sqrt(dx * dx + dy * dy)
 
-          if (dist < 180) { // Increased connection distance
+          if (dist < 150) {
             ctx.beginPath()
-            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - dist / 180})` // Dynamic opacity based on distance
+            ctx.strokeStyle = `rgba(161, 98, 7, ${(1 - dist / 150) * 0.35})`
+            ctx.lineWidth = 1
             ctx.moveTo(p.x, p.y)
             ctx.lineTo(p2.x, p2.y)
+            ctx.stroke()
+          }
+        }
+
+        // Mouse line connections
+        if (mouse.active) {
+          const mdx = mouse.x - p.x
+          const mdy = mouse.y - p.y
+          const mdist = Math.sqrt(mdx * mdx + mdy * mdy)
+          if (mdist < 200) {
+            ctx.beginPath()
+            ctx.strokeStyle = `rgba(161, 98, 7, ${(1 - mdist / 200) * 0.6})`
+            ctx.lineWidth = 1.2
+            ctx.moveTo(p.x, p.y)
+            ctx.lineTo(mouse.x, mouse.y)
             ctx.stroke()
           }
         }
@@ -97,11 +164,15 @@ export function NeuralBackground() {
       animationFrameId = requestAnimationFrame(draw)
     }
 
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseleave', handleMouseLeave)
     window.addEventListener('resize', resize)
     resize()
     draw()
 
     return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseleave', handleMouseLeave)
       window.removeEventListener('resize', resize)
       cancelAnimationFrame(animationFrameId)
     }
@@ -109,13 +180,12 @@ export function NeuralBackground() {
 
   return (
     <div className="absolute inset-0 z-[2] overflow-hidden pointer-events-none">
-      <canvas
-        ref={canvasRef}
-        className="block h-full w-full opacity-100"
-      />
-      {/* Dynamic gradient overlay to soften edges */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/40 to-background" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-background/20 to-background/90" />
+      <canvas ref={canvasRef} className="block h-full w-full opacity-90" />
+      {/* Soft background ambient gradient shapes */}
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-600/5 rounded-full blur-3xl" />
     </div>
   )
 }
+

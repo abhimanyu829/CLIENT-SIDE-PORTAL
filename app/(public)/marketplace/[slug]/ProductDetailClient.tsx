@@ -52,6 +52,17 @@ interface Product {
   versions: { id: string; version: number; createdAt: string }[]
   campaign?: { id: string; bannerText?: string | null; ctaText?: string | null; discountPercent: number; endsAt: string; flatDiscount?: number | null } | null
   related: { id: string; slug: string; name: string; tagline?: string | null; type: string; thumbnailUrl?: string | null; averageRating: number; startingPrice?: number | null; interval?: string | null }[]
+  // Live stock data
+  stock?: {
+    availableStock: number
+    totalStock: number
+    soldStock: number
+    lowStockThreshold: number
+    isOutOfStock: boolean
+    backOrdersEnabled: boolean
+    stockVisible: boolean
+    warningMessage?: string | null
+  } | null
 }
 
 export default function ProductDetailClient({ product }: { product: Product }) {
@@ -69,7 +80,15 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const faqs = Array.isArray(product.faqs) ? product.faqs as any[] : []
   const cheapestTier = product.tiers[0]
   const hasFlash = !!(cheapestTier?.flashSalePrice && cheapestTier.flashSaleEndsAt && new Date(cheapestTier.flashSaleEndsAt) > new Date())
-  const isSoldOut = product.inventoryEnabled && (product.inventoryCount ?? 0) <= 0
+
+  // Stock-aware sold-out check: ProductStock takes priority over legacy flags
+  const stock = product.stock ?? null
+  const isSoldOut = stock
+    ? (stock.isOutOfStock && !stock.backOrdersEnabled)
+    : (product.inventoryEnabled && (product.inventoryCount ?? 0) <= 0)
+  const isLowStock = stock && !stock.isOutOfStock &&
+    stock.availableStock > 0 && stock.availableStock <= stock.lowStockThreshold
+  const showStockCount = stock?.stockVisible && !stock.isOutOfStock && stock.availableStock > 0
   const allScreenshots = [
     ...(product.thumbnailUrl ? [product.thumbnailUrl] : []),
     ...product.screenshotUrls,
@@ -621,6 +640,29 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
                 {/* CTA Buttons */}
                 <div className="space-y-2.5">
+                  {/* ── Live Stock Display ── */}
+                  {stock?.stockVisible && stock.isOutOfStock && !stock.backOrdersEnabled && (
+                    <div className="w-full py-2 rounded-xl text-center text-xs font-bold bg-red-500/10 border border-red-500/30 text-red-400">
+                      ❌ Out of Stock
+                    </div>
+                  )}
+                  {stock?.stockVisible && stock.isOutOfStock && stock.backOrdersEnabled && (
+                    <div className="w-full py-2 rounded-xl text-center text-xs font-semibold bg-blue-500/10 border border-blue-500/30 text-blue-400">
+                      ⏳ Back-orders open — ships when available
+                    </div>
+                  )}
+                  {isLowStock && stock?.stockVisible && (
+                    <div className="w-full py-1.5 rounded-xl text-center text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                      ⚡ Only {stock.availableStock} left
+                    </div>
+                  )}
+                  {stock?.warningMessage && (
+                    <div className="flex items-start gap-2 rounded-xl border border-amber-700/40 bg-amber-900/10 px-3 py-2">
+                      <span className="text-amber-400 shrink-0">⚠️</span>
+                      <p className="text-xs text-amber-300 leading-snug">{stock.warningMessage}</p>
+                    </div>
+                  )}
+
                   {isSoldOut ? (
                     <div className="w-full py-4 rounded-xl text-center font-bold text-base bg-red-500/10 border border-red-500/30 text-red-400">
                       Sold Out — Currently Unavailable
@@ -634,7 +676,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                   )}
                   <button
                     onClick={() => addToCart(cheapestTier.id)}
-                    disabled={cartState === "adding" || isSoldOut}
+                    disabled={cartState === "adding" || (isSoldOut && !(stock?.backOrdersEnabled))}
                     className="w-full glass py-3.5 rounded-xl text-zinc-300 font-semibold text-sm hover:border-purple-500/50 transition-all disabled:opacity-60"
                   >
                     {cartState === "adding" ? "Adding..." : cartState === "added" ? "Added to enterprise cart" : "Add to cart"}

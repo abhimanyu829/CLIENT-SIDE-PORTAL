@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -19,6 +19,8 @@ import {
   WalletCards,
   X,
 } from "lucide-react"
+
+const EmailOtpVerifier = lazy(() => import("@/components/checkout/EmailOtpVerifier"))
 import QRCode from "qrcode"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -180,9 +182,19 @@ export default function CheckoutClient({
     initialBuyNow ? { phase: "IDLE", step: "review" } : { phase: "LOADING_CART" }
   )
   const [couponCode, setCouponCode] = useState("")
+  // Billing fields
   const [billingEmail, setBillingEmail] = useState("")
+  const [billingName, setBillingName] = useState("")
+  const [mobile, setMobile] = useState("")
   const [company, setCompany] = useState("")
   const [gstin, setGstin] = useState("")
+  const [addressLine1, setAddressLine1] = useState("")
+  const [city, setCity] = useState("")
+  const [billingState, setBillingState] = useState("")
+  const [postalCode, setPostalCode] = useState("")
+  const [country, setCountry] = useState("IN")
+  // Email OTP gate
+  const [emailVerified, setEmailVerified] = useState(false)
   const [selectedGateway, setSelectedGateway] = useState<"RAZORPAY" | "PHONEPE" | "PAYTM">("RAZORPAY")
   const [couponLoading, setCouponLoading] = useState(false)
   const [couponError, setCouponError] = useState<string | null>(null)
@@ -298,7 +310,19 @@ export default function CheckoutClient({
           productId: initialBuyNow?.productId,
           tierId: initialBuyNow?.tierId,
           couponCode: couponCode || cart?.couponCode || undefined,
-          billingAddress: { billingEmail, company, gstin },
+          billingAddress: {
+            billingEmail,
+            billingName,
+            mobile,
+            company,
+            gstin,
+            addressLine1,
+            city,
+            state: billingState,
+            postalCode,
+            country,
+            emailVerified,
+          },
           checkoutSessionId: checkoutSessionId.current,
         }),
       })
@@ -567,13 +591,13 @@ export default function CheckoutClient({
   const canRetry = state.phase === "FAILED" ? state.canRetry : state.phase === "DISMISSED"
   const currentStep = state.phase === "IDLE" ? state.step : state.phase === "LOADING_CART" ? "review" : state.phase === "FAILED" || state.phase === "DISMISSED" ? "payment" : "payment"
 
-  // ── Loading state ───────────────────────────────────────────────────────────
+  // ── Loading state ────────────────────────────────────────────────────────────
   if (state.phase === "LOADING_CART") {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white grid place-items-center">
-        <div className="flex items-center gap-3 text-zinc-400">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Loading secure checkout
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-foreground/70">
+        <div className="flex items-center gap-3 bg-muted/60 backdrop-blur-xl border border-border px-6 py-4 rounded-2xl shadow-lg animate-pulse">
+          <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+          <span className="text-sm font-semibold">Loading secure checkout…</span>
         </div>
       </div>
     )
@@ -582,12 +606,14 @@ export default function CheckoutClient({
   // ── Empty cart ──────────────────────────────────────────────────────────────
   if (!initialBuyNow && summary.items.length === 0) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white grid place-items-center px-4">
-        <div className="max-w-md rounded-lg border border-white/10 bg-white/[0.03] p-6 text-center">
-          <ShoppingCart className="mx-auto mb-3 h-8 w-8 text-zinc-500" />
-          <h1 className="text-xl font-bold">Your cart is empty</h1>
-          <p className="mt-2 text-sm text-zinc-500">Add an AI agent, SaaS plan, API, or service before starting checkout.</p>
-          <Button asChild className="mt-5">
+      <div className="min-h-screen bg-background text-foreground grid place-items-center px-4">
+        <div className="max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-xl backdrop-blur-xl">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 shadow-inner">
+            <ShoppingCart className="h-7 w-7" />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight">Your cart is empty</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Add an AI agent, SaaS plan, API, or service before starting checkout.</p>
+          <Button asChild className="mt-6 w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold py-6 shadow-md transition-all">
             <Link href={productSlug ? `/marketplace/${productSlug}` : "/marketplace"}>Return to marketplace</Link>
           </Button>
         </div>
@@ -598,40 +624,43 @@ export default function CheckoutClient({
   // ── Success redirect (shouldn't render, but just in case) ──────────────────
   if (state.phase === "SUCCESS") {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white grid place-items-center">
-        <div className="flex flex-col items-center gap-3 text-emerald-400">
-          <ShieldCheck className="h-8 w-8" />
-          <p className="text-lg font-bold">Payment verified!</p>
-          <p className="text-sm text-zinc-400">Redirecting to confirmation...</p>
+      <div className="min-h-screen bg-background text-foreground grid place-items-center">
+        <div className="flex flex-col items-center gap-3 text-emerald-600 dark:text-emerald-400 bg-card border border-border p-8 rounded-3xl shadow-xl">
+          <ShieldCheck className="h-10 w-10 animate-bounce" />
+          <p className="text-xl font-extrabold text-foreground">Payment Verified!</p>
+          <p className="text-sm text-muted-foreground">Redirecting to confirmation…</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden overflow-y-auto bg-zinc-950 pb-12 text-white">
-      {/* Header */}
-      <div className="border-b border-white/10 bg-zinc-950/80">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-          <Link href="/marketplace" className="text-sm text-zinc-400 hover:text-white">NexusAI Commerce</Link>
-          <div className="flex items-center gap-2 text-xs text-emerald-400">
-            <LockKeyhole className="h-4 w-4" />
-            Razorpay secured checkout
+    <div className="min-h-screen overflow-x-hidden overflow-y-auto bg-white dark:bg-zinc-950 pb-16 text-foreground">
+      {/* Top Header Bar */}
+      <div className="border-b border-border bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl sticky top-0 z-40 shadow-xs">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6">
+          <Link href="/marketplace" className="text-sm font-bold text-foreground hover:text-amber-600 transition-colors flex items-center gap-2">
+            <span className="brand-gradient text-lg font-black">⬡ ABHIBHIDEVELOPERS</span>
+            <span className="text-xs text-muted-foreground font-mono uppercase tracking-wider hidden sm:inline">• Commerce</span>
+          </Link>
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full shadow-xs">
+            <LockKeyhole className="h-3.5 w-3.5" />
+            <span>256-bit SSL Razorpay Secured</span>
           </div>
         </div>
       </div>
 
-      <main className="mx-auto grid max-w-7xl gap-8 px-4 py-8 pb-24 lg:grid-cols-[1fr_420px]">
-        <section className="space-y-5">
-          {/* Step indicator */}
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-            <div className="grid grid-cols-4 gap-2 text-xs">
+      <main className="mx-auto grid max-w-7xl gap-8 px-4 py-8 pb-24 sm:px-6 lg:grid-cols-[1fr_400px]">
+        <section className="space-y-6">
+          {/* Visual Step Indicator */}
+          <div className="rounded-3xl border border-border bg-white dark:bg-zinc-900 p-4 sm:p-5 shadow-xs">
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-3 text-xs">
               {[
-                { id: "review" as const, label: "Cart" },
-                { id: "billing" as const, label: "Billing" },
-                { id: "payment" as const, label: "Payment" },
-                { id: "processing" as const, label: "Provision" },
-              ].map(({ id, label }) => {
+                { id: "review" as const, num: "1", label: "Cart" },
+                { id: "billing" as const, num: "2", label: "Billing" },
+                { id: "payment" as const, num: "3", label: "Payment" },
+                { id: "processing" as const, num: "4", label: "Provision" },
+              ].map(({ id, num, label }) => {
                 const isActive = currentStep === id || (id === "processing" && isLoading)
                 return (
                   <button
@@ -639,11 +668,16 @@ export default function CheckoutClient({
                     onClick={() => {
                       if (!isLoading && id !== "processing") setState({ phase: "IDLE", step: id as "review" | "billing" | "payment" })
                     }}
-                    className={`rounded-md px-3 py-2 font-semibold transition-colors ${
-                      isActive ? "bg-white text-zinc-950" : "bg-white/[0.04] text-zinc-500 hover:text-zinc-300"
+                    className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 rounded-2xl px-2 py-2.5 sm:px-4 sm:py-3 font-bold transition-all ${
+                      isActive
+                        ? "bg-amber-600 text-white shadow-md shadow-amber-600/20"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                   >
-                    {label}
+                    <span className={`h-5 w-5 rounded-full text-[11px] font-black flex items-center justify-center ${isActive ? "bg-white text-amber-600" : "bg-border text-muted-foreground"}`}>
+                      {num}
+                    </span>
+                    <span className="truncate">{label}</span>
                   </button>
                 )
               })}
@@ -652,15 +686,15 @@ export default function CheckoutClient({
 
           {/* Error / Dismiss banner */}
           {errorMessage && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 shadow-sm">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
                 <div className="flex-1">
-                  <p className="text-sm text-red-200">{errorMessage}</p>
+                  <p className="text-sm font-semibold text-red-600 dark:text-red-300">{errorMessage}</p>
                   {canRetry && (
-                    <Button variant="outline" size="sm" onClick={handleRetry} className="mt-3 border-red-500/30 bg-transparent text-red-200 hover:bg-red-500/20">
-                      <RefreshCw className="mr-2 h-3 w-3" />
-                      Retry payment
+                    <Button variant="outline" size="sm" onClick={handleRetry} className="mt-3 rounded-xl border-red-500/30 bg-transparent text-red-600 dark:text-red-200 hover:bg-red-500/20">
+                      <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                      Retry Payment
                     </Button>
                   )}
                 </div>
@@ -670,13 +704,13 @@ export default function CheckoutClient({
 
           {/* Phase: Loading SDK */}
           {state.phase === "LOADING_SDK" && (
-            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-8 text-center">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-400" />
-              <h2 className="mt-4 text-xl font-bold">Loading payment gateway</h2>
-              <p className="mt-2 text-sm text-zinc-400">
-                Initializing Razorpay Checkout. This should only take a moment...
+            <div className="rounded-3xl border border-border bg-card p-10 text-center shadow-sm">
+              <Loader2 className="mx-auto h-9 w-9 animate-spin text-amber-600" />
+              <h2 className="mt-4 text-xl font-black tracking-tight">Loading Payment Gateway</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Initializing Razorpay Checkout. This should only take a moment…
               </p>
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1.5 text-xs text-muted-foreground/70">
                 If this takes too long, please check your internet connection or disable ad blockers.
               </p>
             </div>
@@ -684,10 +718,10 @@ export default function CheckoutClient({
 
           {/* Phase: Creating Order */}
           {state.phase === "CREATING_ORDER" && (
-            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-8 text-center">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-400" />
-              <h2 className="mt-4 text-xl font-bold">Creating secure order</h2>
-              <p className="mt-2 text-sm text-zinc-400">
+            <div className="rounded-3xl border border-border bg-card p-10 text-center shadow-sm">
+              <Loader2 className="mx-auto h-9 w-9 animate-spin text-amber-600" />
+              <h2 className="mt-4 text-xl font-black tracking-tight">Creating Secure Order</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Validating pricing, inventory, and preparing your checkout session.
               </p>
             </div>
@@ -695,25 +729,25 @@ export default function CheckoutClient({
 
           {/* Phase: Verifying */}
           {state.phase === "VERIFYING" && (
-            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-8 text-center">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-400" />
-              <h2 className="mt-4 text-xl font-bold">Verifying payment</h2>
-              <p className="mt-2 text-sm text-zinc-400">
+            <div className="rounded-3xl border border-emerald-500/30 bg-emerald-500/5 p-10 text-center shadow-sm">
+              <Loader2 className="mx-auto h-9 w-9 animate-spin text-emerald-600" />
+              <h2 className="mt-4 text-xl font-black tracking-tight text-foreground">Verifying Payment</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Confirming your payment signature. This usually takes a few seconds.
               </p>
-              <p className="mt-1 text-xs text-zinc-500">
-                Do not close this page. If verification takes too long, the webhook will reconcile your payment automatically.
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Do not close this page. Webhook will reconcile your payment automatically.
               </p>
             </div>
           )}
 
           {/* Phase: Payment Pending (Razorpay popup is open) */}
           {state.phase === "REDIRECTING" && (
-            <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border border-white/10 bg-white/[0.03] p-12 text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+            <div className="flex flex-col items-center justify-center space-y-4 rounded-3xl border border-border bg-card p-12 text-center shadow-sm">
+              <Loader2 className="h-9 w-9 animate-spin text-amber-600" />
               <div>
-                <h2 className="text-xl font-bold">Redirecting to payment gateway</h2>
-                <p className="text-sm text-zinc-400 mt-2">
+                <h2 className="text-xl font-black tracking-tight">Redirecting to Payment Gateway</h2>
+                <p className="text-sm text-muted-foreground mt-2">
                   Please wait while we transfer you securely. Do not close this window.
                 </p>
               </div>
@@ -721,16 +755,16 @@ export default function CheckoutClient({
           )}
 
           {state.phase === "PAYMENT_PENDING" && (
-            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-8 text-center">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-400" />
-              <h2 className="mt-4 text-xl font-bold">Complete your payment</h2>
-              <p className="mt-2 text-sm text-zinc-400">
+            <div className="rounded-3xl border border-border bg-card p-10 text-center shadow-sm space-y-3">
+              <Loader2 className="mx-auto h-9 w-9 animate-spin text-amber-600" />
+              <h2 className="text-xl font-black tracking-tight">Complete Your Payment</h2>
+              <p className="text-sm text-muted-foreground">
                 The Razorpay Checkout popup is open. Pay with cards, UPI, QR, wallets, or net banking.
               </p>
-              <p className="mt-1 text-xs text-zinc-500">
-                Order: <span className="font-mono text-zinc-300">{state.orderNumber}</span>
+              <p className="text-xs font-mono text-muted-foreground">
+                Order: <span className="font-bold text-foreground">{state.orderNumber}</span>
               </p>
-              <p className="mt-3 text-xs text-zinc-600">
+              <p className="text-xs text-muted-foreground/80 pt-2">
                 If the popup doesn't appear, check your browser's popup blocker settings.
               </p>
             </div>
@@ -738,81 +772,73 @@ export default function CheckoutClient({
 
           {/* Phase: Manual UPI Verification */}
           {state.phase === "MANUAL_UPI" && (
-            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-8">
+            <div className="rounded-3xl border border-emerald-500/30 bg-emerald-500/5 p-6 sm:p-8 shadow-md">
               {/* Gateway Header */}
               <div className="text-center mb-6">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 mb-4">
-                  <WalletCards className="h-4 w-4 text-emerald-400" />
-                  <span className="text-sm font-semibold text-emerald-300">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 mb-3">
+                  <WalletCards className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
                     {state.gateway === "PAYTM" ? "Paytm Direct UPI" : "PhonePe Direct UPI"}
                   </span>
                 </div>
-                <h2 className="text-2xl font-bold text-white">Scan & Pay</h2>
-                <p className="mt-2 text-sm text-zinc-400">
-                  Open your{" "}
-                  <strong className="text-white">
-                    {state.gateway === "PAYTM" ? "Paytm" : "PhonePe"}
-                  </strong>{" "}
-                  app and scan the QR code below to complete your payment.
+                <h2 className="text-2xl sm:text-3xl font-black text-foreground">Scan & Pay</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Open your <strong className="text-foreground">{state.gateway === "PAYTM" ? "Paytm" : "PhonePe"}</strong> app and scan the QR code below to complete your payment.
                 </p>
               </div>
 
               {/* QR Code */}
-              <div className="mx-auto overflow-hidden rounded-xl bg-white p-3 shadow-xl" style={{ width: "fit-content" }}>
-                <img src={state.qrDataUrl} alt="UPI QR Code" className="h-56 w-56" />
+              <div className="mx-auto overflow-hidden rounded-2xl bg-white p-4 shadow-xl border border-emerald-500/20" style={{ width: "fit-content" }}>
+                <img src={state.qrDataUrl} alt="UPI QR Code" className="h-56 w-56 object-contain" />
               </div>
 
               {/* UPI Handle & Order Info */}
-              <div className="mt-4 text-center space-y-1">
-                <p className="text-sm font-mono font-semibold text-emerald-400">
+              <div className="mt-5 text-center space-y-1.5">
+                <p className="text-sm font-mono font-extrabold text-emerald-600 dark:text-emerald-400">
                   UPI ID: {state.upiId}
                 </p>
-                <p className="text-xs text-zinc-500">
-                  Pay exactly{" "}
-                  <span className="font-semibold text-white">
-                    ₹{Number(state.amount).toFixed(2)}
-                  </span>{" "}
-                  · Order <span className="font-mono text-zinc-300">{state.orderNumber}</span>
+                <p className="text-xs text-muted-foreground">
+                  Pay exactly <span className="font-bold text-foreground">{formatMoney(state.amount, "INR")}</span> • Order <span className="font-mono font-bold text-foreground">{state.orderNumber}</span>
                 </p>
-                <p className="text-xs text-zinc-600 mt-1">
-                  Add <span className="text-zinc-400 font-mono">{state.orderNumber}</span> as the payment note/description for faster verification.
+                <p className="text-xs text-muted-foreground/80 mt-1">
+                  Add <span className="font-mono font-semibold text-foreground">{state.orderNumber}</span> as the payment note/description for faster verification.
                 </p>
               </div>
 
               {/* Divider */}
-              <div className="my-6 border-t border-white/10" />
+              <div className="my-6 border-t border-emerald-500/20" />
 
               {/* UTR Submission */}
               <div className="space-y-4 max-w-sm mx-auto">
-                <h3 className="text-sm font-semibold text-white">Submit Payment Proof</h3>
-                <p className="text-xs text-zinc-400">
-                  After completing the payment, enter the <strong className="text-white">12-digit UTR</strong> (transaction reference number) from your UPI app and upload a screenshot as proof.
+                <h3 className="text-sm font-extrabold text-foreground">Submit Payment Proof</h3>
+                <p className="text-xs text-muted-foreground">
+                  After completing the payment, enter the <strong className="text-foreground">12-digit UTR</strong> (transaction reference number) from your UPI app and upload a screenshot as proof.
                 </p>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-zinc-300">UTR / Transaction Reference Number</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground">UTR / Transaction Reference Number</label>
                   <Input
                     placeholder="e.g. 312345678901"
                     value={utrNumber}
                     onChange={(e) => setUtrNumber(e.target.value.replace(/[^0-9]/g, ""))}
                     maxLength={12}
-                    className="border-white/20 bg-zinc-900 font-mono text-base tracking-widest"
+                    className="rounded-xl border-border bg-card font-mono text-base tracking-widest text-foreground focus:ring-2 focus:ring-emerald-500/30"
                   />
                   {utrNumber.length > 0 && utrNumber.length < 12 && (
-                    <p className="text-xs text-amber-400">{12 - utrNumber.length} more digits needed</p>
+                    <p className="text-xs text-amber-600 font-semibold">{12 - utrNumber.length} more digits needed</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-zinc-300">Payment Screenshot</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground">Payment Screenshot</label>
                   <div className="flex items-center gap-3">
                     <Button
                       variant="outline"
-                      className="border-white/20 bg-zinc-900 w-full justify-start"
+                      className="rounded-xl border-border bg-card w-full justify-start font-medium text-foreground hover:bg-muted"
                       onClick={() => document.getElementById("screenshot-upload")?.click()}
                     >
-                      <Upload className="mr-2 h-4 w-4" />
-                      {screenshot ? screenshot.name : "Upload screenshot"}
+                      <Upload className="mr-2 h-4 w-4 text-emerald-600" />
+                      <span className="truncate">{screenshot ? screenshot.name : "Upload screenshot"}</span>
                     </Button>
                     <input
                       id="screenshot-upload"
@@ -823,12 +849,12 @@ export default function CheckoutClient({
                     />
                   </div>
                   {screenshot && (
-                    <p className="text-xs text-emerald-400">✓ Screenshot ready to submit</p>
+                    <p className="text-xs text-emerald-600 font-bold">✓ Screenshot ready to submit</p>
                   )}
                 </div>
 
                 <Button
-                  className="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+                  className="w-full mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-6 shadow-md"
                   disabled={submittingUtr || utrNumber.length < 12 || !screenshot}
                   onClick={() => submitUtr(state.orderId)}
                 >
@@ -836,7 +862,7 @@ export default function CheckoutClient({
                   {submittingUtr ? "Submitting for verification..." : "Submit Payment Proof"}
                 </Button>
 
-                <p className="text-xs text-center text-zinc-500">
+                <p className="text-xs text-center text-muted-foreground">
                   Your order will be activated within minutes after an admin verifies your payment.
                 </p>
               </div>
@@ -845,19 +871,19 @@ export default function CheckoutClient({
 
           {/* Phase: Dismissed */}
           {state.phase === "DISMISSED" && (
-            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-6 text-center">
-              <X className="mx-auto h-8 w-8 text-amber-400" />
-              <h2 className="mt-3 text-xl font-bold text-amber-200">Payment not completed</h2>
-              <p className="mt-2 text-sm text-zinc-400">
-                You closed the payment popup. Your order <span className="font-mono text-white">{state.orderNumber}</span> is still pending — no duplicate charges will be made.
+            <div className="rounded-3xl border border-amber-500/30 bg-amber-500/5 p-8 text-center shadow-sm">
+              <X className="mx-auto h-9 w-9 text-amber-600" />
+              <h2 className="mt-3 text-xl font-black text-foreground">Payment Not Completed</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                You closed the payment popup. Your order <span className="font-mono font-bold text-foreground">{state.orderNumber}</span> is still pending — no duplicate charges will be made.
               </p>
-              <div className="mt-5 flex justify-center gap-3">
-                <Button variant="outline" onClick={() => setState({ phase: "IDLE", step: "payment" })} className="border-white/10 bg-transparent">
-                  Back to payment
+              <div className="mt-6 flex justify-center gap-3">
+                <Button variant="outline" onClick={() => setState({ phase: "IDLE", step: "payment" })} className="rounded-xl border-border bg-card hover:bg-muted font-bold">
+                  Back to Payment
                 </Button>
-                <Button onClick={handleRetry}>
+                <Button onClick={handleRetry} className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold">
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Retry payment
+                  Retry Payment
                 </Button>
               </div>
             </div>
@@ -865,184 +891,319 @@ export default function CheckoutClient({
 
           {/* Phase: Failed */}
           {state.phase === "FAILED" && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-6 text-center">
-              <AlertTriangle className="mx-auto h-8 w-8 text-red-400" />
-              <h2 className="mt-3 text-xl font-bold text-red-300">Payment failed</h2>
-              <p className="mt-2 text-sm text-zinc-400">
+            <div className="rounded-3xl border border-red-500/30 bg-red-500/10 p-8 text-center shadow-sm">
+              <AlertTriangle className="mx-auto h-9 w-9 text-red-500" />
+              <h2 className="mt-3 text-xl font-black text-red-600 dark:text-red-300">Payment Failed</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Your payment could not be processed. Your cart and order details are preserved.
               </p>
               {state.orderId && (
-                <p className="mt-1 text-xs text-zinc-500">
-                  Order reference: <span className="font-mono text-zinc-300">{state.orderId.slice(0, 12)}</span>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Order reference: <span className="font-mono font-bold text-foreground">{state.orderId.slice(0, 12)}</span>
                 </p>
               )}
-              <div className="mt-5 flex justify-center gap-3">
-                <Button variant="outline" onClick={() => setState({ phase: "IDLE", step: "payment" })} className="border-white/10 bg-transparent">
-                  Back to payment
+              <div className="mt-6 flex justify-center gap-3">
+                <Button variant="outline" onClick={() => setState({ phase: "IDLE", step: "payment" })} className="rounded-xl border-border bg-card hover:bg-muted font-bold">
+                  Back to Payment
                 </Button>
                 {state.canRetry && (
-                  <Button onClick={handleRetry}>
+                  <Button onClick={handleRetry} className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold">
                     <RefreshCw className="mr-2 h-4 w-4" />
-                    Retry payment
+                    Retry Payment
                   </Button>
                 )}
               </div>
             </div>
           )}
 
-          {/* Step: Review */}
+          {/* Step 1: Review */}
           {(state.phase === "IDLE" && state.step === "review") && (
-            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
-              <div className="mb-5 flex items-center justify-between">
+            <div className="rounded-3xl border border-border bg-white dark:bg-zinc-900 p-6 sm:p-8 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b border-border pb-5">
                 <div>
-                  <h1 className="text-2xl font-bold">Review order</h1>
-                  <p className="text-sm text-zinc-500">Validated pricing, tax, subscription and AI quota snapshots.</p>
+                  <h1 className="text-2xl font-extrabold tracking-tight">Review Order</h1>
+                  <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Validated pricing, tax, subscription and AI quota snapshots.</p>
                 </div>
-                <Badge variant="outline" className="border-emerald-500/30 text-emerald-300">Live cart</Badge>
+                <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-3 py-1 rounded-full">
+                  Live Cart
+                </Badge>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {summary.items.map((item) => (
-                  <div key={item.id} className="grid gap-4 rounded-lg border border-white/10 bg-zinc-950/60 p-4 sm:grid-cols-[56px_1fr_auto]">
-                    <div className="h-14 w-14 overflow-hidden rounded-md bg-zinc-900">
-                      {item.thumbnailUrl ? <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center"><ShoppingCart className="h-5 w-5 text-zinc-500" /></div>}
+                  <div key={item.id} className="grid gap-4 rounded-2xl border border-border bg-muted/40 p-4 sm:grid-cols-[64px_1fr_auto] items-center">
+                    <div className="h-16 w-16 overflow-hidden rounded-xl bg-card border border-border shrink-0">
+                      {item.thumbnailUrl ? <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-muted-foreground"><ShoppingCart className="h-6 w-6" /></div>}
                     </div>
-                    <div>
-                      <p className="font-semibold">{item.name}</p>
-                      <p className="text-sm text-zinc-500">{item.tier} {intervalLabels[item.interval] ?? ""} · {item.type.replaceAll("_", " ")}</p>
-                      <p className="mt-1 text-xs text-zinc-600">Qty {item.quantity} · instant provisioning after verified webhook</p>
+                    <div className="space-y-1">
+                      <p className="font-bold text-foreground">{item.name}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span className="px-2 py-0.5 rounded-md bg-card border border-border font-medium text-foreground">
+                          {item.tier} {intervalLabels[item.interval] ?? ""}
+                        </span>
+                        <span>•</span>
+                        <span className="capitalize">{item.type.replaceAll("_", " ")}</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground pt-0.5">Qty {item.quantity} • Instant provisioning after verified webhook</p>
                     </div>
-                    <p className="font-bold">{formatMoney(item.price * item.quantity, summary.currency)}</p>
+                    <p className="text-base font-extrabold text-foreground sm:text-right">{formatMoney(item.price * item.quantity, summary.currency)}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-5 flex justify-end">
-                <Button onClick={() => setState({ phase: "IDLE", step: "billing" })}>Continue</Button>
+              <div className="mt-6 flex justify-end border-t border-border pt-5">
+                <Button onClick={() => setState({ phase: "IDLE", step: "billing" })} className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-8 py-6 shadow-md">
+                  Continue to Billing →
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Step: Billing */}
+          {/* Step 2: Billing */}
           {(state.phase === "IDLE" && state.step === "billing") && (
-            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
-              <h2 className="text-xl font-bold">Billing details</h2>
-              <p className="mt-1 text-sm text-zinc-500">Used for invoices, tax records, and subscription renewal notices.</p>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <label className="space-y-2">
-                  <span className="text-xs font-semibold text-zinc-500">Billing email</span>
-                  <Input value={billingEmail} onChange={(e) => setBillingEmail(e.target.value)} placeholder="billing@company.com" className="border-white/10 bg-zinc-950" />
+            <div className="rounded-3xl border border-border bg-white dark:bg-zinc-900 p-6 sm:p-8 shadow-sm space-y-6">
+              <div className="border-b border-border pb-5">
+                <h2 className="text-2xl font-extrabold tracking-tight">Billing Details</h2>
+                <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Used for invoices, tax records, and subscription renewal notices.</p>
+              </div>
+
+              {/* Contact Information */}
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="space-y-1.5">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Full Name <span className="text-red-500">*</span></span>
+                  <Input
+                    value={billingName}
+                    onChange={(e) => setBillingName(e.target.value)}
+                    placeholder="Jane Smith"
+                    className="rounded-xl border-border bg-white dark:bg-zinc-800 text-sm font-medium text-foreground focus:ring-2 focus:ring-amber-500/30"
+                  />
                 </label>
-                <label className="space-y-2">
-                  <span className="text-xs font-semibold text-zinc-500">Company</span>
-                  <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name" className="border-white/10 bg-zinc-950" />
+                <label className="space-y-1.5">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Billing Email <span className="text-red-500">*</span></span>
+                  <Input
+                    type="email"
+                    value={billingEmail}
+                    onChange={(e) => setBillingEmail(e.target.value)}
+                    placeholder="billing@company.com"
+                    className="rounded-xl border-border bg-white dark:bg-zinc-800 text-sm font-medium text-foreground focus:ring-2 focus:ring-amber-500/30"
+                  />
                 </label>
-                <label className="space-y-2 sm:col-span-2">
-                  <span className="text-xs font-semibold text-zinc-500">GSTIN / tax ID</span>
-                  <Input value={gstin} onChange={(e) => setGstin(e.target.value)} placeholder="Optional" className="border-white/10 bg-zinc-950" />
+                <label className="space-y-1.5">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Company <span className="text-xs font-normal text-muted-foreground">(optional)</span></span>
+                  <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Company name" className="rounded-xl border-border bg-white dark:bg-zinc-800 text-sm font-medium text-foreground focus:ring-2 focus:ring-amber-500/30" />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">GSTIN / Tax ID <span className="text-xs font-normal text-muted-foreground">(optional)</span></span>
+                  <Input value={gstin} onChange={(e) => setGstin(e.target.value)} placeholder="22AAAAA0000A1Z5" className="rounded-xl border-border bg-white dark:bg-zinc-800 text-sm font-mono text-foreground focus:ring-2 focus:ring-amber-500/30" />
                 </label>
               </div>
-              <div className="mt-5 flex justify-between">
-                <Button variant="outline" onClick={() => setState({ phase: "IDLE", step: "review" })} className="border-white/10 bg-transparent">Back</Button>
-                <Button onClick={() => setState({ phase: "IDLE", step: "payment" })}>Continue to payment</Button>
+
+              {/* Address Fields */}
+              <div className="pt-2">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 border-b border-border pb-2">Billing Address</p>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <label className="space-y-1.5 sm:col-span-2">
+                    <span className="text-xs font-medium text-muted-foreground">Street / Flat / Building <span className="text-red-500">*</span></span>
+                    <Input value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} placeholder="123 Main St, Suite 4" className="rounded-xl border-border bg-white dark:bg-zinc-800 text-sm font-medium text-foreground focus:ring-2 focus:ring-amber-500/30" />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">City <span className="text-red-500">*</span></span>
+                    <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Mumbai" className="rounded-xl border-border bg-white dark:bg-zinc-800 text-sm font-medium text-foreground focus:ring-2 focus:ring-amber-500/30" />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">State / Province <span className="text-red-500">*</span></span>
+                    <Input value={billingState} onChange={(e) => setBillingState(e.target.value)} placeholder="Maharashtra" className="rounded-xl border-border bg-white dark:bg-zinc-800 text-sm font-medium text-foreground focus:ring-2 focus:ring-amber-500/30" />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">Postal Code <span className="text-red-500">*</span></span>
+                    <Input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="400001" className="rounded-xl border-border bg-white dark:bg-zinc-800 text-sm font-medium text-foreground focus:ring-2 focus:ring-amber-500/30" />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">Country</span>
+                    <select
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className="w-full rounded-xl border border-border bg-white dark:bg-zinc-800 px-3.5 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                    >
+                      <option value="IN">India</option>
+                      <option value="US">United States</option>
+                      <option value="GB">United Kingdom</option>
+                      <option value="AU">Australia</option>
+                      <option value="CA">Canada</option>
+                      <option value="SG">Singapore</option>
+                      <option value="AE">UAE</option>
+                      <option value="DE">Germany</option>
+                      <option value="FR">France</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              {/* Email OTP Verification Box */}
+              <div className="pt-2">
+                <Suspense fallback={
+                  <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center text-xs text-muted-foreground">Loading verifier…</div>
+                }>
+                  <EmailOtpVerifier
+                    email={billingEmail}
+                    customerName={billingName || undefined}
+                    checkoutSessionId={checkoutSessionId.current}
+                    onVerified={() => setEmailVerified(true)}
+                    onReset={() => setEmailVerified(false)}
+                  />
+                </Suspense>
+              </div>
+
+              <div className="flex justify-between pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setState({ phase: "IDLE", step: "review" })} className="rounded-xl border-border bg-card hover:bg-muted font-bold">
+                  Back
+                </Button>
+                <Button
+                  onClick={() => setState({ phase: "IDLE", step: "payment" })}
+                  disabled={!billingName.trim() || !billingEmail.trim() || !addressLine1.trim() || !city.trim() || !billingState.trim() || !postalCode.trim() || !emailVerified}
+                  className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-8 py-6 shadow-md"
+                >
+                  Continue to Payment →
+                </Button>
               </div>
             </div>
           )}
 
-          {/* Step: Payment */}
+          {/* Step 3: Payment */}
           {(state.phase === "IDLE" && state.step === "payment") && (
-            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
-              <h2 className="text-xl font-bold">Secure payment</h2>
-              <p className="mt-1 text-sm text-zinc-500">
-                Choose your payment method. Paytm and PhonePe use Direct UPI — you will scan a QR code and submit the UTR reference for instant admin verification.
-              </p>
+            <div className="rounded-3xl border border-border bg-white dark:bg-zinc-900 p-6 sm:p-8 shadow-sm space-y-6">
+              <div className="border-b border-border pb-5">
+                <h2 className="text-2xl font-extrabold tracking-tight">Secure Payment</h2>
+                <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                  Choose your payment method. Paytm and PhonePe use Direct UPI — scan a QR code and submit the UTR reference for instant admin verification.
+                </p>
+              </div>
 
-              <div className="mt-5 space-y-3">
+              {/* Gateway Cards */}
+              <div className="space-y-4">
                 <div 
-                  className={`cursor-pointer rounded-lg border p-4 transition-all ${selectedGateway === "RAZORPAY" ? "border-emerald-500/50 bg-emerald-500/5" : "border-white/10 bg-white/[0.02] hover:border-white/20"}`}
+                  className={`cursor-pointer rounded-2xl border p-5 transition-all ${selectedGateway === "RAZORPAY" ? "border-amber-500 bg-amber-500/5 shadow-sm ring-1 ring-amber-500/20" : "border-border bg-card hover:border-border/80 hover:bg-muted/30"}`}
                   onClick={() => setSelectedGateway("RAZORPAY")}
                 >
-                  <div className="flex items-start gap-3">
-                    <ShieldCheck className={`mt-0.5 h-5 w-5 shrink-0 ${selectedGateway === "RAZORPAY" ? "text-emerald-400" : "text-zinc-500"}`} />
-                    <div className="text-sm">
-                      <p className={`font-semibold ${selectedGateway === "RAZORPAY" ? "text-white" : "text-zinc-400"}`}>Razorpay Standard Checkout</p>
-                      <p className="mt-1 text-zinc-500">Cards, UPI, net banking, wallets, and EMI.</p>
+                  <div className="flex items-start gap-4">
+                    <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${selectedGateway === "RAZORPAY" ? "border-amber-600 bg-amber-600 text-white" : "border-muted-foreground/30"}`}>
+                      {selectedGateway === "RAZORPAY" && <div className="h-2 w-2 rounded-full bg-white" />}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-foreground text-base">Razorpay Standard Checkout</p>
+                        <Badge className="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">Instant Activation</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Cards, UPI, Net Banking, Wallets, and EMI.</p>
                     </div>
                   </div>
                 </div>
 
                 <div
-                  className={`cursor-pointer rounded-lg border p-4 transition-all ${selectedGateway === "PHONEPE" ? "border-indigo-500/50 bg-indigo-500/5" : "border-white/10 bg-white/[0.02] hover:border-white/20"}`}
+                  className={`cursor-pointer rounded-2xl border p-5 transition-all ${selectedGateway === "PHONEPE" ? "border-indigo-500 bg-indigo-500/5 shadow-sm ring-1 ring-indigo-500/20" : "border-border bg-card hover:border-border/80 hover:bg-muted/30"}`}
                   onClick={() => setSelectedGateway("PHONEPE")}
                 >
-                  <div className="flex items-start gap-3">
-                    <WalletCards className={`mt-0.5 h-5 w-5 shrink-0 ${selectedGateway === "PHONEPE" ? "text-indigo-400" : "text-zinc-500"}`} />
-                    <div className="text-sm">
-                      <p className={`font-semibold ${selectedGateway === "PHONEPE" ? "text-white" : "text-zinc-400"}`}>PhonePe (Direct UPI)</p>
-                      <p className="mt-1 text-zinc-500">Scan QR code via PhonePe · UTR verification.</p>
+                  <div className="flex items-start gap-4">
+                    <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${selectedGateway === "PHONEPE" ? "border-indigo-600 bg-indigo-600 text-white" : "border-muted-foreground/30"}`}>
+                      {selectedGateway === "PHONEPE" && <div className="h-2 w-2 rounded-full bg-white" />}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-foreground text-base">PhonePe (Direct UPI)</p>
+                        <Badge variant="outline" className="text-xs font-semibold">UTR Verification</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Scan QR code via PhonePe • Instant UTR submission.</p>
                     </div>
                   </div>
                 </div>
 
                 <div
-                  className={`cursor-pointer rounded-lg border p-4 transition-all ${selectedGateway === "PAYTM" ? "border-sky-500/50 bg-sky-500/5" : "border-white/10 bg-white/[0.02] hover:border-white/20"}`}
+                  className={`cursor-pointer rounded-2xl border p-5 transition-all ${selectedGateway === "PAYTM" ? "border-sky-500 bg-sky-500/5 shadow-sm ring-1 ring-sky-500/20" : "border-border bg-card hover:border-border/80 hover:bg-muted/30"}`}
                   onClick={() => setSelectedGateway("PAYTM")}
                 >
-                  <div className="flex items-start gap-3">
-                    <WalletCards className={`mt-0.5 h-5 w-5 shrink-0 ${selectedGateway === "PAYTM" ? "text-sky-400" : "text-zinc-500"}`} />
-                    <div className="text-sm">
-                      <p className={`font-semibold ${selectedGateway === "PAYTM" ? "text-white" : "text-zinc-400"}`}>Paytm (Direct UPI)</p>
-                      <p className="mt-1 text-zinc-500">Scan QR code via Paytm · UTR verification.</p>
+                  <div className="flex items-start gap-4">
+                    <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${selectedGateway === "PAYTM" ? "border-sky-600 bg-sky-600 text-white" : "border-muted-foreground/30"}`}>
+                      {selectedGateway === "PAYTM" && <div className="h-2 w-2 rounded-full bg-white" />}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-foreground text-base">Paytm (Direct UPI)</p>
+                        <Badge variant="outline" className="text-xs font-semibold">UTR Verification</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Scan QR code via Paytm • Instant UTR submission.</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-5 flex justify-between">
-                <Button variant="outline" onClick={() => setState({ phase: "IDLE", step: "billing" })} className="border-white/10 bg-transparent">Back</Button>
-                <Button onClick={initiatePayment} size="lg" className="gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Pay {formatMoney(summary.total, summary.currency)}
+              <div className="flex justify-between pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setState({ phase: "IDLE", step: "billing" })} className="rounded-xl border-border bg-card hover:bg-muted font-bold">
+                  Back
+                </Button>
+                <Button onClick={initiatePayment} size="lg" className="rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-extrabold px-8 py-6 shadow-md gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  <span>Pay {formatMoney(summary.total, summary.currency)}</span>
                 </Button>
               </div>
             </div>
           )}
         </section>
 
-        {/* Sidebar: Order summary */}
-        <aside className="space-y-4">
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <FileText className="h-5 w-5 text-zinc-400" />
-              <h2 className="font-bold">Order summary</h2>
+        {/* Sidebar: Order Summary & Trust Signals */}
+        <aside className="space-y-6">
+          <div className="rounded-3xl border border-border bg-white dark:bg-zinc-900 p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="flex items-center gap-2.5 border-b border-border pb-4">
+              <FileText className="h-5 w-5 text-amber-600" />
+              <h2 className="text-xl font-extrabold tracking-tight">Order Summary</h2>
             </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between text-zinc-400"><span>Subtotal</span><span>{formatMoney(summary.subtotal, summary.currency)}</span></div>
+            
+            <div className="space-y-3.5 text-sm">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Subtotal</span>
+                <span className="font-semibold text-foreground">{formatMoney(summary.subtotal, summary.currency)}</span>
+              </div>
               {summary.discount > 0 && (
-                <div className="flex justify-between text-emerald-400"><span>Discount</span><span>-{formatMoney(summary.discount, summary.currency)}</span></div>
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+                  <span>Discount</span>
+                  <span className="font-semibold">-{formatMoney(summary.discount, summary.currency)}</span>
+                </div>
               )}
-              <div className="flex justify-between text-zinc-400"><span>Tax</span><span>{formatMoney(summary.tax, summary.currency)}</span></div>
-              <div className="border-t border-white/10 pt-3 flex justify-between text-lg font-black"><span>Total</span><span>{formatMoney(summary.total, summary.currency)}</span></div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>Estimated Tax</span>
+                <span className="font-semibold text-foreground">{formatMoney(summary.tax, summary.currency)}</span>
+              </div>
+              <div className="border-t border-border pt-4 flex justify-between items-baseline">
+                <span className="text-base font-extrabold text-foreground">Total</span>
+                <span className="text-2xl font-black text-foreground bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-600 bg-clip-text text-transparent">
+                  {formatMoney(summary.total, summary.currency)}
+                </span>
+              </div>
             </div>
 
             {!initialBuyNow && (
-              <div className="mt-5">
+              <div className="pt-2">
                 <div className="flex gap-2">
-                  <Input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="Coupon code" className="border-white/10 bg-zinc-950" />
-                  <Button variant="outline" disabled={couponLoading} onClick={applyCoupon} className="border-white/10 bg-transparent shrink-0">
+                  <Input
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="Coupon code"
+                    className="rounded-xl border-border bg-white dark:bg-zinc-800 font-mono uppercase tracking-wider text-sm focus:ring-2 focus:ring-amber-500/30"
+                  />
+                  <Button variant="outline" disabled={couponLoading} onClick={applyCoupon} className="rounded-xl border-border hover:bg-muted font-bold shrink-0 px-4">
                     {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Tag className="h-4 w-4" />}
                   </Button>
                 </div>
-                {couponError && <p className="mt-2 text-xs text-red-400">{couponError}</p>}
+                {couponError && <p className="mt-2 text-xs font-semibold text-red-500">{couponError}</p>}
               </div>
             )}
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
-            <div className="grid gap-3 text-sm text-zinc-400">
+          <div className="rounded-3xl border border-border bg-white dark:bg-zinc-900 p-6 shadow-sm">
+            <div className="grid gap-3.5 text-xs text-muted-foreground font-medium">
               {trustSignals.map(({ Icon, label }) => (
                 <div key={label} className="flex items-center gap-3">
-                  <Icon className="h-4 w-4 text-emerald-300" />
+                  <Icon className="h-4 w-4 text-emerald-600 shrink-0" />
                   <span>{label}</span>
                 </div>
               ))}
