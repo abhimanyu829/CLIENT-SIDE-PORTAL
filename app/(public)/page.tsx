@@ -354,33 +354,16 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ── SECTION 7: RECENTLY LAUNCHED ────────────────────────────────────── */}
-      {newLaunches.length > 0 && (
-        <section className="py-[80px] px-4 bg-background">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-end justify-between mb-10">
-              <div>
-                <p className="section-label mb-2">Just Launched</p>
-                <h2 className="text-3xl md:text-[40px] font-medium text-foreground">Fresh new arrivals</h2>
-              </div>
-              <Link href="/marketplace?sort=newest" className="bg-card text-card-foreground px-5 py-2.5 rounded-lg text-sm font-medium border border-border hover:bg-accent/10 transition-all hidden sm:block">
-                View all →
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[16px]">
-              {newLaunches.map((p, idx) => {
-                const daysAgo = Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000)
-                return (
-                  <div key={p.id} className="relative">
-                    <div className="absolute -top-2 left-4 z-10 badge-new font-mono">NEW {daysAgo === 0 ? "TODAY" : `${daysAgo}D AGO`}</div>
-                    <ProductCard {...toCardProps(p)} variant="grid" />
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* ── SECTION 7: GIF SHOWCASE ──────────────────────────────────────────── */}
+      <section className="py-[80px] px-4 bg-background">
+        <div className="max-w-7xl mx-auto flex flex-col items-center justify-center">
+          <img
+            src="/uploads/utr/Untitled design (1).gif"
+            alt="Platform showcase"
+            className="w-full max-w-4xl rounded-2xl shadow-2xl border border-border object-cover"
+          />
+        </div>
+      </section>
 
       {/* ── SECTION 8: DEMO SHOWCASE ─────────────────────────────────────────── */}
       <section className="py-[80px] px-4 bg-background">

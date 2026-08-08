@@ -58,7 +58,8 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
   const userRole = internalUser?.role
   const canSeeAdminPanel =
     userRole === "SUPER_ADMIN" ||
-    (userRole === "SUB_ADMIN" && internalUser?.adminAccess?.panelEligible === true)
+    (userRole === "SUB_ADMIN" && internalUser?.adminAccess?.panelEligible === true) ||
+    internalUser?.adminAccess?.allowed === true
   const adminPanelHref = internalUser?.adminAccess?.allowed
     ? internalUser.adminAccess.landingPath ?? "/admin"
     : "/admin-access"
