@@ -29,18 +29,18 @@ const SORT_OPTIONS = [
 ]
 
 const S = `
-.glass{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08)}
-.btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);border:1px solid rgba(139,92,246,.3)}
+.glass{background:hsl(var(--card)/0.85);backdrop-filter:blur(20px);border:1px solid hsl(var(--border))}
+.btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);border:1px solid rgba(139,92,246,.3);color:#fff}
 .btn-primary:hover{box-shadow:0 0 20px rgba(139,92,246,.3)}
-.filter-chip{border:1px solid rgba(255,255,255,.08);border-radius:9999px;padding:.375rem 1rem;font-size:.8125rem;font-weight:500;transition:all .2s;cursor:pointer;color:rgba(255,255,255,.5);background:transparent}
-.filter-chip:hover{border-color:rgba(139,92,246,.4);color:rgba(255,255,255,.9)}
-.filter-chip-active{background:rgba(139,92,246,.15);border-color:rgba(139,92,246,.5)!important;color:#a78bfa!important}
-.text-gradient{background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.filter-chip{border:1px solid hsl(var(--border));border-radius:9999px;padding:.375rem 1rem;font-size:.8125rem;font-weight:500;transition:all .2s;cursor:pointer;color:hsl(var(--muted-foreground));background:hsl(var(--card))}
+.filter-chip:hover{border-color:hsl(var(--primary)/0.5);color:hsl(var(--foreground))}
+.filter-chip-active{background:hsl(var(--primary)/0.15);border-color:hsl(var(--primary))!important;color:hsl(var(--primary))!important}
+.text-gradient{background:linear-gradient(135deg,#8b5cf6,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .section-label{font-size:.7rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;background:linear-gradient(90deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .card-hover{transition:all .3s ease}
 .card-hover:hover{transform:translateY(-4px)}
-.filter-panel{background:rgba(8,8,8,.97);border:1px solid rgba(255,255,255,.08);border-radius:1rem;padding:1.25rem}
-.range-slider{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:rgba(255,255,255,.1);outline:none}
+.filter-panel{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:1rem;padding:1.25rem;color:hsl(var(--foreground))}
+.range-slider{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:hsl(var(--border));outline:none}
 .range-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);cursor:pointer}
 @keyframes flash-pulse{0%,100%{opacity:1}50%{opacity:.7}}
 .flash-badge{animation:flash-pulse 1.5s ease-in-out infinite}
@@ -206,7 +206,7 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
   }, [allProducts, selectedType, searchQuery, showSale, showWithDemo, minRating, priceMax, sortBy])
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <style>{S}</style>
 
       {/* Toast notification */}
@@ -214,25 +214,24 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
         <div className={`fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold transition-all animate-in slide-in-from-bottom-4 ${
           toast.type === "success" ? "bg-emerald-500/90 text-white border border-emerald-400/30" :
           toast.type === "error" ? "bg-red-500/90 text-white border border-red-400/30" :
-          "bg-zinc-800/95 text-white border border-white/10"
+          "bg-card text-foreground border border-border"
         } backdrop-blur-xl`}>
           <span>{toast.type === "success" ? "✓" : toast.type === "error" ? "✕" : "ℹ"}</span>
           <span>{toast.msg}</span>
         </div>
       )}
 
-      {/* ── HERO SECTION ────────────────────────────────────────────────────── */}
-      <section className="relative py-16 px-4 border-b border-white/5 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-950/15 to-transparent pointer-events-none" />
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/8 rounded-full blur-3xl pointer-events-none" />
+      {/* ── HERO SEARCH & TYPES ───────────────────────────────────────────── */}
+      <section className="relative py-16 px-4 border-b border-border/40 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-purple-500/5 to-transparent pointer-events-none" />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-10">
             <p className="section-label mb-3">🛒 Marketplace</p>
-            <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-4">
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4 text-foreground">
               <span className="text-gradient">{totalCount.toLocaleString()}+ Products</span>
               <br />Ready to Deploy
             </h1>
-            <p className="text-zinc-500 text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               AI agents, SaaS tools, APIs, and developer products. Curated, reviewed, and production-ready.
             </p>
           </div>
@@ -240,16 +239,16 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
           {/* Search bar */}
           <div className="max-w-2xl mx-auto mb-8">
             <div className="relative">
-              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 text-lg pointer-events-none">🔍</span>
+              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground text-lg pointer-events-none">🔍</span>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => startTransition(() => setSearchQuery(e.target.value))}
                 placeholder="Search products, AI agents, tools..."
-                className="w-full glass rounded-2xl pl-14 pr-5 py-5 text-white placeholder-zinc-600 outline-none focus:border-purple-500/50 text-base transition-all"
+                className="w-full bg-card rounded-2xl pl-14 pr-5 py-5 text-foreground placeholder:text-muted-foreground border border-border focus:border-purple-500/50 text-base shadow-sm transition-all"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors">✕</button>
+                <button onClick={() => setSearchQuery("")} className="absolute right-5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">✕</button>
               )}
             </div>
           </div>
@@ -269,17 +268,17 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
 
       {/* ── FLASH SALE SECTION ───────────────────────────────────────────────── */}
       {flashSale.length > 0 && (
-        <section className="py-12 px-4 border-b border-red-500/10 bg-gradient-to-r from-red-950/20 to-orange-950/15">
+        <section className="py-12 px-4 border-b border-red-500/10 bg-gradient-to-r from-red-500/10 to-amber-500/10">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 bg-red-400 rounded-full animate-pulse" />
-                  <span className="text-red-400 font-black uppercase tracking-wider text-sm flash-badge">⚡ Flash Sale</span>
+                  <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                  <span className="text-red-600 dark:text-red-400 font-black uppercase tracking-wider text-sm flash-badge">⚡ Flash Sale</span>
                 </div>
-                <span className="text-zinc-600 text-sm">Limited time — ends soon</span>
+                <span className="text-muted-foreground text-sm">Limited time — ends soon</span>
               </div>
-              <Link href="/marketplace?filter=sale" className="text-sm text-red-400 hover:text-red-300 transition-colors">View all →</Link>
+              <Link href="/marketplace?filter=sale" className="text-sm text-red-600 dark:text-red-400 font-semibold hover:underline transition-colors">View all →</Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {flashSale.map(p => <ProductCard key={p.id} {...p} variant="grid" previewEnabled={p.previewEnabled ?? false} onPreview={() => handlePreview(p.id)} onAddToCart={() => handleAddToCart(p.id, p.tierId)} isAddingToCart={addingToCart === p.id} />)}
@@ -290,14 +289,14 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
 
       {/* ── FEATURED PRODUCTS ───────────────────────────────────────────────── */}
       {featured.length > 0 && !searchQuery && selectedType === "ALL" && (
-        <section className="py-12 px-4 border-b border-white/5">
+        <section className="py-12 px-4 border-b border-border/40">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-end justify-between mb-8">
               <div>
                 <p className="section-label mb-1">⭐ Featured</p>
-                <h2 className="text-2xl font-black">Editor&apos;s Picks</h2>
+                <h2 className="text-2xl font-black text-foreground">Editor&apos;s Picks</h2>
               </div>
-              <Link href="/marketplace?filter=featured" className="text-sm text-zinc-500 hover:text-white transition-colors">See all →</Link>
+              <Link href="/marketplace?filter=featured" className="text-sm text-muted-foreground hover:text-foreground transition-colors">See all →</Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {featured.slice(0, 3).map((p, i) => <ProductCard key={p.id} {...p} variant={i === 0 ? "featured" : "grid"} previewEnabled={p.previewEnabled ?? false} onPreview={() => handlePreview(p.id)} onAddToCart={() => handleAddToCart(p.id, p.tierId)} isAddingToCart={addingToCart === p.id} />)}
@@ -308,14 +307,14 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
 
       {/* ── TRENDING SECTION ─────────────────────────────────────────────────── */}
       {trending.length > 0 && !searchQuery && selectedType === "ALL" && (
-        <section className="py-12 px-4 border-b border-white/5">
+        <section className="py-12 px-4 border-b border-border/40">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-end justify-between mb-8">
               <div>
                 <p className="section-label mb-1">🔥 Trending</p>
-                <h2 className="text-2xl font-black">Popular this week</h2>
+                <h2 className="text-2xl font-black text-foreground">Popular this week</h2>
               </div>
-              <Link href="/marketplace?sort=trending" className="text-sm text-zinc-500 hover:text-white transition-colors">See all →</Link>
+              <Link href="/marketplace?sort=trending" className="text-sm text-muted-foreground hover:text-foreground transition-colors">See all →</Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {trending.slice(0, 4).map(p => <ProductCard key={p.id} {...p} variant="grid" previewEnabled={p.previewEnabled ?? false} onPreview={() => handlePreview(p.id)} onAddToCart={() => handleAddToCart(p.id, p.tierId)} isAddingToCart={addingToCart === p.id} />)}
@@ -326,12 +325,12 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
 
       {/* ── BEST SELLERS ─────────────────────────────────────────────────────── */}
       {bestSellers.length > 0 && !searchQuery && selectedType === "ALL" && (
-        <section className="py-12 px-4 border-b border-white/5">
+        <section className="py-12 px-4 border-b border-border/40">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-end justify-between mb-8">
               <div>
                 <p className="section-label mb-1">🏆 Best Sellers</p>
-                <h2 className="text-2xl font-black">Top performing products</h2>
+                <h2 className="text-2xl font-black text-foreground">Top performing products</h2>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -347,55 +346,55 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
           {/* Grid controls */}
           <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-4">
-              <h2 className="text-lg font-bold">
+              <h2 className="text-lg font-bold text-foreground">
                 {searchQuery ? `Results for "${searchQuery}"` : selectedType !== "ALL" ? TYPES.find(t => t.value === selectedType)?.label : "All Products"}
-                <span className="text-zinc-600 font-normal text-sm ml-2">({filteredProducts.length})</span>
+                <span className="text-muted-foreground font-normal text-sm ml-2">({filteredProducts.length})</span>
               </h2>
             </div>
             <div className="flex items-center gap-3">
               {/* Toggle filters */}
               <button onClick={() => setShowFilters(f => !f)}
-                className={`glass px-4 py-2 rounded-xl text-sm font-medium transition-all ${showFilters ? "border-purple-500/50 text-purple-400" : "text-zinc-400 hover:border-purple-500/30"}`}>
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${showFilters ? "border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-400" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}>
                 ⚙️ Filters {(showSale || showWithDemo || minRating > 0 || priceMax < 1000) ? "●" : ""}
               </button>
               {/* Sort select */}
               <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-                className="glass rounded-xl px-4 py-2 text-sm text-zinc-300 outline-none border-transparent focus:border-purple-500/50 transition-all bg-transparent cursor-pointer">
-                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value} className="bg-zinc-900">{o.label}</option>)}
+                className="bg-card border border-border rounded-xl px-4 py-2 text-sm text-foreground outline-none focus:border-purple-500/50 transition-all cursor-pointer">
+                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value} className="bg-background text-foreground">{o.label}</option>)}
               </select>
             </div>
           </div>
 
           {/* Filter panel */}
           {showFilters && (
-            <div className="filter-panel mb-8 grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="filter-panel mb-8 grid grid-cols-2 md:grid-cols-4 gap-6 shadow-sm">
               <div>
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Deals</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Deals</p>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={showSale} onChange={e => setShowSale(e.target.checked)} className="accent-purple-500 w-4 h-4" />
-                  <span className="text-sm text-zinc-300">On Sale Only</span>
+                  <span className="text-sm font-medium text-foreground">On Sale Only</span>
                 </label>
               </div>
               <div>
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Demo</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Demo</p>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={showWithDemo} onChange={e => setShowWithDemo(e.target.checked)} className="accent-purple-500 w-4 h-4" />
-                  <span className="text-sm text-zinc-300">Has Live Demo</span>
+                  <span className="text-sm font-medium text-foreground">Has Live Demo</span>
                 </label>
               </div>
               <div>
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Min Rating</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Min Rating</p>
                 <div className="flex gap-1">
                   {[0, 3, 4, 4.5].map(r => (
                     <button key={r} onClick={() => setMinRating(r)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${minRating === r ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : "glass text-zinc-500 hover:text-zinc-300"}`}>
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${minRating === r ? "bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/40" : "bg-card border border-border text-muted-foreground hover:text-foreground"}`}>
                       {r === 0 ? "Any" : `${r}★+`}
                     </button>
                   ))}
                 </div>
               </div>
               <div>
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Max Price: ${priceMax === 1000 ? "Any" : `$${priceMax}/mo`}</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Max Price: ${priceMax === 1000 ? "Any" : `$${priceMax}/mo`}</p>
                 <input type="range" min={0} max={1000} step={50} value={priceMax} onChange={e => setPriceMax(Number(e.target.value))} className="range-slider w-full" />
               </div>
             </div>
@@ -405,7 +404,7 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
           {isPending ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="glass rounded-2xl aspect-[3/4] animate-pulse" />
+                <div key={i} className="bg-card border border-border rounded-2xl aspect-[3/4] animate-pulse" />
               ))}
             </div>
           ) : filteredProducts.length > 0 ? (
@@ -415,10 +414,10 @@ export default function MarketplaceClient({ featured, trending, flashSale, bestS
           ) : (
             <div className="text-center py-24">
               <div className="text-5xl mb-4">🔍</div>
-              <h3 className="text-xl font-bold mb-2">No products found</h3>
-              <p className="text-zinc-600 mb-6">Try adjusting your filters or search query</p>
+              <h3 className="text-xl font-bold mb-2 text-foreground">No products found</h3>
+              <p className="text-muted-foreground mb-6">Try adjusting your filters or search query</p>
               <button onClick={() => { setSearchQuery(""); setSelectedType("ALL"); setShowSale(false); setShowWithDemo(false); setMinRating(0); setPriceMax(1000) }}
-                className="glass px-6 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:border-purple-500/40 transition-all">
+                className="bg-card border border-border px-6 py-3 rounded-xl text-sm font-semibold text-foreground hover:border-purple-500/40 transition-all">
                 Clear all filters
               </button>
             </div>

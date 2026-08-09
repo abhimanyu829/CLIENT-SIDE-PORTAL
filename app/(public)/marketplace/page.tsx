@@ -122,6 +122,8 @@ function serialize(products: any[]) {
   })
 }
 
+import { MarketplaceHero } from "@/components/marketplace/MarketplaceHero"
+
 export default async function MarketplacePage() {
   const { featured, trending, flashSale, bestSellers, allProducts, campaign, totalCount } = await getMarketplaceData()
 
@@ -137,9 +139,9 @@ export default async function MarketplacePage() {
   } : null
 
   return (
-    <div className="bg-[#080808] text-white min-h-screen">
-      <PageHero 
-        title={<>The Enterprise <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-400">AI Marketplace</span></>}
+    <div className="bg-background text-foreground min-h-screen">
+      <MarketplaceHero 
+        titleText="THE ENTERPRISE AI MARKETPLACE"
         description="Discover, deploy, and scale production-grade AI agents, SaaS tools, and developer APIs in seconds. The trusted ecosystem for modern AI infrastructure."
         pillText="NexusAI Ecosystem"
         ctaText="Start Deploying"
@@ -156,13 +158,6 @@ export default async function MarketplacePage() {
         allProducts={serialize(allProducts)}
         totalCount={totalCount}
       />
-      
-      <StatsRow stats={[
-        { value: "10k+", label: "Active Deployments" },
-        { value: "99.99%", label: "Platform Uptime" },
-        { value: "500+", label: "Verified Agents" },
-        { value: "0ms", label: "Cold Starts" }
-      ]} />
 
       <FeatureGrid 
         title="Why Choose NexusAI Marketplace?"
@@ -189,9 +184,11 @@ export default async function MarketplacePage() {
 
       <CallToAction 
         title="Ready to upgrade your workflow?"
-        description="Join thousands of companies using NexusAI to deploy enterprise-grade AI tools."
+        description="Join thousands of companies using NexusAI to deploy enterprise-grade AI tools, SaaS products, and custom automation systems."
         ctaText="Explore All Products"
         ctaHref="/register"
+        secondaryCtaText="Schedule Enterprise Demo"
+        secondaryCtaHref="/custom-service"
       />
     </div>
   )

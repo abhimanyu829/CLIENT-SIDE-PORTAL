@@ -106,8 +106,9 @@ export default function ContactSalesPage() {
       <FAQSection 
         title="Sales FAQs"
         faqs={[
-          { question: "Do you offer proof of concepts (POCs)?", answer: "Yes, for qualified enterprise prospects we offer a 14-day assisted POC with a dedicated solution architect." },
-          { question: "Can we purchase through AWS/GCP Marketplace?", answer: "Yes, NexusAI can be purchased and billed directly through your existing AWS, GCP, or Azure commits." }
+          { question: "How fast can we get started?", answer: "Most teams set up their account and begin deploying within minutes." },
+          { question: "Do you offer custom enterprise plans?", answer: "Yes, we tailor plans based on your usage, security requirements, and team size." },
+          { question: "What support is included?", answer: "All plans include 24/7 email support, with dedicated account managers for enterprise customers." },
         ]}
       />
     </div>

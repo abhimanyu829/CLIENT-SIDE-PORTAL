@@ -35,39 +35,42 @@ export default async function ServicesDirectoryPage({ searchParams }: Props) {
   const totalCategories = categories.length
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-indigo-500/30">
-      <div className="relative overflow-hidden border-b border-white/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.18),transparent_45%),linear-gradient(180deg,rgba(8,8,8,1),rgba(8,8,8,0.92))]" />
-        <div className="relative max-w-7xl mx-auto px-6 pt-32 pb-20">
+    <div className="min-h-screen bg-background text-foreground selection:bg-amber-500/30">
+      {/* Hero section with beautiful glowing gradient background (no black background) */}
+      <div className="relative overflow-hidden border-b border-border/50 bg-gradient-to-b from-amber-500/10 via-purple-500/5 via-30% to-background">
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-400/15 via-purple-500/5 to-transparent blur-3xl" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32 pb-16 sm:pb-20">
           <div className="max-w-4xl">
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-              <span className="rounded-full border border-indigo-500/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-indigo-300">
+            <div className="flex flex-wrap items-center gap-2.5 mb-6">
+              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.2em] text-amber-700 dark:text-amber-300 shadow-xs">
                 Enterprise Services
               </span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-zinc-300">
+              <span className="rounded-full border border-border bg-muted/60 px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 {totalCategories} categories
               </span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-zinc-300">
+              <span className="rounded-full border border-border bg-muted/60 px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 {totalServices} active offerings
               </span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-6 bg-gradient-to-br from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-6 bg-gradient-to-r from-amber-700 via-purple-700 to-indigo-700 dark:from-amber-400 dark:via-purple-300 dark:to-indigo-300 bg-clip-text text-transparent">
               Professional Services
             </h1>
-            <p className="text-xl text-gray-400 leading-relaxed max-w-3xl">
-              Explore NexusAI's separate service vertical for AI delivery, SaaS builds, automation, cloud, APIs, enterprise systems, consulting, and digital transformation.
+            <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-3xl">
+              Explore NexusAI&apos;s separate service vertical for AI delivery, SaaS builds, automation, cloud, APIs, enterprise systems, consulting, and digital transformation.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-16 space-y-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-12">
         <ServiceDiscoveryShelf />
+
+        {/* Category Pills */}
         <section className="space-y-4">
           <div className="flex flex-wrap gap-2">
             <Link
               href="/services"
-              className={`rounded-full px-4 py-2 text-sm font-medium border transition ${!category ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-200" : "border-white/10 bg-white/5 text-zinc-300 hover:text-white"}`}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 border ${!category ? "border-amber-600 bg-amber-600 text-white shadow-md shadow-amber-600/20" : "border-border bg-card text-foreground hover:border-amber-500/40 hover:bg-muted"}`}
             >
               All Services
             </Link>
@@ -75,42 +78,52 @@ export default async function ServicesDirectoryPage({ searchParams }: Props) {
               <Link
                 key={item.id}
                 href={`/services?category=${item.slug}`}
-                className={`rounded-full px-4 py-2 text-sm font-medium border transition ${category === item.slug ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-200" : "border-white/10 bg-white/5 text-zinc-300 hover:text-white"}`}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 border ${category === item.slug ? "border-amber-600 bg-amber-600 text-white shadow-md shadow-amber-600/20" : "border-border bg-card text-foreground hover:border-amber-500/40 hover:bg-muted"}`}
               >
                 {item.name}
-                <span className="ml-2 text-xs text-zinc-500">({item._count.services})</span>
+                <span className={`ml-2 text-xs ${category === item.slug ? "text-amber-100" : "text-muted-foreground"}`}>({item._count.services})</span>
               </Link>
             ))}
           </div>
         </section>
 
+        {/* Category Grid */}
         {categories.length > 0 && (
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {categories.map((item) => (
               <Link
                 key={item.id}
                 href={`/services?category=${item.slug}`}
-                className="group rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-indigo-500/40 hover:bg-white/10"
+                className="group relative overflow-hidden rounded-3xl border border-white/80 dark:border-zinc-800/80 bg-gradient-to-br from-slate-50/90 via-indigo-50/40 to-purple-50/60 dark:from-zinc-900/90 dark:via-purple-950/20 dark:to-indigo-950/30 p-6 shadow-md shadow-slate-200/50 dark:shadow-none transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1"
               >
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-300">
-                    <Briefcase className="h-5 w-5" />
-                  </div>
-                  <span className="text-xs text-zinc-500">{item._count.services} services</span>
+                {/* Organic Translucent Liquid Gradient Orbs */}
+                <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none z-0">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-purple-300/40 via-pink-200/30 to-blue-200/20 dark:from-purple-900/30 dark:to-blue-950/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10" />
+                  <div className="absolute bottom-0 right-0 w-44 h-44 bg-gradient-to-tl from-indigo-300/30 via-purple-200/25 to-sky-200/20 dark:from-indigo-900/25 dark:to-purple-950/10 rounded-full blur-xl transform translate-x-8 translate-y-8" />
                 </div>
-                <h2 className="mt-4 text-lg font-semibold text-white group-hover:text-indigo-300">{item.name}</h2>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-400 line-clamp-3">
-                  {item.description || "Category-managed services tailored for enterprise delivery."}
-                </p>
+
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 group-hover:bg-amber-500/20 transition-colors backdrop-blur-xs">
+                      <Briefcase className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-semibold text-muted-foreground">{item._count.services} services</span>
+                  </div>
+                  <h2 className="mt-4 text-lg font-bold text-foreground group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">{item.name}</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                    {item.description || "Category-managed services tailored for enterprise delivery."}
+                  </p>
+                </div>
               </Link>
             ))}
           </section>
         )}
 
+        {/* Service Catalog Grid */}
         <section>
           <div className="flex items-center gap-3 mb-8">
-            <Layers3 className="h-5 w-5 text-indigo-400" />
-            <h2 className="text-3xl font-bold tracking-tight">
+            <Layers3 className="h-6 w-6 text-amber-700 dark:text-amber-400" />
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               {category ? `Filtered Services` : "Service Catalog"}
             </h2>
           </div>
@@ -120,44 +133,61 @@ export default async function ServicesDirectoryPage({ searchParams }: Props) {
               <Link
                 href={`/services/${service.slug}`}
                 key={service.id}
-                className="group relative rounded-2xl border border-white/10 bg-[#0f172a] p-8 transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/40 hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.28)]"
+                className="group relative overflow-hidden rounded-3xl border border-white/80 dark:border-zinc-800/80 bg-gradient-to-br from-slate-50/90 via-indigo-50/40 to-purple-50/60 dark:from-zinc-900/90 dark:via-purple-950/20 dark:to-indigo-950/30 p-8 shadow-md shadow-slate-200/50 dark:shadow-none transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-500/15 flex flex-col justify-between"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-300">
-                    <Sparkles className="h-6 w-6" />
+                {/* Organic Translucent Liquid Gradient Orbs */}
+                <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none z-0">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-300/40 via-pink-200/35 to-blue-200/20 dark:from-purple-900/30 dark:via-pink-900/20 dark:to-blue-950/10 rounded-full blur-2xl transform translate-x-12 -translate-y-12" />
+                  <div className="absolute bottom-0 right-0 w-56 h-56 bg-gradient-to-tl from-indigo-300/35 via-purple-200/30 to-sky-200/25 dark:from-indigo-900/30 dark:via-purple-950/20 dark:to-sky-950/10 rounded-full blur-2xl transform translate-x-10 translate-y-10" />
+                  <div className="absolute top-1/2 left-0 w-44 h-44 bg-gradient-to-tr from-sky-200/30 via-indigo-100/20 to-transparent dark:from-sky-950/20 dark:via-indigo-950/10 rounded-full blur-xl transform -translate-x-14 -translate-y-10" />
+                </div>
+
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 group-hover:bg-amber-500/20 transition-colors backdrop-blur-xs">
+                      <Sparkles className="h-6 w-6" />
+                    </div>
+                    {service.category?.name && (
+                      <span className="rounded-full border border-border bg-background/80 backdrop-blur-xs px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground shadow-2xs">
+                        {service.category.name}
+                      </span>
+                    )}
                   </div>
-                  {service.category?.name && (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-300">
-                      {service.category.name}
+
+                  <h3 className="mt-6 text-2xl font-bold tracking-tight text-foreground group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">
+                    {service.title}
+                  </h3>
+                  <p className="mt-3 text-sm text-muted-foreground leading-relaxed line-clamp-4">
+                    {service.heroSubheading}
+                  </p>
+                </div>
+
+                <div className="relative z-10">
+                  <div className="mt-6 flex flex-wrap items-center gap-2">
+                    {service._count.features > 0 && (
+                      <span className="rounded-full bg-background/70 backdrop-blur-xs border border-border/50 px-3 py-1 text-[11px] font-semibold text-muted-foreground shadow-2xs">
+                        {service._count.features} features
+                      </span>
+                    )}
+                    {service._count.technologies > 0 && (
+                      <span className="rounded-full bg-background/70 backdrop-blur-xs border border-border/50 px-3 py-1 text-[11px] font-semibold text-muted-foreground shadow-2xs">
+                        {service._count.technologies} tech items
+                      </span>
+                    )}
+                    <span className="rounded-full bg-background/70 backdrop-blur-xs border border-border/50 px-3 py-1 text-[11px] font-semibold text-muted-foreground shadow-2xs">
+                      {service._count.leads} leads
                     </span>
-                  )}
-                </div>
+                  </div>
 
-                <h3 className="mt-6 text-2xl font-bold tracking-tight text-white group-hover:text-indigo-300 transition-colors">
-                  {service.title}
-                </h3>
-                <p className="mt-3 text-sm text-zinc-400 leading-relaxed line-clamp-4">
-                  {service.heroSubheading}
-                </p>
-
-                <div className="mt-6 flex flex-wrap items-center gap-2">
-                  {service._count.features > 0 && (
-                    <span className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium text-zinc-300">{service._count.features} features</span>
-                  )}
-                  {service._count.technologies > 0 && (
-                    <span className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium text-zinc-300">{service._count.technologies} tech items</span>
-                  )}
-                  <span className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium text-zinc-300">{service._count.leads} leads</span>
-                </div>
-
-                <div className="mt-8 flex items-center text-indigo-400 font-medium group-hover:translate-x-1 transition-transform">
-                  Learn More <ArrowRight className="ml-2 h-4 w-4" />
+                  <div className="mt-8 flex items-center text-amber-700 dark:text-amber-400 font-bold group-hover:translate-x-1 transition-transform">
+                    Learn More <ArrowRight className="ml-2 h-4 w-4" />
+                  </div>
                 </div>
               </Link>
             ))}
 
             {services.length === 0 && (
-              <div className="col-span-full rounded-2xl border border-dashed border-white/10 bg-white/5 py-24 text-center text-zinc-500">
+              <div className="col-span-full rounded-2xl border border-dashed border-border bg-card py-20 text-center text-muted-foreground">
                 No services found in this category yet.
               </div>
             )}

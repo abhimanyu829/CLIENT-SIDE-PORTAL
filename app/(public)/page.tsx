@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { ShoppingBag, ArrowRight } from "lucide-react"
 import { db } from "@/lib/db"
 import { ProductStatus, ProductType, SubStatus, CampaignStatus } from "@prisma/client"
 import { unstable_cache } from "next/cache"
@@ -215,15 +216,23 @@ export default async function HomePage() {
           </MotionWrapper>
 
           <MotionWrapper delay={0.3}>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-14">
-              <Link href="/marketplace">
-                <button className="bg-white text-[#0a0520] uppercase tracking-widest px-10 py-4 rounded-lg font-bold text-sm flex items-center gap-2 shadow-[0_0_30px_rgba(255,255,255,0.15)] transition-transform hover:scale-105 active:scale-95">
-                  Browse Marketplace
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-14">
+              <Link href="/marketplace" className="w-full sm:w-auto">
+                <button className="group relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-2xl bg-slate-950 px-9 py-4 text-xs sm:text-sm font-bold uppercase tracking-widest text-white shadow-xl shadow-slate-950/20 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:shadow-2xl hover:shadow-indigo-500/25 active:translate-y-0 active:scale-[0.98] w-full sm:w-auto">
+                  {/* Subtle animated gradient on hover */}
+                  <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-600 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                  {/* Sheen effect */}
+                  <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
+                  <span className="relative flex items-center gap-2.5">
+                    <ShoppingBag className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
+                    Browse Marketplace
+                  </span>
                 </button>
               </Link>
-              <Link href="/register">
-                <button className="bg-transparent text-black border border-black/20 uppercase tracking-widest px-10 py-4 rounded-lg font-bold text-sm flex items-center gap-2 transition-transform hover:scale-105 active:scale-95 group">
-                  Sign in <span className="text-black transition-transform group-hover:translate-x-2">→</span>
+              <Link href="/register" className="w-full sm:w-auto">
+                <button className="group relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-2xl border border-black/20 bg-white/60 px-9 py-4 text-xs sm:text-sm font-bold uppercase tracking-widest text-black backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:border-black/50 hover:bg-white/90 hover:shadow-xl hover:shadow-black/10 active:translate-y-0 active:scale-[0.98] w-full sm:w-auto">
+                  <span>Sign in</span>
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
                 </button>
               </Link>
             </div>

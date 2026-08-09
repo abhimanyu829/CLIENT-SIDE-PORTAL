@@ -8,7 +8,6 @@ import { useCart } from "@/providers/CartProvider"
 import { useInternalUser } from "@/hooks/useInternalUser"
 
 const SearchModal = lazy(() => import("@/components/marketplace/SearchModal"))
-import { ThemeToggle } from "@/components/theme/ThemeToggle"
 
 const MEGA_MENU = {
   Products: {
@@ -119,20 +118,23 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
       {/* Floating Pill Top Navbar Container */}
       <header
         suppressHydrationWarning
-        className="sticky top-3 z-50 w-full px-2 sm:px-4 max-w-7xl mx-auto transition-all duration-300"
+        className="sticky top-3 z-50 w-full px-2 sm:px-4 max-w-7xl mx-auto transition-all duration-300 group"
         onMouseLeave={closeMenu}
       >
+        {/* Glowing Gradient Ambient Aura — Strictly behind this navbar section */}
+        <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-sky-400 via-cyan-400 to-blue-500 opacity-60 blur-xl pointer-events-none transition-all duration-500 group-hover:opacity-80 animate-pulse" style={{ animationDuration: '6s' }} />
+
         <div
-          className={`relative w-full rounded-full bg-background/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-sky-400/35 dark:border-sky-500/35 shadow-[0_8px_32px_rgba(56,189,248,0.22),0_0_20px_rgba(14,165,233,0.15)] px-3 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between gap-1.5 sm:gap-2 xl:gap-3 transition-all duration-300 ${
-            scrolled ? "shadow-[0_12px_40px_rgba(56,189,248,0.32)] border-sky-400/50 bg-background/95 dark:bg-zinc-900/95 ring-1 ring-sky-400/25" : ""
+          className={`relative w-full rounded-full bg-background/85 dark:bg-zinc-950/85 backdrop-blur-2xl border border-sky-400/50 dark:border-sky-500/40 shadow-[0_8px_32px_rgba(56,189,248,0.28),0_0_24px_rgba(14,165,233,0.2)] px-3 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between gap-1.5 sm:gap-2 xl:gap-3 transition-all duration-300 ${
+            scrolled ? "shadow-[0_12px_44px_rgba(56,189,248,0.38)] border-sky-400/60 bg-background/95 dark:bg-zinc-950/95 ring-1 ring-sky-400/30" : ""
           }`}
         >
           {/* Sky Light Billowing Background Effect */}
           <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none z-0">
-            <div className="absolute -top-12 -left-12 w-48 h-48 bg-sky-400/30 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '4s' }} />
-            <div className="absolute -bottom-12 left-1/3 w-56 h-56 bg-cyan-400/25 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1.5s' }} />
-            <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-500/25 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '3s' }} />
-            <div className="absolute inset-0 bg-gradient-to-r from-sky-400/10 via-cyan-400/15 to-indigo-400/10 backdrop-blur-xl" />
+            <div className="absolute -top-12 -left-12 w-48 h-48 bg-sky-400/35 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '4s' }} />
+            <div className="absolute -bottom-12 left-1/3 w-56 h-56 bg-cyan-400/30 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1.5s' }} />
+            <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-500/30 rounded-full blur-2xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '3s' }} />
+            <div className="absolute inset-0 bg-gradient-to-r from-sky-400/20 via-cyan-400/25 to-indigo-400/20 backdrop-blur-xl" />
           </div>
 
           {/* Logo */}
@@ -252,8 +254,6 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
               <kbd className="hidden xl:inline ml-0.5 text-[9px] text-muted-foreground/80 bg-background/80 px-1 py-0.5 rounded border border-border/40">⌘K</kbd>
             </button>
 
-            <ThemeToggle />
-
             {isLoading ? (
               <div className="flex gap-1.5 shrink-0">
                 <div className="h-7 w-16 rounded-full bg-muted animate-pulse" />
@@ -324,7 +324,6 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
               ⬡ ABHIBHIDEVELOPERS GROUP
             </span>
             <div className="flex items-center gap-2">
-              <ThemeToggle />
               <button
                 onClick={() => setMobileOpen(false)}
                 className="text-muted-foreground hover:text-foreground text-xl w-9 h-9 rounded-full bg-muted/50 flex items-center justify-center"

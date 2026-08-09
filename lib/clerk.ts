@@ -2,10 +2,10 @@ export const clerkAppearance: any = {
   variables: {
     colorPrimary: "#7c3aed",
     colorBackground: "#ffffff",
-    colorText: "#171717",
-    colorTextSecondary: "#525252",
+    colorText: "#111827",
+    colorTextSecondary: "#4b5563",
     colorInputBackground: "#f9fafb",
-    colorInputText: "#171717",
+    colorInputText: "#111827",
     colorNeutral: "#e5e7eb",
     colorDanger: "#ef4444",
     borderRadius: "0.875rem",
@@ -13,10 +13,13 @@ export const clerkAppearance: any = {
       'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
   elements: {
-    userButtonPopoverCard: "bg-white shadow-lg border border-gray-200",
-    userButtonPopoverActionButton: "hover:bg-gray-100 text-gray-800",
-    userButtonPopoverActionButtonText: "text-gray-800",
-    userButtonPopoverFooter: "bg-white border-t border-gray-200",
+    userButtonPopoverCard: "bg-white shadow-xl border border-gray-200 text-gray-900",
+    userButtonPopoverActionButton: "hover:bg-gray-100 text-gray-900 font-medium transition-colors opacity-100",
+    userButtonPopoverActionButtonText: "text-gray-900 font-semibold opacity-100",
+    userButtonPopoverActionButtonIcon: "text-gray-700 opacity-100",
+    userButtonPopoverFooter: "bg-white border-t border-gray-200 text-gray-600",
+    userPreviewMainIdentifier: "text-gray-900 font-semibold",
+    userPreviewSecondaryIdentifier: "text-gray-500 font-normal",
   },
 }
 

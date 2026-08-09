@@ -5,6 +5,7 @@
 @tailwind utilities;
 
 @layer base {
+
   :root,
   .dark {
     --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
@@ -32,9 +33,13 @@
     --radius: 1rem;
   }
 
-  * { border-color: hsl(var(--border)); }
+  * {
+    border-color: hsl(var(--border));
+  }
 
-  html { background: #f8f7f4; }
+  html {
+    background: #f8f7f4;
+  }
 
   body {
     @apply bg-background text-foreground;
@@ -43,19 +48,32 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
     letter-spacing: -0.025em;
   }
 
-  input, select, textarea {
+  input,
+  select,
+  textarea {
     background-color: #fff;
     color: #171717;
     border-color: #e5e5e5;
   }
 
-  input::placeholder, textarea::placeholder { color: #a3a3a3; }
-  input:focus, select:focus, textarea:focus {
+  input::placeholder,
+  textarea::placeholder {
+    color: #a3a3a3;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
     border-color: #a16207;
     box-shadow: 0 0 0 3px rgba(161, 98, 7, .12);
   }
@@ -92,17 +110,17 @@
   box-shadow: 0 8px 28px rgba(23, 23, 23, .08) !important;
 }
 
-.light-theme .uiverse-glass { display: none; }
+.light-theme .uiverse-glass {
+  display: none;
+}
 
 /* Convert legacy hard-coded dark surfaces without changing component markup. */
-.light-theme :is(
-  .bg-black, .bg-zinc-950, .bg-zinc-900, .bg-zinc-800,
+.light-theme :is(.bg-black, .bg-zinc-950, .bg-zinc-900, .bg-zinc-800,
   .bg-slate-950, .bg-slate-900, .bg-slate-800,
   .bg-gray-950, .bg-gray-900, .bg-gray-800,
   [class*="bg-[#050505]"], [class*="bg-[#060606]"], [class*="bg-[#080808]"],
   [class*="bg-[#090909]"], [class*="bg-[#0d0d10]"], [class*="bg-[#0e0e0e]"],
-  [class*="bg-[#0f172a]"], [class*="bg-[#111827]"], [class*="bg-[#1e293b]"]
-) {
+  [class*="bg-[#0f172a]"], [class*="bg-[#111827]"], [class*="bg-[#1e293b]"]) {
   background-color: #fff !important;
   background-image: none !important;
   border-color: #e5e5e5 !important;
@@ -126,33 +144,35 @@
 .light-theme :is(.text-white, .text-zinc-100, .text-zinc-200, .text-zinc-300, .text-gray-100, .text-gray-200, .text-gray-300) {
   color: #171717;
 }
+
 .light-theme :is(.text-zinc-400, .text-zinc-500, .text-gray-400, .text-gray-500, .text-slate-400, .text-slate-500) {
   color: #525252;
 }
+
 .light-theme :is(.text-zinc-600, .text-zinc-700, .text-gray-600, .text-gray-700, .text-slate-600, .text-slate-700) {
   color: #404040;
 }
 
 /* Preserve contrast on retained semantic/action colors. */
-.light-theme :is(
-  .bg-primary, .bg-destructive, .bg-red-500, .bg-red-600, .bg-red-700,
+.light-theme :is(.bg-primary, .bg-destructive, .bg-red-500, .bg-red-600, .bg-red-700,
   .bg-green-500, .bg-green-600, .bg-blue-500, .bg-blue-600,
   .bg-indigo-500, .bg-indigo-600, .bg-indigo-700,
-  .bg-purple-500, .bg-purple-600, .bg-violet-500, .bg-violet-600
-) :is(.text-white, .text-zinc-100, .text-zinc-200, .text-zinc-300) {
+  .bg-purple-500, .bg-purple-600, .bg-violet-500, .bg-violet-600) :is(.text-white, .text-zinc-100, .text-zinc-200, .text-zinc-300) {
   color: #fff !important;
 }
-.light-theme :is(
-  [class*="bg-primary"][class*="text-white"], [class*="bg-red-"][class*="text-white"],
+
+.light-theme :is([class*="bg-primary"][class*="text-white"], [class*="bg-red-"][class*="text-white"],
   [class*="bg-green-"][class*="text-white"], [class*="bg-blue-"][class*="text-white"],
   [class*="bg-indigo-"][class*="text-white"], [class*="bg-purple-"][class*="text-white"],
-  [class*="bg-violet-"][class*="text-white"]
-) { color: #fff !important; }
+  [class*="bg-violet-"][class*="text-white"]) {
+  color: #fff !important;
+}
 
 /* The legacy violet/indigo primary actions become a restrained ochre accent. */
 .light-theme :is(.bg-indigo-500, .bg-indigo-600, .bg-indigo-700, .bg-purple-500, .bg-purple-600, .bg-violet-500, .bg-violet-600) {
   background-color: #a16207 !important;
 }
+
 .light-theme :is(.hover\:bg-indigo-500:hover, .hover\:bg-indigo-600:hover, .hover\:bg-indigo-700:hover, .hover\:bg-purple-500:hover, .hover\:bg-purple-600:hover, .hover\:bg-violet-500:hover, .hover\:bg-violet-600:hover) {
   background-color: #854d0e !important;
 }
@@ -160,6 +180,7 @@
 .light-theme :is(.border-white, .border-white\/5, .border-white\/10, .border-white\/20, .border-zinc-800, .border-zinc-700, .border-gray-800, .border-gray-700) {
   border-color: #e5e5e5 !important;
 }
+
 .light-theme :is(.hover\:bg-white\/5:hover, .hover\:bg-white\/10:hover, .hover\:bg-zinc-800:hover, .hover\:bg-zinc-900:hover, .hover\:bg-gray-800:hover) {
   background-color: #f3f4f6 !important;
 }
@@ -169,17 +190,35 @@
   -webkit-backdrop-filter: none !important;
 }
 
-.light-theme table { background: #fff; }
-.light-theme thead { position: sticky; top: 0; z-index: 1; background: #f8f7f4 !important; color: #525252; }
-.light-theme tbody tr { border-color: #e5e5e5; }
-.light-theme tbody tr:hover { background: #f8f7f4 !important; }
+.light-theme table {
+  background: #fff;
+}
+
+.light-theme thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8f7f4 !important;
+  color: #525252;
+}
+
+.light-theme tbody tr {
+  border-color: #e5e5e5;
+}
+
+.light-theme tbody tr:hover {
+  background: #f8f7f4 !important;
+}
 
 .light-theme .aurora-dashboard-bg {
   background: #f8f7f4 !important;
   animation: none;
 }
+
 .light-theme .aurora-dashboard-bg::before,
-.light-theme .aurora-dashboard-bg::after { display: none; }
+.light-theme .aurora-dashboard-bg::after {
+  display: none;
+}
 
 .brand-gradient {
   background: none;
@@ -191,8 +230,13 @@
 
 /* SmartCampaignBanner shimmer */
 @keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(200%);
+  }
 }
 
 /* Clerk Auth Portal Explicit High-Visibility Styling */
@@ -259,3 +303,70 @@
   color: #4b5563 !important;
 }
 
+/* UserButton Popover Explicit High-Visibility Styling */
+.cl-userButtonPopoverCard {
+  background-color: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  color: #111827 !important;
+}
+
+.cl-userButtonPopoverMain {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
+.cl-userButtonPopoverActionButton,
+.cl-userButtonPopoverCustomMenuItem,
+button.cl-userButtonPopoverActionButton {
+  color: #111827 !important;
+  opacity: 1 !important;
+}
+
+.cl-userButtonPopoverActionButton:hover,
+.cl-userButtonPopoverCustomMenuItem:hover,
+button.cl-userButtonPopoverActionButton:hover {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+.cl-userButtonPopoverActionButtonText,
+.cl-userButtonPopoverCustomMenuItemText,
+.cl-userButtonPopoverActionButtonText *,
+.cl-userButtonPopoverActionButtonText span,
+.cl-actionButtonText {
+  color: #111827 !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+.cl-userButtonPopoverActionButtonIcon,
+.cl-userButtonPopoverActionButtonIcon *,
+.cl-userButtonPopoverActionButtonIcon svg,
+.cl-userButtonPopoverCustomMenuItemIcon,
+.cl-userButtonPopoverCustomMenuItemIcon *,
+.cl-userButtonPopoverActionButtonIcon svg path,
+.cl-actionButtonIcon,
+.cl-actionButtonIcon * {
+  color: #374151 !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+.cl-userPreviewMainIdentifier {
+  color: #111827 !important;
+  font-weight: 600 !important;
+}
+
+.cl-userPreviewSecondaryIdentifier {
+  color: #4b5563 !important;
+}
+
+.cl-userButtonPopoverFooter,
+.cl-userButtonPopoverFooter * {
+  background-color: #ffffff !important;
+  border-color: #f3f4f6 !important;
+  color: #4b5563 !important;
+  opacity: 1 !important;
+}

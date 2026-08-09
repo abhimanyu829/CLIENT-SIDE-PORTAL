@@ -231,7 +231,7 @@ export function CustomServiceRequestForm({ name, email }: { name: string; email:
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   // ── Step 1 validation ────
-  const step1Valid = fullName.trim().length >= 2
+  const step1Valid = fullName.trim().length >= 2 && phone.trim().length >= 7
 
   // ── Step 2 validation ────
   const step2Valid = serviceCategory && projectTitle.trim().length >= 3 && ideaDescription.trim().length >= 20
@@ -262,7 +262,7 @@ export function CustomServiceRequestForm({ name, email }: { name: string; email:
     event.preventDefault()
     setSubmitting(true); setSubmitError(null)
     const payload = {
-      fullName, phone: phone || undefined, companyName: companyName || undefined,
+      fullName, phone, companyName: companyName || undefined,
       serviceCategory, projectTitle, ideaDescription,
       problemStatement: problemStatement || undefined,
       requestedFeatures: requestedFeatures || undefined,
@@ -319,9 +319,10 @@ export function CustomServiceRequestForm({ name, email }: { name: string; email:
             </div>
             <Input
               label="Phone number"
+              required
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="+91 98765 43210 (optional)"
+              placeholder="+91 98765 43210"
               type="tel"
             />
             <div className="space-y-1">
