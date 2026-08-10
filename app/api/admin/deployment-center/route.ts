@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
 
     const where: Prisma.PurchasedServiceWhereInput = {}
     if (status) where.status = status as any
+    else where.status = { not: "DELETED" } // hide soft-deleted unless explicitly requested
     if (deploymentStatus) where.deployment = { is: { status: deploymentStatus as any } }
     if (search) {
       where.OR = [
@@ -31,12 +32,12 @@ export async function GET(req: NextRequest) {
         user: { select: { id: true, name: true, email: true } },
         order: {
           select: {
-            orderNumber: true, grandTotal: true, currency: true, paidAt: true, gateway: true,
+            id: true, orderNumber: true, grandTotal: true, currency: true, paidAt: true, gateway: true,
             payments: { select: { status: true, amount: true, gateway: true }, take: 1, orderBy: { createdAt: "desc" } },
           },
         },
         orderItem: { select: { name: true, unitPrice: true, currency: true, tier: { select: { name: true, interval: true } } } },
-        product: { select: { name: true, slug: true } },
+        product: { select: { name: true, slug: true, version: true } },
         deployment: true,
         upgrades: { where: { status: { in: ["PENDING", "PAID"] } }, select: { id: true, status: true, snapshot: true } },
       },

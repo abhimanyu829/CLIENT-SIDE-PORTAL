@@ -377,41 +377,89 @@ export default async function HomePage() {
       {/* ── SECTION 8: DEMO SHOWCASE ─────────────────────────────────────────── */}
       <section className="py-[80px] px-4 bg-background">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-card text-card-foreground rounded-2xl p-12 md:p-16 border border-border shadow-sm">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <p className="section-label mb-4">Live Demos</p>
-                <h2 className="text-4xl md:text-[48px] font-medium tracking-tight mb-6 text-foreground">
-                  Try before<br />you buy
+          <div className="relative bg-card text-card-foreground rounded-3xl p-8 md:p-14 border border-border shadow-xl overflow-hidden">
+            {/* Ambient Background Accents */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+              {/* Left Column - Hero Content */}
+              <div className="lg:col-span-5 text-left space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Sandbox Demos
+                </div>
+
+                <h2 className="text-4xl md:text-5xl font-semibold tracking-tight leading-tight text-foreground">
+                  Try Before You Buy
                 </h2>
-                <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                  Launch interactive 5-minute sandbox demos. No account required. No credit card. Real data, real experience.
+
+                <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
+                  Launch interactive 5-minute sandbox demos. No account required, no credit card, and pre-loaded with realistic production data.
                 </p>
-                <div className="flex gap-4 flex-wrap">
+
+                {/* Feature checklist */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs font-medium text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-500 font-bold text-sm">✓</span> 3-Second Spin-up
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-500 font-bold text-sm">✓</span> Isolated Sandboxes
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-500 font-bold text-sm">✓</span> Real-Time Analytics
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-500 font-bold text-sm">✓</span> Full API Capabilities
+                  </div>
+                </div>
+
+                {/* CTA Buttons */}
+                <div className="flex gap-4 flex-wrap pt-4">
                   <Link href="/demo">
-                    <button className="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-medium text-base hover:bg-primary/90 transition-all">
-                      ▶ Launch Demo
+                    <button className="bg-primary text-primary-foreground px-7 py-3.5 rounded-xl font-semibold text-sm shadow-md hover:bg-primary/90 transition-all hover:-translate-y-0.5 flex items-center gap-2">
+                      <span>▶</span> Launch Demo
                     </button>
                   </Link>
                   <Link href="/marketplace">
-                    <button className="bg-background text-foreground border border-border px-8 py-4 rounded-lg font-medium text-base hover:bg-accent/10 transition-all">
+                    <button className="bg-background text-foreground border border-border px-7 py-3.5 rounded-xl font-semibold text-sm hover:bg-accent/10 transition-all hover:-translate-y-0.5">
                       Browse Products
                     </button>
                   </Link>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+
+              {/* Right Column - Demo Interactive Cards */}
+              <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { icon: "🏢", title: "Sales CRM AI", desc: "Pipeline, lead scoring, AI insights", color: "blue" },
-                  { icon: "🤖", title: "AI Chatbot", desc: "GPT-4 powered, streaming responses", color: "purple" },
-                  { icon: "📊", title: "Analytics Suite", desc: "Revenue charts, user funnels, heatmaps", color: "emerald" },
-                  { icon: "⚙️", title: "Workflow Engine", desc: "Visual automation, triggers & actions", color: "amber" },
+                  { icon: "🏢", title: "Sales CRM AI", desc: "Pipeline management, lead scoring, and automated AI insights", badge: "CRM", bg: "from-blue-500/10 to-indigo-500/5" },
+                  { icon: "🤖", title: "AI Chatbot", desc: "GPT-4 powered real-time streaming agent with custom knowledge", badge: "Agent", bg: "from-purple-500/10 to-pink-500/5" },
+                  { icon: "📊", title: "Analytics Suite", desc: "Interactive revenue charts, conversion funnels, and real heatmaps", badge: "Metrics", bg: "from-emerald-500/10 to-teal-500/5" },
+                  { icon: "⚙️", title: "Workflow Engine", desc: "Visual automation canvas with instant webhooks and triggers", badge: "Automation", bg: "from-amber-500/10 to-orange-500/5" },
                 ].map(item => (
                   <Link key={item.title} href={`/demo?type=${item.title.toLowerCase().replace(/ /g, "-")}`}>
-                    <div className="bg-background border border-border rounded-xl p-[24px] card-hover cursor-pointer group shadow-sm">
-                      <span className="text-3xl block mb-3">{item.icon}</span>
-                      <h4 className="font-medium text-[16px] mb-1 group-hover:text-primary transition-colors">{item.title}</h4>
-                      <p className="text-muted-foreground text-[12px] font-mono leading-[1.2]">{item.desc}</p>
+                    <div className={`relative bg-gradient-to-br ${item.bg} bg-background border border-border/80 hover:border-primary/50 rounded-2xl p-6 card-hover cursor-pointer group shadow-sm transition-all flex flex-col justify-between h-full`}>
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="w-12 h-12 rounded-xl bg-card border border-border/50 flex items-center justify-center text-2xl shadow-xs group-hover:scale-110 transition-transform">
+                            {item.icon}
+                          </div>
+                          <span className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-full bg-accent/50 border border-border/50 text-muted-foreground">
+                            {item.badge}
+                          </span>
+                        </div>
+                        <h4 className="font-semibold text-lg mb-1.5 text-foreground group-hover:text-primary transition-colors">
+                          {item.title}
+                        </h4>
+                        <p className="text-muted-foreground text-xs leading-relaxed">
+                          {item.desc}
+                        </p>
+                      </div>
+
+                      <div className="mt-5 pt-3 border-t border-border/30 flex items-center justify-between text-xs font-semibold text-primary opacity-90 group-hover:opacity-100">
+                        <span>Launch Sandbox</span>
+                        <span className="group-hover:translate-x-1 transition-transform">→</span>
+                      </div>
                     </div>
                   </Link>
                 ))}
@@ -431,13 +479,55 @@ export default async function HomePage() {
             </h2>
           </div>
 
-          {/* Logo carousel */}
-          <div className="flex flex-wrap items-center justify-center gap-6 mb-16 opacity-60">
-            {["Stripe", "Vercel", "OpenAI", "GitHub", "Figma", "Notion", "Linear", "Supabase"].map(company => (
-              <div key={company} className="bg-card border border-border px-6 py-3 rounded-lg shadow-sm">
-                <span className="text-sm font-bold text-card-foreground">{company}</span>
+          {/* Ecosystem & Partner Stack Wall */}
+          <div className="mb-16 space-y-6">
+            <div className="flex flex-wrap items-center justify-center gap-3 max-w-5xl mx-auto">
+              {[
+                { name: "OpenAI", tag: "LLM Provider", icon: "🧠" },
+                { name: "Anthropic", tag: "Claude 3.5", icon: "🤖" },
+                { name: "Stripe", tag: "Payments", icon: "💳" },
+                { name: "Vercel", tag: "Frontend Hosting", icon: "▲" },
+                { name: "Supabase", tag: "Database", icon: "⚡" },
+                { name: "Pinecone", tag: "Vector Index", icon: "🌲" },
+                { name: "LangChain", tag: "Agent Framework", icon: "🦜" },
+                { name: "GitHub", tag: "CI/CD Pipeline", icon: "🐙" },
+                { name: "AWS S3", tag: "Cloud Storage", icon: "☁️" },
+                { name: "Upstash", tag: "Redis Cache", icon: "🔥" },
+                { name: "Resend", tag: "Email Infra", icon: "✉️" },
+                { name: "Linear", tag: "Issue Tracking", icon: "🎯" },
+              ].map(item => (
+                <div 
+                  key={item.name} 
+                  className="group bg-card/80 hover:bg-card border border-border hover:border-primary/50 px-4 py-2.5 rounded-xl shadow-xs transition-all hover:scale-105 flex items-center gap-2.5 cursor-pointer"
+                >
+                  <span className="text-base">{item.icon}</span>
+                  <div className="text-left">
+                    <p className="text-xs font-bold text-foreground leading-none group-hover:text-primary transition-colors">{item.name}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto pt-4 border-t border-border/40">
+              <div className="text-center p-3 rounded-xl bg-card/60 border border-border/40 shadow-xs">
+                <p className="text-xl font-bold text-foreground">1,200+</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Agents Deployed</p>
               </div>
-            ))}
+              <div className="text-center p-3 rounded-xl bg-card/60 border border-border/40 shadow-xs">
+                <p className="text-xl font-bold text-foreground">&lt;45ms</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Global P99 Latency</p>
+              </div>
+              <div className="text-center p-3 rounded-xl bg-card/60 border border-border/40 shadow-xs">
+                <p className="text-xl font-bold text-foreground">99.99%</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Uptime SLA</p>
+              </div>
+              <div className="text-center p-3 rounded-xl bg-card/60 border border-border/40 shadow-xs">
+                <p className="text-xl font-bold text-foreground">SOC2 & GDPR</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Enterprise Ready</p>
+              </div>
+            </div>
           </div>
 
           {/* Testimonials */}
@@ -497,11 +587,44 @@ export default async function HomePage() {
               <h2 className="text-5xl md:text-[64px] font-medium mb-6 leading-[1.04] tracking-tight">
                 Seamless Streaming
               </h2>
-              <p className="text-muted-foreground text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
+              <p className="text-muted-foreground text-xl mb-8 max-w-2xl mx-auto leading-relaxed">
                 Join {stats.users.toLocaleString()}+ AI developers deploying agents and building products that matter.
                 Start free, scale unlimited.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
+
+              {/* Key Features & Performance Highlights */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-10 text-left max-w-3xl mx-auto">
+                <div className="p-4 rounded-xl border border-border/60 bg-background/50 backdrop-blur-xs">
+                  <div className="text-2xl mb-1">⚡</div>
+                  <h4 className="font-semibold text-sm mb-1 text-foreground">Sub-50ms Latency</h4>
+                  <p className="text-xs text-muted-foreground leading-normal">Lightning-fast token streaming and direct WebSocket connections.</p>
+                </div>
+                <div className="p-4 rounded-xl border border-border/60 bg-background/50 backdrop-blur-xs">
+                  <div className="text-2xl mb-1">🛡️</div>
+                  <h4 className="font-semibold text-sm mb-1 text-foreground">Enterprise Security</h4>
+                  <p className="text-xs text-muted-foreground leading-normal">AES-256 encryption, isolated sandboxes, and compliance controls.</p>
+                </div>
+                <div className="p-4 rounded-xl border border-border/60 bg-background/50 backdrop-blur-xs">
+                  <div className="text-2xl mb-1">🚀</div>
+                  <h4 className="font-semibold text-sm mb-1 text-foreground">1-Click Deployments</h4>
+                  <p className="text-xs text-muted-foreground leading-normal">Spin up AI agents, APIs, and workflows without infrastructure overhead.</p>
+                </div>
+                <div className="p-4 rounded-xl border border-border/60 bg-background/50 backdrop-blur-xs">
+                  <div className="text-2xl mb-1">📊</div>
+                  <h4 className="font-semibold text-sm mb-1 text-foreground">Real-time Metrics</h4>
+                  <p className="text-xs text-muted-foreground leading-normal">Track token usage, cost breakdowns, and model telemetry live.</p>
+                </div>
+              </div>
+
+              {/* Trust Badges */}
+              <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-muted-foreground mb-10">
+                <span className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span> 99.9% Uptime SLA</span>
+                <span className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span> No Credit Card Required</span>
+                <span className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span> Instant API Keys</span>
+                <span className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span> 24/7 Developer Support</span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/register">
                   <button className="bg-primary text-primary-foreground px-12 py-5 rounded-lg font-medium text-lg shadow-lg hover:bg-primary/90 transition-all hover:-translate-y-0.5">
                     Start Building Free

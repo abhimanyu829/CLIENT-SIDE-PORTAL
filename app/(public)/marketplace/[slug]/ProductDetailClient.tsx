@@ -174,9 +174,9 @@ export default function ProductDetailClient({ product }: { product: Product }) {
         .text-gradient{background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
         .btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);transition:all .2s;border:1px solid rgba(139,92,246,.3)}
         .btn-primary:hover{transform:scale(1.03);box-shadow:0 0 24px rgba(139,92,246,.4)}
-        .tab-item{padding:.625rem 1.25rem;font-size:.875rem;font-weight:600;color:rgba(255,255,255,.45);border-bottom:2px solid transparent;transition:all .2s;cursor:pointer;white-space:nowrap}
-        .tab-item:hover{color:rgba(255,255,255,.8)}
-        .tab-active{color:#fff!important;border-bottom-color:#8b5cf6!important}
+        .tab-item{padding:.625rem 1.25rem;font-size:.875rem;font-weight:600;color:#525252!important;border-bottom:2px solid transparent;transition:all .2s;cursor:pointer;white-space:nowrap}
+        .tab-item:hover{color:#171717!important}
+        .tab-active{color:#a16207!important;border-bottom-color:#a16207!important;font-weight:700!important}
         .thumb-btn{border-radius:.5rem;overflow:hidden;border:2px solid transparent;transition:all .2s;cursor:pointer;aspect-video}
         .thumb-active{border-color:#8b5cf6!important}
         .star{color:#f59e0b}
@@ -696,11 +696,11 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                 {/* Wishlist + Share */}
                 <div className="flex gap-2">
                   <button onClick={() => setWishlisted(w => !w)}
-                    className={`flex-1 glass py-2.5 rounded-xl text-sm font-medium transition-all ${wishlisted ? "text-red-400 border-red-500/40" : "text-zinc-500 hover:text-white"}`}>
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-all ${wishlisted ? "bg-red-50 text-red-600 border-red-300 hover:bg-red-100" : "bg-zinc-100 border-zinc-200 text-zinc-800 hover:bg-zinc-200 hover:text-zinc-900 shadow-2xs"}`}>
                     {wishlisted ? "❤️ Saved" : "♡ Wishlist"}
                   </button>
                   <button onClick={() => navigator.share ? navigator.share({ title: product.name, url: window.location.href }) : navigator.clipboard.writeText(window.location.href)}
-                    className="flex-1 glass py-2.5 rounded-xl text-sm font-medium text-zinc-500 hover:text-white transition-all">
+                    className="flex-1 bg-zinc-100 border border-zinc-200 py-2.5 rounded-xl text-sm font-bold text-zinc-800 hover:bg-zinc-200 hover:text-zinc-900 transition-all shadow-2xs">
                     ↗ Share
                   </button>
                 </div>

@@ -13,6 +13,7 @@ type Category = {
 export default function NewServiceClient({ categories, initialCategoryId = "" }: { categories: Category[]; initialCategoryId?: string }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]> | null>(null)
   const [businessBenefits, setBusinessBenefits] = useState("[]")
   const [technicalBenefits, setTechnicalBenefits] = useState("[]")
   const [workflow, setWorkflow] = useState("[]")
@@ -23,25 +24,40 @@ export default function NewServiceClient({ categories, initialCategoryId = "" }:
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
+    setFieldErrors(null)
 
     const formData = new FormData(e.currentTarget)
+
+    // Parse JSON fields safely
+    let parsedBusiness: any[] = []
+    let parsedTechnical: any[] = []
+    let parsedWorkflow: any[] = []
+    let parsedUseCases: any[] = []
+    try { parsedBusiness = JSON.parse(businessBenefits) } catch { toast.error("Business Benefits is not valid JSON"); setLoading(false); return }
+    try { parsedTechnical = JSON.parse(technicalBenefits) } catch { toast.error("Technical Benefits is not valid JSON"); setLoading(false); return }
+    try { parsedWorkflow = JSON.parse(workflow) } catch { toast.error("Workflow is not valid JSON"); setLoading(false); return }
+    try { parsedUseCases = JSON.parse(useCases) } catch { toast.error("Use Cases is not valid JSON"); setLoading(false); return }
+
+    const rawHeroImageUrl = (formData.get("heroImageUrl") as string | null) || ""
+
     const payload = {
-      categoryId: formData.get("categoryId") || null,
-      title: formData.get("title"),
-      slug: formData.get("slug"),
-      heroHeading: formData.get("heroHeading"),
-      heroSubheading: formData.get("heroSubheading"),
-      heroImageUrl: formData.get("heroImageUrl") || null,
-      overview: formData.get("overview"),
-      pricingGuidance: formData.get("pricingGuidance") || null,
+      categoryId: (formData.get("categoryId") as string | null) || null,
+      title: formData.get("title") as string,
+      slug: formData.get("slug") as string,
+      heroHeading: formData.get("heroHeading") as string,
+      heroSubheading: formData.get("heroSubheading") as string,
+      // only send heroImageUrl if it looks like a URL, otherwise send null
+      heroImageUrl: rawHeroImageUrl.startsWith("http") ? rawHeroImageUrl : null,
+      overview: formData.get("overview") as string,
+      pricingGuidance: (formData.get("pricingGuidance") as string | null) || null,
       isActive: formData.get("isActive") === "true",
-      businessBenefits: JSON.parse(businessBenefits),
-      technicalBenefits: JSON.parse(technicalBenefits),
-      workflow: JSON.parse(workflow),
-      useCases: JSON.parse(useCases),
+      businessBenefits: parsedBusiness,
+      technicalBenefits: parsedTechnical,
+      workflow: parsedWorkflow,
+      useCases: parsedUseCases,
       industriesServed: industriesServed.split(",").map((item) => item.trim()).filter(Boolean),
-      seoTitle: formData.get("seoTitle") || null,
-      seoDescription: formData.get("seoDescription") || null,
+      seoTitle: (formData.get("seoTitle") as string | null) || null,
+      seoDescription: (formData.get("seoDescription") as string | null) || null,
       seoKeywords: seoKeywords.split(",").map((item) => item.trim()).filter(Boolean),
     }
 
@@ -53,6 +69,16 @@ export default function NewServiceClient({ categories, initialCategoryId = "" }:
       })
 
       const data = await res.json()
+      if (res.status === 422) {
+        // Surface Zod field errors
+        const fields = data.error?.details?.fieldErrors as Record<string, string[]> | undefined
+        setFieldErrors(fields || null)
+        const errorMsg = fields
+          ? Object.entries(fields).map(([k, v]) => `${k}: ${v.join(", ")}`).join(" | ")
+          : data.error?.message || "Validation failed"
+        toast.error(`422 Validation Error — ${errorMsg}`)
+        return
+      }
       if (!res.ok) throw new Error(data.error?.message || "Failed to create service")
 
       toast.success("Service created successfully")
@@ -72,6 +98,19 @@ export default function NewServiceClient({ categories, initialCategoryId = "" }:
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-[#0f172a] border border-gray-800 p-6 rounded-xl">
+        {/* Field-level validation errors from 422 */}
+        {fieldErrors && (
+          <div className="bg-red-950/60 border border-red-700 rounded-lg p-4 text-sm">
+            <p className="font-semibold text-red-400 mb-2">Validation errors — fix the following fields:</p>
+            <ul className="space-y-1">
+              {Object.entries(fieldErrors).map(([field, msgs]) => (
+                <li key={field} className="text-red-300">
+                  <span className="font-mono font-bold">{field}:</span> {msgs.join(", ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Category</label>

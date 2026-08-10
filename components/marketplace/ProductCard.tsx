@@ -113,8 +113,8 @@ function ActionButtons({ p, layout = "grid" }: { p: ProductCardProps; layout?: "
           title={p.previewEnabled ? "Preview product" : "Preview coming soon"}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
             p.previewEnabled
-              ? "bg-gradient-to-r from-violet-600/20 to-purple-600/20 border-purple-500/30 text-purple-300 hover:border-purple-400/60 hover:text-white"
-              : "bg-zinc-900/40 border-white/5 text-zinc-600 cursor-not-allowed"
+              ? "bg-amber-600 hover:bg-amber-700 text-white hover:text-white border-amber-700 shadow-xs"
+              : "bg-zinc-100 text-zinc-600 border-zinc-200 hover:bg-zinc-200 hover:text-zinc-800 cursor-not-allowed"
           }`}
         >
           ⚡ Preview
@@ -122,7 +122,7 @@ function ActionButtons({ p, layout = "grid" }: { p: ProductCardProps; layout?: "
         <Link
           href={`/checkout?product=${p.id}${p.tierId ? `&tier=${p.tierId}` : ""}`}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold text-center transition-all ${
-            isSoldOut ? "bg-zinc-800 text-zinc-500 cursor-not-allowed" : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-105 shadow-lg shadow-purple-500/20"
+            isSoldOut ? "bg-zinc-200 text-zinc-500 cursor-not-allowed" : "bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-xs"
           }`}
         >
           {isSoldOut ? "Sold Out" : "Buy Now"}
@@ -130,11 +130,11 @@ function ActionButtons({ p, layout = "grid" }: { p: ProductCardProps; layout?: "
         <button
           onClick={p.onAddToCart}
           disabled={isSoldOut || p.isAddingToCart}
-          className="px-3 py-1.5 rounded-lg text-xs font-bold glass text-zinc-300 hover:text-white hover:border-purple-500/50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 text-zinc-900 border border-zinc-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {p.isAddingToCart ? "Adding…" : "🛒 Cart"}
         </button>
-        <Link href={`/marketplace/${p.slug}`} className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+        <Link href={`/marketplace/${p.slug}`} className="text-xs font-bold text-zinc-700 hover:text-primary transition-colors">
           Details →
         </Link>
       </div>
@@ -149,8 +149,8 @@ function ActionButtons({ p, layout = "grid" }: { p: ProductCardProps; layout?: "
         title={p.previewEnabled ? "Preview product" : "Preview coming soon"}
         className={`col-span-2 py-2 rounded-xl text-xs font-bold border transition-all ${
           p.previewEnabled
-            ? "bg-gradient-to-r from-violet-600/20 to-purple-600/20 border-purple-500/30 text-purple-300 hover:border-purple-400/60 hover:text-white"
-            : "bg-zinc-900/40 border-white/5 text-zinc-600 cursor-not-allowed"
+            ? "bg-amber-600 hover:bg-amber-700 text-white hover:text-white border-amber-700 shadow-xs"
+            : "bg-zinc-100 text-zinc-600 border-zinc-200 hover:bg-zinc-200 hover:text-zinc-800 cursor-not-allowed"
         }`}
       >
         ⚡ {p.previewEnabled ? "Preview Product" : "Preview Coming Soon"}
@@ -158,7 +158,7 @@ function ActionButtons({ p, layout = "grid" }: { p: ProductCardProps; layout?: "
       <Link
         href={`/checkout?product=${p.id}${p.tierId ? `&tier=${p.tierId}` : ""}`}
         className={`py-2 rounded-xl text-xs font-bold text-center transition-all ${
-          isSoldOut ? "bg-zinc-800 text-zinc-500 cursor-not-allowed" : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-105 shadow-lg shadow-purple-500/20"
+          isSoldOut ? "bg-zinc-200 text-zinc-500 cursor-not-allowed" : "bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-xs"
         }`}
       >
         {isSoldOut ? "Sold Out" : "Buy Now"}
@@ -166,11 +166,11 @@ function ActionButtons({ p, layout = "grid" }: { p: ProductCardProps; layout?: "
       <button
         onClick={p.onAddToCart}
         disabled={isSoldOut || p.isAddingToCart}
-        className="py-2 rounded-xl text-xs font-bold glass text-zinc-300 hover:text-white hover:border-purple-500/50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        className="py-2 rounded-xl text-xs font-bold bg-zinc-100 hover:bg-zinc-200 text-zinc-900 border border-zinc-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {p.isAddingToCart ? "Adding…" : "🛒 Add to Cart"}
       </button>
-      <Link href={`/marketplace/${p.slug}`} className="col-span-2 py-1.5 rounded-xl text-xs text-zinc-500 hover:text-zinc-300 transition-colors text-center">
+      <Link href={`/marketplace/${p.slug}`} className="col-span-2 py-1.5 rounded-xl text-xs font-bold text-zinc-700 hover:text-primary transition-colors text-center">
         View Details →
       </Link>
     </div>
