@@ -114,7 +114,13 @@ export default function InvoicesClient() {
                   <td className="py-3 px-4">${Number(inv.totalAmount).toFixed(2)} {inv.currency}</td>
                   <td className="py-3 px-4 text-zinc-500">{new Date(inv.issuedAt).toLocaleDateString()}</td>
                   <td className="py-3 px-4 text-right">
-                    <button className="text-xs text-amber-400 hover:underline">Download PDF</button>
+                    <a
+                      href={`/api/invoices/${inv.id}/download`}
+                      download={`${inv.number ?? "invoice"}.pdf`}
+                      className="text-xs text-amber-400 hover:underline"
+                    >
+                      Download PDF
+                    </a>
                   </td>
                 </tr>
               ))}
