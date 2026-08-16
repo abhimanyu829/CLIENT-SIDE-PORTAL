@@ -194,7 +194,6 @@ export default function PremiumServiceDetailClient({
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? "Failed to add to cart")
       setAddedToCart(true)
-      // Short delay so user sees the confirmation, then navigate to cart
       setTimeout(() => router.push("/cart"), 800)
     } catch (e: any) {
       setCartError(e.message)
@@ -203,15 +202,15 @@ export default function PremiumServiceDetailClient({
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 pb-16">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 pb-16">
       {showQueryModal && <QueryModal service={service} onClose={() => setShowQueryModal(false)} />}
 
       {/* Back nav */}
-      <div className="border-b border-zinc-800/60 bg-zinc-950">
+      <div className="border-b border-zinc-200 dark:border-zinc-800/60 bg-white dark:bg-zinc-950">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <Link
             href="/dashboard/premium-services"
-            className="flex items-center gap-2 text-sm text-zinc-400 hover:text-violet-400 transition-colors w-fit"
+            className="flex items-center gap-2 text-sm font-semibold text-zinc-600 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors w-fit"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Premium Services
           </Link>
@@ -220,21 +219,21 @@ export default function PremiumServiceDetailClient({
 
       <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
         {/* Hero */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
           {service.bannerUrl ? (
             <div className="h-48 relative overflow-hidden">
               <img src={service.bannerUrl} alt={service.name} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent" />
             </div>
           ) : (
-            <div className="h-32 bg-gradient-to-br from-violet-950 via-blue-950 to-zinc-900 flex items-center px-8 gap-4">
+            <div className="h-32 bg-gradient-to-br from-violet-600/10 to-indigo-600/10 dark:from-violet-950 dark:via-blue-950 dark:to-zinc-900 flex items-center px-8 gap-4 border-b border-zinc-100 dark:border-zinc-800">
               {service.iconUrl ? (
                 <img src={service.iconUrl} alt="" className="w-12 h-12 object-contain" />
               ) : (
-                <Sparkles className="w-8 h-8 text-violet-400/60" />
+                <Sparkles className="w-8 h-8 text-violet-600 dark:text-violet-400" />
               )}
               {service.isFeatured && (
-                <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/90 text-xs font-bold text-white ml-auto">
+                <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500 text-xs font-bold text-white ml-auto shadow-xs">
                   <Star className="w-3 h-3 fill-current" /> Featured
                 </span>
               )}
@@ -245,28 +244,28 @@ export default function PremiumServiceDetailClient({
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
               <div className="flex-1">
                 {service.category && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-400 font-medium mb-2 inline-block">
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-violet-100 dark:bg-blue-900/40 text-violet-700 dark:text-blue-400 font-semibold mb-2 inline-block">
                     {service.category.name}
                   </span>
                 )}
-                <h1 className="text-3xl font-bold text-white mt-1">{service.name}</h1>
-                <p className="text-zinc-400 mt-2 leading-relaxed">{service.shortDescription}</p>
+                <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mt-1">{service.name}</h1>
+                <p className="text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed">{service.shortDescription}</p>
               </div>
 
               {/* Pricing & CTA */}
               <div className="shrink-0 w-full md:w-72">
-                <div className="rounded-2xl border border-zinc-700 bg-zinc-900 p-5 space-y-4">
+                <div className="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-5 space-y-4 shadow-xs">
                   {/* Tier selector */}
                   {product && product.tiers.length > 1 && (
                     <div className="space-y-1">
-                      <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Select Plan</p>
+                      <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Select Plan</p>
                       <div className="space-y-2">
                         {product.tiers.map((tier) => (
                           <label
                             key={tier.id}
                             className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-colors ${selectedTierId === tier.id
-                                ? "border-violet-500 bg-violet-950/30"
-                                : "border-zinc-700 bg-zinc-800/40 hover:border-zinc-600"
+                                ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30"
+                                : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/40 hover:border-zinc-300"
                               }`}
                           >
                             <div className="flex items-center gap-2">
@@ -276,11 +275,11 @@ export default function PremiumServiceDetailClient({
                                 value={tier.id}
                                 checked={selectedTierId === tier.id}
                                 onChange={() => setSelectedTierId(tier.id)}
-                                className="accent-violet-500"
+                                className="accent-violet-600"
                               />
-                              <span className="text-sm font-medium text-zinc-200">{tier.name}</span>
+                              <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{tier.name}</span>
                             </div>
-                            <span className="text-sm font-bold text-white">
+                            <span className="text-sm font-bold text-zinc-900 dark:text-white">
                               {fmt(Number(tier.price), tier.currency)}{CYCLE_LABELS[tier.interval] ?? ""}
                             </span>
                           </label>
@@ -290,25 +289,25 @@ export default function PremiumServiceDetailClient({
                   )}
 
                   <div>
-                    <p className="text-3xl font-bold text-white">{fmt(displayPrice, displayCurrency)}</p>
-                    <p className="text-xs text-zinc-500">{CYCLE_LABELS[displayCycle] ?? ""}</p>
+                    <p className="text-3xl font-bold text-zinc-900 dark:text-white">{fmt(displayPrice, displayCurrency)}</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">{CYCLE_LABELS[displayCycle] ?? ""}</p>
                   </div>
 
                   {cartError && (
-                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-950/40 border border-red-800 text-red-300 text-xs">
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs">
                       <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {cartError}
                     </div>
                   )}
 
                   {alreadyOwned ? (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-950/30 border border-emerald-800 text-emerald-300 text-sm">
+                      <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm font-semibold">
                         <Check className="w-4 h-4 shrink-0" /> You already own this service
                       </div>
                       {purchasedServiceId && (
                         <Link
                           href={`/dashboard/services/${purchasedServiceId}`}
-                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-700 hover:bg-zinc-600 text-zinc-200 text-sm font-semibold transition-colors"
+                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-800 text-white hover:bg-zinc-700 text-sm font-bold transition-colors"
                         >
                           Open Workspace <ExternalLink className="w-4 h-4" />
                         </Link>
@@ -318,10 +317,10 @@ export default function PremiumServiceDetailClient({
                     <button
                       onClick={handleAddToCart}
                       disabled={adding || addedToCart}
-                      className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-colors shadow-lg ${
+                      className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-colors shadow-xs ${
                         addedToCart
-                          ? "bg-emerald-600 shadow-emerald-900/40 text-white"
-                          : "bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white shadow-violet-900/40"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white"
                       }`}
                     >
                       {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : addedToCart ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
@@ -330,7 +329,7 @@ export default function PremiumServiceDetailClient({
                   ) : (
                     <button
                       disabled
-                      className="w-full py-3 rounded-xl bg-zinc-700 text-zinc-400 font-semibold text-sm cursor-not-allowed"
+                      className="w-full py-3 rounded-xl bg-zinc-200 text-zinc-500 font-semibold text-sm cursor-not-allowed"
                     >
                       Contact Sales
                     </button>
@@ -338,7 +337,7 @@ export default function PremiumServiceDetailClient({
 
                   <button
                     onClick={() => setShowQueryModal(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium border border-zinc-700 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-300 text-sm font-semibold border border-zinc-300 dark:border-zinc-700 transition-colors"
                   >
                     <MessageSquarePlus className="w-4 h-4" /> Ask a Query
                   </button>
@@ -350,25 +349,25 @@ export default function PremiumServiceDetailClient({
 
         {/* Full Description */}
         {service.fullDescription && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8">
-            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Package className="w-5 h-5 text-violet-400" /> About this Service
+          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 shadow-sm">
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
+              <Package className="w-5 h-5 text-violet-600 dark:text-violet-400" /> About this Service
             </h2>
-            <div className="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap">{service.fullDescription}</div>
+            <div className="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap">{service.fullDescription}</div>
           </div>
         )}
 
         {/* Add-ons */}
         {service.addonServices.length > 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
+          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 overflow-hidden shadow-sm">
             <button
               onClick={() => setAddonsExpanded((x) => !x)}
-              className="w-full flex items-center justify-between px-8 py-5 hover:bg-zinc-800/40 transition-colors"
+              className="w-full flex items-center justify-between px-8 py-5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
             >
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-violet-400" />
+              <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                 Available Add-ons
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 font-medium">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold">
                   {service.addonServices.length}
                 </span>
               </h2>
@@ -381,13 +380,13 @@ export default function PremiumServiceDetailClient({
                   These add-ons can be activated after purchasing the service from your service workspace.
                 </p>
                 {service.addonServices.map((addon) => (
-                  <div key={addon.id} className="flex items-center gap-4 p-4 rounded-xl bg-zinc-800/60 border border-zinc-700/40">
+                  <div key={addon.id} className="flex items-center gap-4 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/40">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-zinc-200">{addon.name}</p>
+                      <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{addon.name}</p>
                       {addon.description && <p className="text-xs text-zinc-500 mt-0.5">{addon.description}</p>}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-white">{fmt(addon.unitPrice, addon.currency)}</p>
+                      <p className="text-sm font-bold text-zinc-900 dark:text-white">{fmt(addon.unitPrice, addon.currency)}</p>
                       <p className="text-[10px] text-zinc-500">
                         {addon.pricingType === "PER_UNIT_RECURRING" && addon.unitName ? `/ ${addon.unitName} ` : ""}
                         {CYCLE_LABELS[addon.billingCycle] ?? ""}
@@ -402,13 +401,13 @@ export default function PremiumServiceDetailClient({
 
         {/* No product CTA */}
         {!product && !alreadyOwned && (
-          <div className="rounded-2xl border border-dashed border-zinc-700 p-8 text-center">
-            <Crown className="w-8 h-8 text-violet-400/60 mx-auto mb-3" />
-            <p className="text-zinc-300 font-semibold">Interested in this service?</p>
+          <div className="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 p-8 text-center bg-white dark:bg-transparent">
+            <Crown className="w-8 h-8 text-violet-600 dark:text-violet-400/60 mx-auto mb-3" />
+            <p className="text-zinc-800 dark:text-zinc-300 font-semibold">Interested in this service?</p>
             <p className="text-sm text-zinc-500 mt-1 mb-4">Click "Ask a Query" to get in touch with our team.</p>
             <button
               onClick={() => setShowQueryModal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 text-sm font-semibold border border-violet-600/30 transition-all mx-auto"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold transition-all mx-auto shadow-xs"
             >
               <MessageSquarePlus className="w-4 h-4" /> Ask a Query <ArrowRight className="w-4 h-4" />
             </button>

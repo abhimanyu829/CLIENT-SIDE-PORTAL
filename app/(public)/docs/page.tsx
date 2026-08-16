@@ -20,7 +20,7 @@ export default function DocsPage() {
         title="NexusAI Documentation"
         description="Everything you need to build, deploy, and scale your AI workflows. From quickstarts to advanced enterprise configurations."
         pillText="v2.0 Documentation"
-        align="left"
+        align="center"
       />
 
       <div className="max-w-7xl mx-auto px-6 pb-24 border-b border-white/5">

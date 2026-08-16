@@ -21,9 +21,9 @@ const CATEGORIES = [
 const S = `
 .glass{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08)}
 .btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);transition:all .2s}
-.filter-chip{border:1px solid rgba(255,255,255,.08);border-radius:9999px;padding:.375rem 1rem;font-size:.8125rem;font-weight:500;transition:all .2s;cursor:pointer;color:rgba(255,255,255,.5)}
-.filter-chip:hover{border-color:rgba(139,92,246,.4);color:rgba(255,255,255,.9)}
-.filter-chip-active{background:rgba(139,92,246,.15);border-color:rgba(139,92,246,.5)!important;color:#a78bfa!important}
+.filter-chip{border:1px solid #d4d4d8;background:#f4f4f5;border-radius:9999px;padding:.375rem 1rem;font-size:.8125rem;font-weight:600;transition:all .2s;cursor:pointer;color:#27272a!important}
+.filter-chip:hover{border-color:#a1a1aa;background:#e4e4e7;color:#09090b!important}
+.filter-chip-active{background:#7c3aed!important;border-color:#6d28d9!important;color:#ffffff!important;font-weight:700!important}
 .section-label{font-size:.7rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;background:linear-gradient(90deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 `
 
@@ -119,14 +119,14 @@ export default function AIAgentsClient({ agents }: { agents: AgentCardData[] }) 
               value={search}
               onChange={e => startTransition(() => setSearch(e.target.value))}
               placeholder="Search agents..."
-              className="glass rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-purple-500/50 transition-all w-48"
+              className="bg-white border border-zinc-300 rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-900 placeholder-zinc-400 outline-none focus:border-violet-500 transition-all w-48 shadow-2xs"
             />
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-              className="glass rounded-xl px-4 py-2.5 text-sm text-zinc-300 outline-none bg-transparent cursor-pointer">
-              <option value="popular" className="bg-zinc-900">Most Popular</option>
-              <option value="rating" className="bg-zinc-900">Highest Rated</option>
-              <option value="newest" className="bg-zinc-900">Newest</option>
-              <option value="price_asc" className="bg-zinc-900">Lowest Price</option>
+              className="bg-white border border-zinc-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-800 outline-none cursor-pointer shadow-2xs">
+              <option value="popular">Most Popular</option>
+              <option value="rating">Highest Rated</option>
+              <option value="newest">Newest</option>
+              <option value="price_asc">Lowest Price</option>
             </select>
           </div>
         </div>
@@ -152,7 +152,7 @@ export default function AIAgentsClient({ agents }: { agents: AgentCardData[] }) 
                 {(agent.techStack?.length || 0) > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2 px-1">
                     {(agent.techStack || []).slice(0, 2).map(t => (
-                      <span key={t} className="glass text-[10px] px-2 py-0.5 rounded-full text-zinc-600">{t}</span>
+                      <span key={t} className="bg-zinc-100 border border-zinc-200 text-[10px] font-bold px-2 py-0.5 rounded-full text-zinc-700">{t}</span>
                     ))}
                   </div>
                 )}
@@ -165,7 +165,7 @@ export default function AIAgentsClient({ agents }: { agents: AgentCardData[] }) 
             <h3 className="text-xl font-bold mb-2">No agents found</h3>
             <p className="text-zinc-600 mb-6">Try a different category or search query</p>
             <button onClick={() => { setActiveCategory("ALL"); setSearch("") }}
-              className="glass px-6 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white transition-all">
+              className="bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 px-6 py-3 rounded-xl text-sm font-bold text-zinc-800 hover:text-zinc-900 transition-all shadow-2xs">
               Reset filters
             </button>
           </div>

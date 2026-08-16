@@ -197,14 +197,14 @@ function MessageBubble({ msg, isOwnMessage }: { msg: Message; isOwnMessage: bool
           <span title={fullTime(msg.createdAt)}>{timeAgo(msg.createdAt)}</span>
         </div>
         <div className={`
-          rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm
+          rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-xs
           ${isOwnMessage
-            ? "bg-amber-700 text-white rounded-tr-sm"
-            : "bg-card border border-border text-foreground rounded-tl-sm"}
+            ? "bg-white text-zinc-900 border border-zinc-200 dark:bg-zinc-100 dark:text-zinc-900 rounded-tr-sm font-semibold"
+            : "bg-zinc-50 border border-zinc-200 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 rounded-tl-sm font-medium"}
         `}>
           {msg.body && <p className="whitespace-pre-wrap">{msg.body}</p>}
           {msg.attachments.length > 0 && (
-            <div className={`mt-3 space-y-1.5 ${msg.body ? "border-t border-white/20 pt-2.5" : ""}`}>
+            <div className={`mt-3 space-y-1.5 ${msg.body ? "border-t border-zinc-200 dark:border-zinc-700 pt-2.5" : ""}`}>
               {msg.attachments.map((f) => (
                 <a
                   key={f.id || f.storageKey}
@@ -214,7 +214,7 @@ function MessageBubble({ msg, isOwnMessage }: { msg: Message; isOwnMessage: bool
                   className={`
                     flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors
                     ${isOwnMessage
-                      ? "bg-white/15 text-white hover:bg-white/25"
+                      ? "bg-zinc-100 text-zinc-900 hover:bg-zinc-200 border border-zinc-200"
                       : "bg-muted text-foreground hover:bg-muted/70"}
                   `}
                 >
