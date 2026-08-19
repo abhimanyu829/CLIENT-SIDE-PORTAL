@@ -149,7 +149,7 @@ export default function AiMonitoringClient({
           <div className="rounded-xl border p-4 bg-card flex items-center justify-between shadow-sm">
             <div>
               <p className="text-xs text-muted-foreground uppercase font-semibold">Est. Running Costs (7d)</p>
-              <h3 className="text-2xl font-bold">${totals.totalCostUsd.toFixed(2)}</h3>
+              <h3 className="text-2xl font-bold">₹{totals.totalCostUsd.toFixed(2)}</h3>
               <p className="text-[10px] text-zinc-500 mt-1">Real inference cost</p>
             </div>
             <div className="h-10 w-10 rounded-full bg-rose-50 dark:bg-rose-950/20 flex items-center justify-center text-rose-600">
@@ -349,7 +349,7 @@ export default function AiMonitoringClient({
                 {Object.entries(searchResult.tokenLogs).map(([model, metrics]: any) => (
                   <div key={model} className="flex justify-between font-mono text-[11px]">
                     <span className="text-violet-600 font-sans font-semibold">{model}</span>
-                    <span>In: {metrics.inputTokens.toLocaleString()} · Out: {metrics.outputTokens.toLocaleString()} (${metrics.cost.toFixed(2)})</span>
+                    <span>In: {metrics.inputTokens.toLocaleString()} · Out: {metrics.outputTokens.toLocaleString()} (₹{metrics.cost.toFixed(2)})</span>
                   </div>
                 ))}
               </div>

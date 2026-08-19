@@ -393,10 +393,10 @@ export default function PricingClient({ products }: Props) {
                           <div className="mb-6">
                             <div className="flex items-baseline gap-2">
                               <span className={`text-3xl font-black ${hasFlash ? "text-red-600" : "text-gray-900"}`}>
-                                ${effectivePrice.toFixed(0)}
+                                ₹{effectivePrice.toFixed(0)}
                               </span>
                               {(hasFlash || tier.discountPrice) && (
-                                <span className="text-gray-400 line-through text-base">${Number(tier.price).toFixed(0)}</span>
+                                <span className="text-gray-400 line-through text-base">₹{Number(tier.price).toFixed(0)}</span>
                               )}
                             </div>
                             <p className="text-gray-500 text-xs mt-1">{INTERVAL_LABELS[tier.interval] || "/month"}</p>

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState } from "react"
+import Link from "next/link"
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, AreaChart, Area
@@ -11,8 +12,43 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   DollarSign, TrendingUp, Users, ShoppingCart, Percent,
-  RefreshCw, Download, FileText, ArrowUpRight, ArrowDownRight
+  RefreshCw, Download, FileText, ArrowUpRight, ArrowDownRight,
+  LayoutDashboard, Package, Briefcase, Settings2, MessageSquare,
+  Sparkles, Shapes, ReceiptText, ClipboardList, BarChart3,
+  GitBranch, CreditCard, PlaySquare, Ticket, FolderKanban,
+  ShieldCheck, Settings, Crown, ScanSearch, Globe2
 } from "lucide-react"
+
+const ADMIN_SECTIONS = [
+  { href: "/admin",                     label: "Overview",          icon: LayoutDashboard, color: "text-violet-500 bg-violet-500/10" },
+  { href: "/admin/users",               label: "User Management",    icon: Users,            color: "text-blue-500 bg-blue-500/10" },
+  { href: "/admin/subadmins",           label: "Subadmin Mgmt",      icon: ShieldCheck,      color: "text-rose-500 bg-rose-500/10" },
+  { href: "/admin/products",            label: "Products",           icon: Package,          color: "text-orange-500 bg-orange-500/10" },
+  { href: "/admin/services",            label: "Services",           icon: Briefcase,        color: "text-teal-500 bg-teal-500/10" },
+  { href: "/admin/services/centers",   label: "Service Centers",    icon: Settings2,        color: "text-cyan-500 bg-cyan-500/10" },
+  { href: "/admin/services/emails",    label: "Service Emails",     icon: MessageSquare,    color: "text-indigo-500 bg-indigo-500/10" },
+  { href: "/admin/services/saas",      label: "SaaS Center",        icon: Sparkles,         color: "text-pink-500 bg-pink-500/10" },
+  { href: "/admin/services/ai-agents", label: "AI Agents",          icon: Sparkles,         color: "text-amber-500 bg-amber-500/10" },
+  { href: "/admin/services/ai-models", label: "AI Models",          icon: Sparkles,         color: "text-lime-500 bg-lime-500/10" },
+  { href: "/admin/services/automation",label: "Automation",         icon: Sparkles,         color: "text-emerald-500 bg-emerald-500/10" },
+  { href: "/admin/services/categories",label: "Service Categories", icon: Shapes,           color: "text-fuchsia-500 bg-fuchsia-500/10" },
+  { href: "/admin/services/orders",    label: "Service Orders",     icon: ReceiptText,      color: "text-sky-500 bg-sky-500/10" },
+  { href: "/admin/services/requests",  label: "Service Requests",   icon: ClipboardList,    color: "text-violet-400 bg-violet-400/10" },
+  { href: "/admin/services/analytics", label: "Service Analytics",  icon: BarChart3,        color: "text-blue-400 bg-blue-400/10" },
+  { href: "/admin/subscriptions",      label: "Subscriptions",      icon: GitBranch,        color: "text-green-500 bg-green-500/10" },
+  { href: "/admin/billing-center",     label: "Billing Center",     icon: Crown,            color: "text-yellow-500 bg-yellow-500/10" },
+  { href: "/admin/orders",             label: "Orders & Payments",  icon: ShoppingCart,     color: "text-orange-400 bg-orange-400/10" },
+  { href: "/admin/payments",           label: "Payment Inspection", icon: ScanSearch,       color: "text-red-500 bg-red-500/10" },
+  { href: "/admin/revenue",            label: "Revenue Dashboard",  icon: TrendingUp,       color: "text-emerald-400 bg-emerald-400/10" },
+  { href: "/admin/ecosystem",          label: "Ecosystem Control",  icon: Globe2,           color: "text-teal-400 bg-teal-400/10" },
+  { href: "/admin/deployment-center", label: "Deployment Center",  icon: Settings2,        color: "text-indigo-400 bg-indigo-400/10" },
+  { href: "/admin/previews",           label: "Previews",           icon: PlaySquare,       color: "text-cyan-400 bg-cyan-400/10" },
+  { href: "/admin/analytics",          label: "Analytics",          icon: BarChart3,        color: "text-pink-400 bg-pink-400/10" },
+  { href: "/admin/tickets",            label: "Tickets",            icon: Ticket,           color: "text-amber-400 bg-amber-400/10" },
+  { href: "/admin/invoices",           label: "Invoices",           icon: FileText,         color: "text-lime-400 bg-lime-400/10" },
+  { href: "/admin/audit",              label: "Audit Logs",         icon: ShieldCheck,      color: "text-rose-400 bg-rose-400/10" },
+  { href: "/admin/settings",           label: "Settings",           icon: Settings,         color: "text-zinc-500 bg-zinc-500/10" },
+]
 
 export interface DashboardData {
   mrr: number
@@ -34,9 +70,9 @@ export interface DashboardData {
 }
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`
-  return `$${n.toFixed(2)}`
+  if (n >= 1_000_000) return `\u20b9${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `\u20b9${(n / 1_000).toFixed(1)}K`
+  return `\u20b9${n.toFixed(2)}`
 }
 
 function exportCSV(data: DashboardData) {
@@ -111,7 +147,30 @@ export default function RevenueDashboardClient({ data }: { data: DashboardData }
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* ── Quick Access Grid ──────────────────────────────────── */}
+      <div>
+        <div className="mb-4">
+          <h2 className="text-lg font-black text-foreground">Admin Sections</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Quick access to all admin panels</p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-3">
+          {ADMIN_SECTIONS.map(({ href, label, icon: Icon, color }) => (
+            <Link
+              key={href}
+              href={href}
+              className="group flex flex-col items-center gap-2.5 rounded-2xl border border-border bg-card hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 transition-all p-4 text-center"
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color} shrink-0 group-hover:scale-110 transition-transform`}>
+                <Icon className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-bold text-foreground leading-tight">{label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-border" />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

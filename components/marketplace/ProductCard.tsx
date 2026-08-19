@@ -66,9 +66,9 @@ function PriceDisplay({ price, discount, flash, flashEnd, currency = "USD", inte
       <div className="flex flex-col">
         <div className="flex items-baseline gap-1.5">
           <span className="text-red-400 font-bold text-sm">
-            ${flash.toFixed(0)}{intervalLabel}
+            ₹{flash.toFixed(0)}{intervalLabel}
           </span>
-          {price && <span className="text-zinc-600 text-xs line-through">${price.toFixed(0)}</span>}
+          {price && <span className="text-zinc-600 text-xs line-through">₹{price.toFixed(0)}</span>}
         </div>
       </div>
     )
@@ -77,12 +77,12 @@ function PriceDisplay({ price, discount, flash, flashEnd, currency = "USD", inte
   if (discount && discount < price) {
     return (
       <div className="flex items-baseline gap-1.5">
-        <span className="text-emerald-400 font-bold text-sm">${discount.toFixed(0)}{intervalLabel}</span>
-        <span className="text-zinc-600 text-xs line-through">${price.toFixed(0)}</span>
+        <span className="text-emerald-400 font-bold text-sm">₹{discount.toFixed(0)}{intervalLabel}</span>
+        <span className="text-zinc-600 text-xs line-through">₹{price.toFixed(0)}</span>
       </div>
     )
   }
-  return <span className="font-bold text-sm text-white">${price.toFixed(0)}{intervalLabel}</span>
+  return <span className="font-bold text-sm text-white">₹{price.toFixed(0)}{intervalLabel}</span>
 }
 
 function Stars({ rating, count }: { rating?: number; count?: number }) {

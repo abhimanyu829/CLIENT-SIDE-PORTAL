@@ -332,10 +332,11 @@ export default function CheckoutClient({
 
       if (!res.ok || !json.success) {
         const checkoutError = json.error?.message ?? json.error?.code
-        if (
-          json.error?.code === "ORDER_ALREADY_COMPLETED" ||
-          checkoutError === "CART_ALREADY_CHECKED_OUT"
-        ) {
+        if (json.error?.code === "ORDER_ALREADY_COMPLETED") {
+          const completedStatus = json.data?.order?.status
+          if (completedStatus !== "PAID" && completedStatus !== "FULFILLED") {
+            throw new Error("Order is not paid yet. Please complete payment before opening your products.")
+          }
           const redirectUrl = json.data?.redirectUrl ?? "/dashboard/my-products"
           setState({ phase: "SUCCESS", redirectUrl })
           router.push(redirectUrl)
@@ -349,6 +350,10 @@ export default function CheckoutClient({
       const data = json.data
 
       if (data?.alreadyCompleted) {
+        const completedStatus = data.order?.status
+        if (completedStatus !== "PAID" && completedStatus !== "FULFILLED") {
+          throw new Error("Order is not paid yet. Please complete payment before opening your products.")
+        }
         const redirectUrl = data.redirectUrl ?? "/dashboard/my-products"
         setState({ phase: "SUCCESS", redirectUrl })
         router.push(redirectUrl)
@@ -546,7 +551,24 @@ export default function CheckoutClient({
 
       setState({ phase: "FAILED", error: userMessage, canRetry: true })
     }
-  }, [initialBuyNow, couponCode, cart, billingEmail, company, gstin, router, selectedGateway])
+  }, [
+    initialBuyNow,
+    couponCode,
+    cart,
+    billingEmail,
+    billingName,
+    mobile,
+    company,
+    gstin,
+    addressLine1,
+    city,
+    billingState,
+    postalCode,
+    country,
+    emailVerified,
+    router,
+    selectedGateway,
+  ])
 
   // ── Retry ───────────────────────────────────────────────────────────────────
   const handleRetry = useCallback(() => {

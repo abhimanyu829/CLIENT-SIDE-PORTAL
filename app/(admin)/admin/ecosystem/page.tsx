@@ -2,7 +2,7 @@ import Link from "next/link"
 import { getEnterpriseCommandCenter } from "@/lib/services/enterprise-commerce-service"
 
 function money(value: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value)
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value)
 }
 
 function Card({ label, value, hint }: { label: string; value: string | number; hint: string }) {

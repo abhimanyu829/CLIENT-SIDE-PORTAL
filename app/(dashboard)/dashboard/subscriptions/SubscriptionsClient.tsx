@@ -254,7 +254,7 @@ export default function SubscriptionsClient({ subscriptions, invoices }: { subsc
                     <p className="text-sm font-mono font-semibold text-foreground">{inv.stripeInvoiceId?.slice(0,16) ?? `INV-${inv.id.slice(0,8)}`}</p>
                     <p className="text-xs text-muted-foreground">{inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString() : "—"}</p>
                   </div>
-                  <p className="font-black text-foreground">$\{(Number(inv.amount||0)/100).toFixed(2)}</p>
+                  <p className="font-black text-foreground">₹{(Number(inv.amount||0)/100).toFixed(2)}</p>
                   <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold border ${inv.status==="PAID"?"text-emerald-700 border-emerald-200 bg-emerald-100":"text-amber-700 border-amber-200 bg-amber-100"}`}>{inv.status}</span>
                   <button className="text-xs text-muted-foreground hover:text-foreground transition-colors">⬇ PDF</button>
                 </div>

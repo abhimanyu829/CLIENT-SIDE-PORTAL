@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { AlertCircle, ArrowLeft, BookOpen, CheckCircle2, Clock3, ExternalLink, LifeBuoy, Loader2, ShoppingBag, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,27 +21,72 @@ export default function ServiceWorkspaceClient({ serviceId }: { serviceId: strin
   const [requestType, setRequestType] = useState("FEATURE")
   const [subject, setSubject] = useState("")
   const [details, setDetails] = useState("")
+  const pollAttemptRef = useRef(0)
 
-  async function load() {
-    setLoading(true); setError("")
+  const load = useCallback(async (options: { showLoading?: boolean } = {}) => {
+    const showLoading = options.showLoading ?? true
+    if (showLoading) setLoading(true)
+    setError("")
     try {
       const responses = await Promise.all([fetch(`/api/services/${serviceId}`, { cache: "no-store" }), fetch(`/api/services/${serviceId}/deployment`, { cache: "no-store" }), fetch("/api/addons", { cache: "no-store" }), fetch(`/api/services/${serviceId}/requests`, { cache: "no-store" })])
       const payloads = await Promise.all(responses.map((response) => response.json()))
       if (!responses[0].ok) throw new Error(payloads[0].error ?? "Service not found")
       setService(payloads[0].data); setDeployment(payloads[1].data ?? null); setAddons(payloads[2].data ?? []); setRequests(payloads[3].data ?? [])
     } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Unable to load workspace") }
-    finally { setLoading(false) }
-  }
+    finally { if (showLoading) setLoading(false) }
+  }, [serviceId])
 
-  useEffect(() => { void load() }, [serviceId])
+  const loadDeployment = useCallback(async () => {
+    const response = await fetch(`/api/services/${serviceId}/deployment`, { cache: "no-store" })
+    const payload = await response.json()
+    if (!response.ok) throw new Error(payload.error ?? "Unable to refresh deployment status")
 
-  // Continuous deployment updates: poll while the service is not yet ACTIVE.
-  // (Pusher "service-update" events cover realtime; polling is the fallback.)
+    const nextDeployment = payload.data ?? null
+    setDeployment(nextDeployment)
+    setService((current: any) => {
+      if (!current || !nextDeployment?.serviceStatus) return current
+      return {
+        ...current,
+        status: nextDeployment.serviceStatus,
+        estimatedCompletionAt: nextDeployment.estimatedCompletionAt ?? current.estimatedCompletionAt,
+      }
+    })
+
+    if (nextDeployment?.serviceStatus === "ACTIVE") {
+      await load({ showLoading: false })
+    }
+    return nextDeployment?.serviceStatus
+  }, [load, serviceId])
+
+  useEffect(() => { void load() }, [load])
+
+  // Poll only the small deployment endpoint while activation is pending.
   useEffect(() => {
     if (!service || service.status === "ACTIVE") return
-    const timer = setInterval(() => { void load() }, 5000)
-    return () => clearInterval(timer)
-  }, [service?.status, serviceId])
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | null = null
+    pollAttemptRef.current = 0
+
+    const schedule = () => {
+      const delay = Math.min(60_000, 15_000 + pollAttemptRef.current * 5_000)
+      pollAttemptRef.current += 1
+      timer = setTimeout(async () => {
+        if (cancelled) return
+        const nextStatus = await loadDeployment().catch((pollError) => {
+          if (!cancelled) setError(pollError instanceof Error ? pollError.message : "Unable to refresh deployment status")
+          return null
+        })
+        if (nextStatus === "ACTIVE") return
+        if (!cancelled) schedule()
+      }, delay)
+    }
+
+    schedule()
+    return () => {
+      cancelled = true
+      if (timer) clearTimeout(timer)
+    }
+  }, [loadDeployment, service?.status])
 
   async function renewService() {
     const response = await fetch(`/api/services/${serviceId}/renew`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) })

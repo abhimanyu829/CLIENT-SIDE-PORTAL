@@ -275,9 +275,9 @@ export default function StockManagementPanel({ productId, productName, initialSt
 
           {/* Warning message */}
           {stock.warningMessage && (
-            <div className="flex items-start gap-2 rounded-lg border border-amber-700/40 bg-amber-900/10 px-4 py-3">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-              <p className="text-sm text-amber-300">{stock.warningMessage}</p>
+            <div className="flex items-center gap-2.5 rounded-xl border border-amber-300/80 bg-amber-100 text-black px-4 py-3 shadow-xs">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-black" />
+              <p className="text-sm font-extrabold text-black uppercase tracking-wide">{stock.warningMessage}</p>
             </div>
           )}
         </div>

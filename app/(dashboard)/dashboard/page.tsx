@@ -84,7 +84,7 @@ export default function DashboardOverview() {
           border="border-emerald-500/20" 
           glow="rgba(16,185,129,0.05)" 
           statKey="monthlySpend" 
-          formatter={(v) => `$${v.toFixed(2)}`}
+          formatter={(v) => `\u20b9${v.toFixed(2)}`}
         />
       </div>
 

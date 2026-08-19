@@ -124,11 +124,16 @@ export async function POST(req: NextRequest) {
 
     // ── Mark verified ────────────────────────────────────────────────────────
     const verifiedAt = new Date()
+    // A verified email must stay valid long enough to finish checkout. Extend
+    // expiresAt past the short OTP window so the order-creation gate does not
+    // reject a verified session when the user takes time filling billing details.
+    const verifiedSessionValidUntil = new Date(verifiedAt.getTime() + 2 * 60 * 60 * 1000)
     await db.billingEmailOtp.update({
       where: { id: record.id },
       data: {
         verified: true,
         verifiedAt,
+        expiresAt: verifiedSessionValidUntil,
         attempts: { increment: 1 },
       },
     })

@@ -38,6 +38,7 @@ const FOOTER_LINKS = [
       ["API Reference", "/docs/api"],
       ["Live Demos", "/demo"],
       ["Compare Products", "/compare"],
+      ["Feedback & Ratings", "/feedback"],
       ["Status Page", "https://status.nexusai.app"],
     ],
   },

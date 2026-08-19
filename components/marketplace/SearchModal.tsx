@@ -163,7 +163,7 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
                         <p className="text-xs text-zinc-600 line-clamp-1">{r.tagline}</p>
                       </div>
                       {r.startingPrice && (
-                        <span className="text-xs text-emerald-400 font-medium flex-shrink-0">${r.startingPrice}/mo</span>
+                        <span className="text-xs text-emerald-400 font-medium flex-shrink-0">₹{r.startingPrice}/mo</span>
                       )}
                     </button>
                   ))}

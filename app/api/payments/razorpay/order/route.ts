@@ -402,7 +402,7 @@ export async function POST(req: NextRequest) {
       couponCode: body.couponCode,
     })
 
-    if (order.status !== OrderStatus.PENDING) {
+    if (order.status === OrderStatus.PAID || order.status === OrderStatus.FULFILLED) {
       return NextResponse.json(
         {
           success: true,
@@ -413,6 +413,19 @@ export async function POST(req: NextRequest) {
           },
         },
         { status: 200 },
+      )
+    }
+
+    if (order.status !== OrderStatus.PENDING) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "ORDER_NOT_PAYABLE",
+            message: "This order is not payable yet. Please refresh checkout and try again.",
+          },
+        },
+        { status: 409 },
       )
     }
 

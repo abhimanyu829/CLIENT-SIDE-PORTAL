@@ -51,10 +51,10 @@ export default function InvoicesClient({ invoices }: { invoices: any[] }) {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label:"Total Paid",    value:`$${(totals.paid/100).toFixed(2)}`,    color:"text-emerald-600", border:"border-emerald-500/20" },
-          { label:"Pending",       value:`$${(totals.pending/100).toFixed(2)}`, color:"text-amber-600",   border:"border-amber-500/20" },
+          { label:"Total Paid",    value:`₹${(totals.paid/100).toFixed(2)}`,    color:"text-emerald-600", border:"border-emerald-500/20" },
+          { label:"Pending",       value:`₹${(totals.pending/100).toFixed(2)}`, color:"text-amber-600",   border:"border-amber-500/20" },
           { label:"Invoices",      value:invoices.length,                        color:"text-blue-600",    border:"border-blue-500/20" },
-          { label:"This Month",    value:`$${(totals.paid/100/12).toFixed(2)}`, color:"text-primary",  border:"border-primary/20" },
+          { label:"This Month",    value:`₹${(totals.paid/100/12).toFixed(2)}`, color:"text-primary",  border:"border-primary/20" },
         ].map(s=>(
           <div key={s.label} className={`d-glass rounded-2xl p-4 border ${s.border}`}>
             <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
@@ -101,7 +101,7 @@ export default function InvoicesClient({ invoices }: { invoices: any[] }) {
             <span className="hidden md:block text-xs text-muted-foreground whitespace-nowrap">
               {inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "—"}
             </span>
-            <span className="font-black text-sm text-foreground">$\{(Number(inv.amount||0)/100).toFixed(2)}</span>
+            <span className="font-black text-sm text-foreground">₹{(Number(inv.amount||0)/100).toFixed(2)}</span>
             <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold border whitespace-nowrap ${STATUS_STYLE[inv.status] ?? STATUS_STYLE.PENDING}`}>
               {inv.status ?? "PENDING"}
             </span>

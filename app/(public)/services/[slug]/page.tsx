@@ -289,7 +289,7 @@ export default async function ServiceDetailsPage({ params }: { params: Promise<{
                         {plan.isPopular && <Badge className="bg-indigo-500/20 text-indigo-200 border border-indigo-500/30">Popular</Badge>}
                       </div>
                       <div className="mt-5">
-                        <p className="text-4xl font-black text-white">${Number(plan.price).toLocaleString()}</p>
+                        <p className="text-4xl font-black text-white">₹{Number(plan.price).toLocaleString()}</p>
                         <p className="text-xs uppercase tracking-[0.24em] text-zinc-500 mt-2">{plan.type.replace("_", " ")}</p>
                       </div>
                       {plan.description && <p className="mt-4 text-sm leading-relaxed text-gray-400">{plan.description}</p>}
@@ -327,7 +327,7 @@ export default async function ServiceDetailsPage({ params }: { params: Promise<{
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <h3 className="text-lg font-semibold text-white">{addon.name}</h3>
-                          <p className="mt-1 text-sm text-gray-400">${Number(addon.price).toLocaleString()} {addon.currency}</p>
+                          <p className="mt-1 text-sm text-gray-400">₹{Number(addon.price).toLocaleString()} {addon.currency}</p>
                         </div>
                         <div className="flex flex-wrap justify-end gap-2">
                           {addon.isPopular && <Badge className="bg-indigo-500/20 text-indigo-200 border border-indigo-500/30">Popular</Badge>}

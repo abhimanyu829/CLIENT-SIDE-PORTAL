@@ -428,10 +428,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                             )}
                             <div className="flex items-baseline gap-2">
                               <span className={`text-4xl font-black ${isFlash ? "text-red-400" : "text-white"}`}>
-                                ${effectivePrice.toFixed(0)}
+                                ₹{effectivePrice.toFixed(0)}
                               </span>
                               {(isFlash || tier.discountPrice) && (
-                                <span className="text-zinc-600 line-through text-lg">${tier.price.toFixed(0)}</span>
+                                <span className="text-zinc-600 line-through text-lg">₹{tier.price.toFixed(0)}</span>
                               )}
                             </div>
                             <p className="text-zinc-500 text-sm mt-1">{INTERVAL_LABELS[tier.interval] || "/month"}</p>
@@ -626,10 +626,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                   <p className="text-xs text-zinc-600 uppercase tracking-wider mb-1">Starting from</p>
                   <div className="flex items-baseline gap-2">
                     <span className={`text-4xl font-black ${hasFlash ? "text-red-400" : "text-white"}`}>
-                      ${displayPrice(cheapestTier).toFixed(0)}
+                      ₹{displayPrice(cheapestTier).toFixed(0)}
                     </span>
                     {(hasFlash || cheapestTier.discountPrice) && (
-                      <span className="text-zinc-600 line-through text-lg">${cheapestTier.price.toFixed(0)}</span>
+                      <span className="text-zinc-600 line-through text-lg">₹{cheapestTier.price.toFixed(0)}</span>
                     )}
                     <span className="text-zinc-500 text-sm">{INTERVAL_LABELS[cheapestTier.interval]}</span>
                   </div>
@@ -639,7 +639,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                 </div>
 
                 {/* CTA Buttons */}
-                <div className="space-y-2.5">
+                <div className="space-y-4">
                   {/* ── Live Stock Display ── */}
                   {stock?.stockVisible && stock.isOutOfStock && !stock.backOrdersEnabled && (
                     <div className="w-full py-2 rounded-xl text-center text-xs font-bold bg-red-500/10 border border-red-500/30 text-red-400">
@@ -657,9 +657,9 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                     </div>
                   )}
                   {stock?.warningMessage && (
-                    <div className="flex items-start gap-2 rounded-xl border border-amber-700/40 bg-amber-900/10 px-3 py-2">
-                      <span className="text-amber-400 shrink-0">⚠️</span>
-                      <p className="text-xs text-amber-300 leading-snug">{stock.warningMessage}</p>
+                    <div className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-amber-300/80 bg-amber-100 text-black px-4 py-3.5 my-3 shadow-xs font-bold text-xs sm:text-sm tracking-wide transition-all">
+                      <span className="shrink-0 text-base">⚠️</span>
+                      <p className="text-black font-extrabold text-xs sm:text-sm uppercase tracking-wide leading-tight">{stock.warningMessage}</p>
                     </div>
                   )}
 

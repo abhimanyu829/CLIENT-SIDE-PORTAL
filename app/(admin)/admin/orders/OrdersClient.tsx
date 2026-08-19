@@ -189,10 +189,10 @@ export default function OrdersClient({
         <div className="rounded-xl border p-4 bg-card flex items-center justify-between shadow-sm">
           <div>
             <p className="text-xs text-muted-foreground uppercase font-semibold">Total Net Revenue</p>
-            <h3 className="text-2xl font-bold">${metrics.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+            <h3 className="text-2xl font-bold">₹{metrics.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
           </div>
-          <div className="h-10 w-10 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center text-emerald-600">
-            <DollarSign className="h-5 w-5" />
+          <div className="h-10 w-10 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center text-emerald-600 font-bold text-lg">
+            ₹
           </div>
         </div>
 
@@ -219,7 +219,7 @@ export default function OrdersClient({
         <div className="rounded-xl border p-4 bg-card flex items-center justify-between shadow-sm">
           <div>
             <p className="text-xs text-muted-foreground uppercase font-semibold">Refunded Amount</p>
-            <h3 className="text-2xl font-bold">${metrics.refundedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+            <h3 className="text-2xl font-bold">₹{metrics.refundedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
           </div>
           <div className="h-10 w-10 rounded-full bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center text-amber-600">
             <Undo2 className="h-5 w-5" />
@@ -314,7 +314,7 @@ export default function OrdersClient({
                         <p className="font-medium">{p.user.name}</p>
                         <p className="text-xs text-muted-foreground">{p.user.email}</p>
                       </td>
-                      <td className="px-4 py-3 font-semibold">${Number(p.amount).toFixed(2)} {p.currency}</td>
+                      <td className="px-4 py-3 font-semibold">₹{Number(p.amount).toFixed(2)} {p.currency}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[p.status] ?? ""}`}>
                           {p.status}
@@ -378,7 +378,7 @@ export default function OrdersClient({
                   <tr key={d.id} className="hover:bg-muted/10">
                     <td className="px-4 py-3 font-mono text-xs">{d.id}</td>
                     <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded bg-zinc-100 font-semibold">{d.gateway}</span></td>
-                    <td className="px-4 py-3 font-semibold text-red-600">${d.amount.toFixed(2)}</td>
+                    <td className="px-4 py-3 font-semibold text-red-600">₹{d.amount.toFixed(2)}</td>
                     <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-medium">{d.status}</span></td>
                     <td className="px-4 py-3">
                       <p className="font-medium">{d.user}</p>
@@ -421,7 +421,7 @@ export default function OrdersClient({
             <div className="grid grid-cols-2 gap-4 text-sm mb-6">
               <div><span className="text-xs text-muted-foreground">Gateway Payment ID</span><p className="font-mono font-semibold">{selectedPayment.gatewayPaymentId || "—"}</p></div>
               <div><span className="text-xs text-muted-foreground">Order Date</span><p>{new Date(selectedPayment.createdAt).toLocaleString()}</p></div>
-              <div><span className="text-xs text-muted-foreground">Amount</span><p className="font-bold text-lg">${Number(selectedPayment.amount).toFixed(2)} {selectedPayment.currency}</p></div>
+              <div><span className="text-xs text-muted-foreground">Amount</span><p className="font-bold text-lg">₹{Number(selectedPayment.amount).toFixed(2)} {selectedPayment.currency}</p></div>
               <div><span className="text-xs text-muted-foreground">Status</span><p className="font-semibold text-emerald-600">{selectedPayment.status}</p></div>
               <div><span className="text-xs text-muted-foreground">Customer Email</span><p>{selectedPayment.user.email}</p></div>
               <div><span className="text-xs text-muted-foreground">Gateway</span><p>{selectedPayment.gateway}</p></div>
@@ -439,9 +439,9 @@ export default function OrdersClient({
               <div className="border rounded-lg p-4 bg-muted/30 mb-6">
                 <h3 className="font-semibold text-sm mb-2">Invoice Summary (GST Breakdown)</h3>
                 <div className="space-y-1 text-sm">
-                  <div className="flex justify-between"><span>Base Price:</span><span>${(Number(selectedPayment.invoice.totalAmount) - Number(selectedPayment.invoice.taxAmount)).toFixed(2)}</span></div>
-                  <div className="flex justify-between text-zinc-500 text-xs"><span>GST / Taxes (18% implied):</span><span>${Number(selectedPayment.invoice.taxAmount).toFixed(2)}</span></div>
-                  <div className="flex justify-between font-semibold border-t pt-1 mt-1"><span>Total Invoice Amount:</span><span>${Number(selectedPayment.invoice.totalAmount).toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Base Price:</span><span>₹{(Number(selectedPayment.invoice.totalAmount) - Number(selectedPayment.invoice.taxAmount)).toFixed(2)}</span></div>
+                  <div className="flex justify-between text-zinc-500 text-xs"><span>GST / Taxes (18% implied):</span><span>₹{Number(selectedPayment.invoice.taxAmount).toFixed(2)}</span></div>
+                  <div className="flex justify-between font-semibold border-t pt-1 mt-1"><span>Total Invoice Amount:</span><span>₹{Number(selectedPayment.invoice.totalAmount).toFixed(2)}</span></div>
                 </div>
 
                 <div className="flex justify-end gap-2 mt-4">
@@ -515,7 +515,7 @@ export default function OrdersClient({
         onClose={() => setRefundDialog(null)}
         onConfirm={triggerRefund}
         title="Issue Refund"
-        description={`Are you sure you want to issue a refund for payment of $${refundDialog?.amount}?`}
+        description={`Are you sure you want to issue a refund for payment of ₹${refundDialog?.amount}?`}
         destructive
       >
         <div className="mt-4 space-y-3">
@@ -523,7 +523,7 @@ export default function OrdersClient({
             <label className="text-xs font-semibold text-muted-foreground uppercase">Refund Amount (Optional, defaults to full)</label>
             <Input
               type="number"
-              placeholder={`Max $${refundDialog?.amount}`}
+              placeholder={`Max ₹${refundDialog?.amount}`}
               value={refundAmount}
               onChange={(e) => setRefundAmount(e.target.value)}
               className="mt-1"

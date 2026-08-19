@@ -14,7 +14,7 @@ interface AdminKPIs {
 
 export default function AdminOverviewClient({ kpis }: { kpis: AdminKPIs }) {
   const fmt = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n)
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n)
 
   const cards = [
     { label: "Monthly Recurring Revenue (MRR)", value: fmt(kpis.mrr), trend: "+12%", pos: true },

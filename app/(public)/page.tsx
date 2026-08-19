@@ -530,50 +530,49 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Testimonials */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px] mb-16">
-            {testimonials.length > 0 ? testimonials.map(t => (
-              <div key={t.id} className="bg-card text-card-foreground rounded-xl p-[24px] border border-border card-hover shadow-sm">
-                <div className="flex gap-1 mb-4">
-                  {[1,2,3,4,5].map(s => <span key={s} className="text-primary text-[12px]">★</span>)}
-                </div>
-                <p className="text-muted-foreground mb-6 leading-relaxed text-[16px]">"{t.body}"</p>
-                <div className="flex items-center gap-3">
-                  {t.user.avatarUrl ? (
-                    <img src={t.user.avatarUrl} alt={t.user.name || ""} className="w-10 h-10 rounded-full object-cover border border-border" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-sm font-bold text-primary-foreground">
-                      {(t.user.name || "?").charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div>
-                    <p className="font-medium text-[16px]">{t.user.name || "Anonymous"}</p>
-                    <p className="text-muted-foreground text-[12px] font-mono">Verified Customer · {t.product.name}</p>
-                  </div>
-                </div>
-              </div>
-            )) : (
-              // Fallback testimonials
-              [
-                { name: "Sarah Chen", role: "ML Engineer @ Stripe", quote: "NexusAI cut our AI deployment time from weeks to hours. The sandbox demos alone converted 40% more enterprise clients.", avatar: "SC" },
-                { name: "Marcus Williams", role: "Founder @ AutomateHQ", quote: "We went from 0 to $50K MRR in 3 months using the marketplace. The billing integration is absolutely flawless.", avatar: "MW" },
-                { name: "Priya Patel", role: "CTO @ DevStudio", quote: "The best AI infrastructure I've worked with. Scales perfectly and the agent hosting is rock solid with 99.9% uptime.", avatar: "PP" },
-              ].map(t => (
-                <div key={t.name} className="bg-card text-card-foreground rounded-xl p-[24px] border border-border card-hover shadow-sm">
-                  <div className="flex gap-1 mb-4">
-                    {[1,2,3,4,5].map(s => <span key={s} className="text-primary text-[12px]">★</span>)}
-                  </div>
-                  <p className="text-muted-foreground mb-6 leading-relaxed text-[16px]">"{t.quote}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-sm font-bold text-primary-foreground">{t.avatar}</div>
+          {/* Dynamic Testimonials / Feedback */}
+          <div className="space-y-8 mb-16">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px]">
+              {testimonials.length > 0 ? (
+                testimonials.map(t => (
+                  <div key={t.id} className="bg-card text-card-foreground rounded-xl p-[24px] border border-border card-hover shadow-sm flex flex-col justify-between">
                     <div>
-                      <p className="font-medium text-[16px]">{t.name}</p>
-                      <p className="text-muted-foreground text-[12px] font-mono">{t.role}</p>
+                      <div className="flex gap-1 mb-4">
+                        {[1,2,3,4,5].map(s => <span key={s} className="text-amber-400 text-[12px]">★</span>)}
+                      </div>
+                      <p className="text-muted-foreground mb-6 leading-relaxed text-[16px]">&ldquo;{t.body}&rdquo;</p>
+                    </div>
+                    <div className="flex items-center gap-3 border-t border-border/50 pt-4 mt-auto">
+                      {t.user.avatarUrl ? (
+                        <img src={t.user.avatarUrl} alt={t.user.name || ""} className="w-10 h-10 rounded-full object-cover border border-border" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-sm font-bold text-primary-foreground">
+                          {(t.user.name || "?").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-[16px]">{t.user.name || "Verified Customer"}</p>
+                        <p className="text-muted-foreground text-[12px] font-mono">Verified Customer · {t.product?.name || "Service"}</p>
+                      </div>
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="md:col-span-3 bg-card border border-border rounded-2xl p-8 text-center space-y-3">
+                  <p className="text-lg font-bold text-foreground">Verified Customer & Admin Feedback</p>
+                  <p className="text-sm text-muted-foreground max-w-xl mx-auto">Explore transparent ratings and star feedback submitted directly by service users and platform administrators.</p>
                 </div>
-              ))
-            )}
+              )}
+            </div>
+
+            <div className="text-center">
+              <Link
+                href="/feedback"
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-3 rounded-xl transition-all shadow-sm"
+              >
+                Explore All Ratings & Submit Feedback <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>

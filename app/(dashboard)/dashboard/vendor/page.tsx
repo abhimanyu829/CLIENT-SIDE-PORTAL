@@ -4,7 +4,7 @@ import { db } from "@/lib/db"
 import { VendorOnboardingClient } from "./VendorOnboardingClient"
 
 function currency(value: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value)
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value)
 }
 
 export default async function VendorStudioPage() {

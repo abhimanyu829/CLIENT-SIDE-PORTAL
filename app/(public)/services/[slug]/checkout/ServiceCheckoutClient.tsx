@@ -104,7 +104,7 @@ export default function ServiceCheckoutClient({ service }: { service: Service })
                       <p className="font-semibold text-white">{plan.name}</p>
                       {plan.billingLabel && <p className="mt-1 text-xs text-zinc-400">{plan.billingLabel}</p>}
                     </div>
-                    <span className="text-sm font-semibold text-white">${Number(plan.price).toLocaleString()}</span>
+                    <span className="text-sm font-semibold text-white">₹{Number(plan.price).toLocaleString()}</span>
                   </div>
                   {plan.description && <p className="mt-3 text-sm text-zinc-400">{plan.description}</p>}
                 </button>
@@ -139,7 +139,7 @@ export default function ServiceCheckoutClient({ service }: { service: Service })
                         <div className="flex-1">
                           <div className="flex items-start justify-between gap-3">
                             <p className="font-semibold text-white">{addon.name}</p>
-                            <span className="text-sm font-semibold text-white">${Number(addon.price).toLocaleString()}</span>
+                            <span className="text-sm font-semibold text-white">₹{Number(addon.price).toLocaleString()}</span>
                           </div>
                           {addon.description && <p className="mt-2 text-sm text-zinc-400">{addon.description}</p>}
                           <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]">

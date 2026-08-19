@@ -656,7 +656,7 @@ export async function createOrderFromActiveCart(input: {
       include: { items: true },
     })
 
-    if (existingOrder && existingOrder.status !== OrderStatus.PENDING) {
+    if (existingOrder && (existingOrder.status === OrderStatus.PAID || existingOrder.status === OrderStatus.FULFILLED)) {
       return existingOrder
     }
 
@@ -667,6 +667,8 @@ export async function createOrderFromActiveCart(input: {
       const updated = await tx.order.update({
         where: { id: pending.id },
         data: {
+          status: OrderStatus.PENDING,
+          paidAt: null,
           gateway: input.gateway,
           currency: cart.currency,
           region: cart.region,
