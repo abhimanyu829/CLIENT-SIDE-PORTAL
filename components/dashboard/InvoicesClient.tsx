@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Download, FileText, Search, Filter, TrendingUp, Clock, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { Download, FileText, Receipt, Search, Filter, TrendingUp, Clock, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 
 const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
   PAID: { label: "Paid", dot: "bg-emerald-400", badge: "text-emerald-400 bg-emerald-400/10 border-emerald-400/25" },
@@ -194,13 +194,22 @@ export default function InvoicesClient() {
                       {new Date(inv.issuedAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                     </td>
                     <td className="py-4 px-5 text-right">
-                      <a
-                        href={`/api/invoices/${inv.id}/download`}
-                        download={`${inv.number ?? "invoice"}.pdf`}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/15 border border-primary/20 px-3 py-1.5 rounded-lg transition-all"
-                      >
-                        <Download className="w-3.5 h-3.5" /> PDF
-                      </a>
+                      <div className="inline-flex gap-2">
+                        <a
+                          href={`/api/invoices/${inv.id}/download`}
+                          download={`${inv.number ?? "invoice"}.pdf`}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/15 border border-primary/20 px-3 py-1.5 rounded-lg transition-all"
+                        >
+                          <Download className="w-3.5 h-3.5" /> Invoice
+                        </a>
+                        <a
+                          href={`/api/invoices/${inv.id}/receipt`}
+                          download={`RECEIPT-${inv.number ?? "payment"}.pdf`}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 px-3 py-1.5 rounded-lg transition-all"
+                        >
+                          <Receipt className="w-3.5 h-3.5" /> Receipt
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 ))}

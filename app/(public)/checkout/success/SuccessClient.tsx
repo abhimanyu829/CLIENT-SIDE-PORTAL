@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { BadgeCheck, FileText, LayoutDashboard, Loader2, PackageCheck, RefreshCw, Rocket } from "lucide-react"
+import { BadgeCheck, Download, FileText, LayoutDashboard, Loader2, PackageCheck, Receipt, RefreshCw, Rocket, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 type SuccessOrder = {
@@ -12,16 +12,26 @@ type SuccessOrder = {
   status: string
   gateway: string | null
   currency: string
+  subtotal: number
+  discountTotal: number
+  taxTotal: number
   grandTotal: number
   paidAt: string | null
   items: Array<{
     id: string
     name: string
     tierName: string
+    interval: string | null
     fulfillmentType: string
     productName: string
+    category: string | null
+    unitPrice: number
+    quantity: number
+    freeServices: string[]
   }>
   invoiceId: string | null
+  invoiceNumber: string | null
+  payment: { gateway: string | null; gatewayPaymentId: string | null; status: string; paidAt: string | null } | null
 }
 
 type PollState = "POLLING" | "DEPLOYMENT_QUEUED" | "CONFIRMED" | "TIMEOUT"
@@ -288,47 +298,164 @@ export default function SuccessClient({ order, userId }: { order: SuccessOrder; 
           ) : null}
         </div>
 
-        {/* Activated items */}
-        <div className="mt-6 rounded-lg border border-white/10 bg-white/[0.03]">
-          <div className="border-b border-white/10 px-5 py-4">
-            <h2 className="font-bold">
-              {isDeploymentQueued ? "Deploying items" : isPaid ? "Activated items" : "Order items"}
-            </h2>
-          </div>
-          <div className="divide-y divide-white/10">
-            {order.items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-4 px-5 py-4">
-                <div>
-                  <p className="font-semibold">{item.name}</p>
-                  <p className="text-sm text-zinc-500">
-                    {item.tierName} · {item.fulfillmentType.replaceAll("_", " ")}
-                  </p>
-                </div>
-                {isDeploymentQueued ? (
-                  <Rocket className="h-5 w-5 text-blue-300 animate-pulse" />
-                ) : isPaid ? (
-                  <PackageCheck className="h-5 w-5 text-emerald-300" />
-                ) : null}
+        {isPaid && !isDeploymentQueued ? (
+          /* ── Premium paid-invoice card ─────────────────────────────── */
+          <div className="mt-6 overflow-hidden rounded-3xl border border-zinc-200 bg-white text-zinc-900 shadow-2xl shadow-black/40">
+            <div className="px-6 pt-8 pb-6 sm:px-10">
+              <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200">
+                  <BadgeCheck className="h-4 w-4" /> Invoice Paid
+                </span>
+                <span className="text-xs font-medium text-zinc-400">
+                  {order.invoiceNumber ?? `Order ${order.orderNumber}`}
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Actions */}
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <Button asChild>
-            <Link href="/dashboard/subscriptions">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              Open billing center
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="border-white/10 bg-transparent">
-            <Link href={order.invoiceId ? `/api/invoices/${order.invoiceId}/download` : "/dashboard/invoices"}>
-              <FileText className="mr-2 h-4 w-4" />
-              Download invoice
-            </Link>
-          </Button>
-        </div>
+              <p className="mt-6 text-4xl font-black tracking-tight sm:text-5xl">
+                {order.currency === "INR" ? "₹" : `${order.currency} `}
+                {order.grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="mt-1 text-sm text-zinc-400">Total paid</p>
+
+              <dl className="mt-8 grid grid-cols-1 gap-x-8 gap-y-4 text-sm sm:grid-cols-2">
+                <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                  <dt className="text-zinc-500">Invoice number</dt>
+                  <dd className="font-semibold">{order.invoiceNumber ?? "—"}</dd>
+                </div>
+                <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                  <dt className="text-zinc-500">Order ID</dt>
+                  <dd className="font-semibold">{order.orderNumber}</dd>
+                </div>
+                <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                  <dt className="text-zinc-500">Payment date</dt>
+                  <dd className="font-semibold">
+                    {(order.payment?.paidAt ?? order.paidAt)
+                      ? new Date(order.payment?.paidAt ?? order.paidAt!).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+                      : "—"}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                  <dt className="text-zinc-500">Payment method</dt>
+                  <dd className="font-semibold">{(order.payment?.gateway ?? order.gateway ?? "—").replaceAll("_", " ")}</dd>
+                </div>
+                {order.payment?.gatewayPaymentId && (
+                  <div className="flex items-center justify-between border-b border-zinc-100 pb-3 sm:col-span-2">
+                    <dt className="text-zinc-500">Transaction ID</dt>
+                    <dd className="font-mono text-xs font-semibold">{order.payment.gatewayPaymentId}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+
+            <div className="border-t border-zinc-100 px-6 py-6 sm:px-10">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Purchased services</h3>
+              <ul className="mt-4 space-y-4">
+                {order.items.map((item) => (
+                  <li key={item.id} className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold">{item.productName}</p>
+                      <p className="mt-0.5 text-xs text-zinc-500">
+                        {item.tierName}
+                        {item.category ? ` · ${item.category}` : ""}
+                        {item.interval ? ` · ${item.interval.replaceAll("_", " ").toLowerCase()}` : ""}
+                        {item.quantity > 1 ? ` · ×${item.quantity}` : ""}
+                      </p>
+                      {item.freeServices.length > 0 && (
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {item.freeServices.slice(0, 6).map((svc) => (
+                            <span key={svc} className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700 ring-1 ring-violet-100">
+                              <Sparkles className="h-2.5 w-2.5" /> {svc}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <p className="whitespace-nowrap text-sm font-bold">
+                      {order.currency === "INR" ? "₹" : `${order.currency} `}
+                      {(item.unitPrice * item.quantity).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-6 space-y-2 border-t border-zinc-100 pt-4 text-sm">
+                {order.subtotal > 0 && (
+                  <div className="flex justify-between text-zinc-500"><span>Subtotal</span><span>{order.subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>
+                )}
+                {order.discountTotal > 0 && (
+                  <div className="flex justify-between text-emerald-600"><span>Discount</span><span>- {order.discountTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>
+                )}
+                {order.taxTotal > 0 && (
+                  <div className="flex justify-between text-zinc-500"><span>Tax</span><span>{order.taxTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>
+                )}
+                <div className="flex items-baseline justify-between pt-2 text-base font-black text-zinc-900">
+                  <span>Total paid</span>
+                  <span>
+                    {order.currency === "INR" ? "₹" : `${order.currency} `}
+                    {order.grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 border-t border-zinc-100 bg-zinc-50/70 px-6 py-6 sm:grid-cols-2 sm:px-10">
+              <Button asChild className="h-11 rounded-xl bg-zinc-900 text-white hover:bg-zinc-800">
+                <a href={order.invoiceId ? `/api/invoices/${order.invoiceId}/download` : "/dashboard/invoices"} download>
+                  <Download className="mr-2 h-4 w-4" /> Download Invoice
+                </a>
+              </Button>
+              <Button asChild variant="outline" className="h-11 rounded-xl border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-100">
+                <a href={order.invoiceId ? `/api/invoices/${order.invoiceId}/receipt` : "/dashboard/invoices"} download>
+                  <Receipt className="mr-2 h-4 w-4" /> Download Receipt
+                </a>
+              </Button>
+            </div>
+          </div>
+        ) : (
+          /* ── Activated / order items (pre-confirmation states) ─────── */
+          <>
+            <div className="mt-6 rounded-lg border border-white/10 bg-white/[0.03]">
+              <div className="border-b border-white/10 px-5 py-4">
+                <h2 className="font-bold">
+                  {isDeploymentQueued ? "Deploying items" : isPaid ? "Activated items" : "Order items"}
+                </h2>
+              </div>
+              <div className="divide-y divide-white/10">
+                {order.items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-4 px-5 py-4">
+                    <div>
+                      <p className="font-semibold">{item.name}</p>
+                      <p className="text-sm text-zinc-500">
+                        {item.tierName} · {item.fulfillmentType.replaceAll("_", " ")}
+                      </p>
+                    </div>
+                    {isDeploymentQueued ? (
+                      <Rocket className="h-5 w-5 text-blue-300 animate-pulse" />
+                    ) : isPaid ? (
+                      <PackageCheck className="h-5 w-5 text-emerald-300" />
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <Button asChild>
+                <Link href="/dashboard/subscriptions">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Open billing center
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="border-white/10 bg-transparent">
+                <Link href={order.invoiceId ? `/api/invoices/${order.invoiceId}/download` : "/dashboard/invoices"}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Download invoice
+                </Link>
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

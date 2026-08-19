@@ -61,7 +61,7 @@ const FOOTER_LINKS = [
       ["Cookie Policy", "/cookies"],
       ["GDPR", "/gdpr"],
       ["Security", "/security"],
-      ["Refund Policy", "/refunds"],
+      ["Refund Policy", "/refund-policy"],
     ],
   },
 ]

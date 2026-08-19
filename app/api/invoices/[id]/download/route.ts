@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { env } from "@/lib/env"
 import { isR2Configured, generatePresignedGetUrl } from "@/lib/r2"
-import { buildInvoicePdf } from "@/lib/invoice-pdf"
+import { buildInvoicePdf, type InvoicePdfInput } from "@/lib/invoice-pdf"
 
 // GET /api/invoices/[id]/download
 // Delivers the invoice PDF with Content-Type: application/pdf and
@@ -25,9 +25,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const invoice = await db.invoice.findUnique({
       where: { id },
       include: {
-        user: { select: { id: true, name: true, email: true } },
-        payment: { select: { gatewayPaymentId: true, id: true } },
-        order: { select: { id: true, orderNumber: true } },
+        user: { select: { id: true, name: true, email: true, phone: true } },
+        payment: { select: { gatewayPaymentId: true, id: true, gateway: true, paidAt: true, status: true } },
+        order: {
+          select: {
+            id: true, orderNumber: true, subtotal: true, discountTotal: true, taxTotal: true, paidAt: true, billingSnapshot: true,
+            items: {
+              select: {
+                name: true, quantity: true, unitPrice: true,
+                tier: { select: { name: true, interval: true } },
+                product: { select: { category: true, serviceProfile: { select: { freeServices: true } } } },
+              },
+            },
+          },
+        },
+        subscription: { select: { currentPeriodStart: true, currentPeriodEnd: true, tier: { select: { name: true, interval: true } }, product: { select: { name: true } } } },
       },
     })
 
@@ -70,18 +82,54 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // Path 2: on-demand PDF from invoice data.
-    const pdf = buildInvoicePdf({
+    const billing = (invoice.order?.billingSnapshot ?? {}) as Record<string, any>
+    const billingAddress = [billing.addressLine1 ?? billing.line1, billing.city, billing.state, billing.postalCode ?? billing.zip, billing.country]
+      .filter(Boolean).join("\n") || null
+
+    const pdfInput: InvoicePdfInput = {
       number: invoice.number,
-      userName: invoice.user?.name,
-      userEmail: invoice.user?.email,
       status: invoice.status,
       issuedAt: invoice.issuedAt,
-      totalAmount: Number(invoice.totalAmount),
-      taxAmount: Number(invoice.taxAmount),
-      currency: invoice.currency,
-      lineItems: invoice.lineItems as any,
+      userName: invoice.user?.name,
+      userEmail: invoice.user?.email,
+      userPhone: invoice.user?.phone,
+      billingAddress,
+      orderNumber: invoice.order?.orderNumber,
+      purchaseDate: invoice.order?.paidAt ?? invoice.issuedAt,
+      paymentMethod: invoice.payment?.gateway ?? null,
       transactionRef: invoice.payment?.gatewayPaymentId ?? invoice.payment?.id ?? null,
-    })
+      paidAt: invoice.payment?.paidAt ?? invoice.order?.paidAt ?? null,
+      subscription: invoice.subscription
+        ? {
+            planName: invoice.subscription.tier?.name,
+            productName: invoice.subscription.product?.name,
+            interval: invoice.subscription.tier?.interval,
+            startDate: invoice.subscription.currentPeriodStart,
+            endDate: invoice.subscription.currentPeriodEnd,
+          }
+        : null,
+      freeServices: (invoice.order?.items ?? []).flatMap(
+        (item) => Array.isArray(item.product?.serviceProfile?.freeServices)
+          ? (item.product.serviceProfile.freeServices as any[])
+              .map((s) => (typeof s === "string" ? s : s?.name))
+              .filter(Boolean)
+          : [],
+      ),
+      lineItems: (invoice.lineItems as any[]) ?? invoice.order?.items.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        unitPrice: String(item.unitPrice),
+        tierName: item.tier?.name,
+        interval: item.tier?.interval,
+        category: item.product?.category,
+      })) ?? [],
+      subtotal: invoice.order?.subtotal != null ? Number(invoice.order.subtotal) : null,
+      discountTotal: invoice.order?.discountTotal != null ? Number(invoice.order.discountTotal) : null,
+      taxAmount: Number(invoice.taxAmount ?? 0),
+      totalAmount: Number(invoice.totalAmount),
+      currency: invoice.currency,
+    }
+    const pdf = buildInvoicePdf(pdfInput)
 
     return new NextResponse(new Uint8Array(pdf), {
       status: 200,
