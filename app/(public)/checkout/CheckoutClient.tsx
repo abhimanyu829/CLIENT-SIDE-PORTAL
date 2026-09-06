@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 
 const EmailOtpVerifier = lazy(() => import("@/components/checkout/EmailOtpVerifier"))
+const PhoneOtpVerifier = lazy(() => import("@/components/checkout/PhoneOtpVerifier"))
 import QRCode from "qrcode"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -195,6 +196,8 @@ export default function CheckoutClient({
   const [country, setCountry] = useState("IN")
   // Email OTP gate
   const [emailVerified, setEmailVerified] = useState(false)
+  // Phone OTP gate (Twilio) — server re-checks this independently at order time
+  const [phoneVerified, setPhoneVerified] = useState(false)
   const [selectedGateway, setSelectedGateway] = useState<"RAZORPAY" | "PHONEPE" | "PAYTM">("RAZORPAY")
   const [couponLoading, setCouponLoading] = useState(false)
   const [couponError, setCouponError] = useState<string | null>(null)
@@ -322,6 +325,7 @@ export default function CheckoutClient({
             postalCode,
             country,
             emailVerified,
+            phoneVerified,
           },
           checkoutSessionId: checkoutSessionId.current,
         }),
@@ -566,6 +570,7 @@ export default function CheckoutClient({
     postalCode,
     country,
     emailVerified,
+    phoneVerified,
     router,
     selectedGateway,
   ])
@@ -1077,13 +1082,31 @@ export default function CheckoutClient({
                 </Suspense>
               </div>
 
+              {/* Phone OTP Verification Box (Twilio) */}
+              <div className="pt-2">
+                <Suspense fallback={
+                  <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center text-xs text-muted-foreground">Loading phone verifier…</div>
+                }>
+                  <PhoneOtpVerifier
+                    onVerified={(verifiedPhone) => {
+                      setMobile(verifiedPhone)
+                      setPhoneVerified(true)
+                    }}
+                    onReset={() => {
+                      setPhoneVerified(false)
+                      setMobile("")
+                    }}
+                  />
+                </Suspense>
+              </div>
+
               <div className="flex justify-between pt-4 border-t border-border">
                 <Button variant="outline" onClick={() => setState({ phase: "IDLE", step: "review" })} className="rounded-xl border-border bg-card hover:bg-muted font-bold">
                   Back
                 </Button>
                 <Button
                   onClick={() => setState({ phase: "IDLE", step: "payment" })}
-                  disabled={!billingName.trim() || !billingEmail.trim() || !addressLine1.trim() || !city.trim() || !billingState.trim() || !postalCode.trim() || !emailVerified}
+                  disabled={!billingName.trim() || !billingEmail.trim() || !addressLine1.trim() || !city.trim() || !billingState.trim() || !postalCode.trim() || !emailVerified || !phoneVerified}
                   className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-8 py-6 shadow-md"
                 >
                   Continue to Payment →

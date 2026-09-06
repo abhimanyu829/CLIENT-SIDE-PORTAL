@@ -320,6 +320,11 @@ model User {
   resetTokenExp        DateTime?
   otpCode              String?
   otpExpiresAt         DateTime?
+  // Twilio OTP hardening: bind each OTP to the phone it was sent to,
+  // and enforce attempts/cooldown limits when Redis is unavailable.
+  otpPhone             String?
+  otpAttempts          Int                          @default(0)
+  otpLastSentAt        DateTime?
   timezone         String                       @default("Asia/Kolkata")
   isVerified       Boolean                      @default(false)
   twoFactorEnabled Boolean                      @default(false)

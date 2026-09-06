@@ -12,6 +12,7 @@ import {
   createOrderFromActiveCart,
   recalculateCart,
 } from "@/lib/services/enterprise-commerce-service"
+import { requireVerifiedPhoneForPayment } from "@/lib/services/phone-verification-gate"
 
 // ── Request schema ──────────────────────────────────────────────────────────────
 const orderSchema = z.object({
@@ -144,6 +145,28 @@ export async function POST(req: NextRequest) {
           error: {
             code: "EMAIL_NOT_VERIFIED",
             message: "Billing email verification expired or not found. Please verify your email again.",
+          },
+        },
+        { status: 403 },
+      )
+    }
+
+    // ── 5b. Phone verification gate (Twilio OTP) ───────────────────────────
+    // User must have verified the billing mobile via /api/auth/otp/* before
+    // any payment order is created. DB is authoritative — client flags are
+    // never trusted for this check.
+    const phoneGate = await requireVerifiedPhoneForPayment({
+      userId: session.user.id,
+      billingMobile: billing.mobile,
+    })
+    if (!phoneGate.verified) {
+      console.warn(`[RAZORPAY ORDER] ❌ Phone not verified for user: ${user.email}`)
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: phoneGate.code,
+            message: phoneGate.message,
           },
         },
         { status: 403 },
