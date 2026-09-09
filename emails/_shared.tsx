@@ -178,7 +178,7 @@ export function EmailShell({
   preview,
   children,
   footerNote,
-  brandName = "NexusAI",
+  brandName = "ABHIBHIDEVELOPER",
   brandTagline = "Enterprise AI Infrastructure",
   unsubscribeUrl = `${BASE_URL}/settings/notifications`,
 }: EmailShellProps) {
@@ -201,7 +201,7 @@ export function EmailShell({
           <Section style={baseStyles.footer}>
             {footerNote && <Text style={baseStyles.muted}>{footerNote}</Text>}
             <Text style={baseStyles.footerText}>
-              © {new Date().getFullYear()} NexusAI, Inc. · All rights reserved.
+              © {new Date().getFullYear()} ABHIBHIDEVELOPER, Inc. · All rights reserved.
             </Text>
             <Text style={baseStyles.footerText}>
               <Link href={unsubscribeUrl} style={baseStyles.footerLink}>Unsubscribe</Link>

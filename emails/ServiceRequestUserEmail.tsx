@@ -33,7 +33,7 @@ export default function ServiceRequestUserEmail({
         )}
       </Text>
       <Text style={baseStyles.paragraph}>
-        The request has been routed to the NexusAI service operations team and is now waiting for review.
+        The request has been routed to the ABHIBHIDEVELOPER service operations team and is now waiting for review.
       </Text>
       <Text style={baseStyles.muted}>
         You can continue tracking service updates from the admin service center.

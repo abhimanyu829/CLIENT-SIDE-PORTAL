@@ -23,10 +23,10 @@ export default function SuspiciousActivityEmail({
   })
 
   return (
-    <EmailShell preview={`⚠️ Suspicious activity detected on your NexusAI account`}>
+    <EmailShell preview={`⚠️ Suspicious activity detected on your ABHIBHIDEVELOPER account`}>
       <Text style={baseStyles.greeting}>🚨 Security Alert, {name}</Text>
       <Text style={baseStyles.paragraph}>
-        We detected suspicious activity on your NexusAI account. If this was you, you can safely
+        We detected suspicious activity on your ABHIBHIDEVELOPER account. If this was you, you can safely
         ignore this email. Otherwise, secure your account immediately.
       </Text>
 

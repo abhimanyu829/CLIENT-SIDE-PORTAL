@@ -15,11 +15,11 @@ export const WelcomeEmail = ({
   email,
   dashboardUrl = `${BASE_URL}/dashboard`,
 }: WelcomeEmailProps) => (
-  <EmailShell preview={`Welcome to NexusAI, ${name}! Your account is ready.`}>
+  <EmailShell preview={`Welcome to ABHIBHIDEVELOPER, ${name}! Your account is ready.`}>
     <Text style={baseStyles.greeting}>Welcome aboard, {name}! 🎉</Text>
 
     <Text style={baseStyles.paragraph}>
-      We're thrilled to have you join NexusAI. Your account is all set up and ready
+      We're thrilled to have you join ABHIBHIDEVELOPER. Your account is all set up and ready
       to go. Here's everything you can do on day one:
     </Text>
 

@@ -29,7 +29,7 @@ export const VerificationEmail = ({
   deviceName,
 }: VerificationEmailProps) => (
   <EmailShell
-    preview={`Verify your NexusAI account and activate secure access`}
+    preview={`Verify your ABHIBHIDEVELOPER account and activate secure access`}
   >
     {/* HERO SECTION */}
     <Section style={{ textAlign: "center", marginBottom: "28px" }}>
@@ -43,7 +43,7 @@ export const VerificationEmail = ({
           marginBottom: "12px",
         }}
       >
-        NexusAI Security Verification
+        ABHIBHIDEVELOPER Security Verification
       </Text>
 
       <Heading
@@ -67,7 +67,7 @@ export const VerificationEmail = ({
           margin: "0 auto",
         }}
       >
-        Hi {name}, welcome to NexusAI. To securely activate your account,
+        Hi {name}, welcome to ABHIBHIDEVELOPER. To securely activate your account,
         subscriptions, AI services, billing access, and dashboard permissions,
         please verify your email address.
       </Text>
@@ -172,12 +172,12 @@ export const VerificationEmail = ({
       </Text>
 
       <Text style={baseStyles.muted}>
-        For your security, never share this verification link with anyone. NexusAI
+        For your security, never share this verification link with anyone. ABHIBHIDEVELOPER
         support will never ask for your verification token or password.
       </Text>
 
       <Text style={baseStyles.muted}>
-        If you did not create a NexusAI account, you can safely ignore this email.
+        If you did not create a ABHIBHIDEVELOPER account, you can safely ignore this email.
         No account or subscription will be activated without successful
         verification.
       </Text>
@@ -210,7 +210,7 @@ export const VerificationEmail = ({
           lineHeight: "18px",
         }}
       >
-        © {new Date().getFullYear()} NexusAI Technologies.
+        © {new Date().getFullYear()} ABHIBHIDEVELOPER Technologies.
         <br />
         Enterprise AI Infrastructure • Secure Commerce • SaaS Ecosystem
       </Text>

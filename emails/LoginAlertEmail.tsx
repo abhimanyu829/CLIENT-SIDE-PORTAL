@@ -25,10 +25,10 @@ export default function LoginAlertEmail({
   })
 
   return (
-    <EmailShell preview={`New sign-in to your NexusAI account — ${loginFormatted}`}>
+    <EmailShell preview={`New sign-in to your ABHIBHIDEVELOPER account — ${loginFormatted}`}>
       <Text style={baseStyles.greeting}>🔔 New Sign-In Detected, {name}</Text>
       <Text style={baseStyles.paragraph}>
-        We detected a new sign-in to your NexusAI account. If this was you, no action is needed.
+        We detected a new sign-in to your ABHIBHIDEVELOPER account. If this was you, no action is needed.
       </Text>
 
       <div style={baseStyles.infoBox}>

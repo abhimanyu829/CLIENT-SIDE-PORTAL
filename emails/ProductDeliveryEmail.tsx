@@ -119,7 +119,7 @@ export default function ProductDeliveryEmail({
 
       <Text style={baseStyles.muted}>
         🔒 <strong>Security Notice:</strong> Keep your credentials secure. Do not share them.
-        NexusAI will never ask for your password via email or chat.
+        ABHIBHIDEVELOPER will never ask for your password via email or chat.
       </Text>
 
       {supportUrl && (

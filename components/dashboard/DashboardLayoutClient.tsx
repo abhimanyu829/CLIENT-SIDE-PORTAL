@@ -20,7 +20,7 @@ const NAV = [
   { name: "Service Requests",  path: "/dashboard/service-requests",  icon: "◐", color: "text-orange-400" },
   { name: "Support",           path: "/dashboard/tickets",           icon: "◎", color: "text-red-400",    badge: true },
   { name: "AI Chat",           path: "/dashboard/chat",              icon: "✦", color: "text-purple-400", live: true },
-  { name: "Join Our Team",     path: "http://localhost:3000/join-our-team", icon: "🤝", color: "text-pink-400" },
+  { name: "Join Our Team",     path: "http://abhibhideveloper.tech/join-our-team", icon: "🤝", color: "text-pink-400" },
 ]
 
 type SearchResult = {
@@ -385,7 +385,7 @@ export default function DashboardLayout({
             </div>
 
             <a
-              href="http://localhost:3000/join-our-team"
+              href="http://abhibhideveloper.tech/join-our-team"
               className="flex items-center bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
             >
               Join Our Team

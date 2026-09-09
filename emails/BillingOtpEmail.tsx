@@ -16,13 +16,13 @@ export const BillingOtpEmail = ({
   billingEmail,
 }: BillingOtpEmailProps) => (
   <EmailShell
-    preview={`Your NexusAI billing verification code: ${otp}`}
+    preview={`Your ABHIBHIDEVELOPER billing verification code: ${otp}`}
     brandTagline="Secure Billing Verification"
   >
     {/* Greeting */}
     <Text style={baseStyles.greeting}>Hi {customerName},</Text>
     <Text style={baseStyles.paragraph}>
-      You requested a billing verification code to complete your NexusAI
+      You requested a billing verification code to complete your ABHIBHIDEVELOPER
       checkout. Use the code below to verify your billing email address.
     </Text>
 
@@ -106,7 +106,7 @@ export const BillingOtpEmail = ({
         🔒 Security Notice
       </Text>
       <Text style={baseStyles.muted}>
-        <strong>Never share this code with anyone.</strong> NexusAI support
+        <strong>Never share this code with anyone.</strong> ABHIBHIDEVELOPER support
         will never ask for your verification code. This code is only valid for
         your current checkout session.
       </Text>
