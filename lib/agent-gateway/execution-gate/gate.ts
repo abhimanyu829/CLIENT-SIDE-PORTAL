@@ -88,6 +88,35 @@ interface GateEventBase {
   riskTier: string
 }
 
+/**
+ * The live policy evaluation of one operation (Phase 6 + autonomy), without
+ * any approval side effect. Returned by `evaluatePolicy()`; `autonomy.outcome`
+ * is only ever ALLOW_AUTONOMOUS or REQUIRE_APPROVAL here — every denial and
+ * every failure is thrown as an ExecutionGateDeniedError instead.
+ */
+export interface GateEvaluation {
+  authorization: AuthorizationDecision
+  autonomy: AutonomyDecision
+  /** "<policyVersionId>@v<n>" of the Phase 6 policy that matched, or "none". */
+  authorizationPolicyRef: string
+  resourceType: string | null
+  resourceId: string | null
+  inputDigest: string
+}
+
+/** The approval consumed (atomically, single use) for this execution. */
+export interface ConsumedApproval {
+  id: string
+  publicRef: string
+  bindingDigest: string
+  expiresAt: Date
+}
+
+/** Result of `grant()`: the evaluation plus the approval it consumed, if one was required. */
+export interface GateGrant extends GateEvaluation {
+  approval: ConsumedApproval | null
+}
+
 export class ExecutionGateDeniedError extends AuthorizationDeniedError {
   constructor(code: GateCode, message: string) {
     super(message, code)
@@ -118,8 +147,32 @@ export class ExecutionGate implements CapabilityAuthorizer {
   }
 
   async authorize(context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown, _resourceContext: ResourceContext): Promise<void> {
+    await this.grant(context, capability, input)
+  }
+
+  /**
+   * Phase 8 seam — exactly the `authorize()` decision (including atomic
+   * single-use approval consumption), but returning what was decided so the
+   * async Task Engine can bind the consumed approval to the task it creates.
+   */
+  async grant(context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown): Promise<GateGrant> {
+    return this.failClosed(context, capability, () => this.evaluate(context, capability, input, true))
+  }
+
+  /**
+   * Phase 8 seam — the same live identity + Phase 6 + autonomy evaluation,
+   * WITHOUT touching approvals. Used by the task worker to re-verify a queued
+   * task immediately before execution; when approval is required the worker
+   * verifies the approval already bound to the task instead of consuming a
+   * new one. Denials and failures are thrown exactly like `authorize()`.
+   */
+  async evaluatePolicy(context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown): Promise<GateEvaluation> {
+    return this.failClosed(context, capability, () => this.evaluate(context, capability, input, false))
+  }
+
+  private async failClosed<T>(context: AgentExecutionContext, capability: CapabilityDefinition, run: () => Promise<T>): Promise<T> {
     try {
-      await this.evaluate(context, capability, input)
+      return await run()
     } catch (err) {
       if (err instanceof AuthorizationDeniedError) throw err
       // Anything unexpected (context building, canonicalization, storage)
@@ -140,7 +193,7 @@ export class ExecutionGate implements CapabilityAuthorizer {
     }
   }
 
-  private async evaluate(context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown): Promise<void> {
+  private async evaluate(context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown, consume: boolean): Promise<GateGrant> {
     const startedAt = Date.now()
     const now = this.clock()
     const authzContext = buildAuthorizationContext(context, capability, input)
@@ -198,17 +251,36 @@ export class ExecutionGate implements CapabilityAuthorizer {
       }
       deny(autonomyDenialCode(autonomy), `Capability "${capability.id}" is outside this connection's permitted autonomy.`, autonomy.effectiveLevel)
     }
+    const evaluation: GateEvaluation = {
+      authorization,
+      autonomy,
+      authorizationPolicyRef: authorization.matchedPolicyVersionId
+        ? `${authorization.matchedPolicyVersionId}@v${authorization.matchedPolicyVersion ?? 0}`
+        : "none",
+      resourceType: authzContext.capabilityResourceType ?? null,
+      resourceId: authzContext.resourceId ?? null,
+      inputDigest: computeInputDigest(input),
+    }
+
     if (autonomy.outcome === "ALLOW_AUTONOMOUS") {
       recordGateEvent({ ...base, autonomyLevel: autonomy.effectiveLevel, outcome: "ALLOWED", reasonCode: autonomy.reasonCode, durationMs: Date.now() - startedAt })
-      return
+      return { ...evaluation, approval: null }
+    }
+
+    if (!consume) {
+      // Evaluation only (Phase 8 worker re-check): the caller must verify the
+      // approval it already holds. Nothing is created or consumed here.
+      recordGateEvent({ ...base, autonomyLevel: autonomy.effectiveLevel, outcome: "APPROVAL_REQUIRED", reasonCode: autonomy.reasonCode, durationMs: Date.now() - startedAt })
+      return { ...evaluation, approval: null }
     }
 
     // 4. Human approval required. Any storage error fails closed.
     try {
-      await this.requireApproval(context, capability, input, authorization, autonomy, authzContext.resourceId ?? null, authzContext.capabilityResourceType ?? null, now, startedAt, base)
+      const approval = await this.requireApproval(context, capability, input, evaluation, now, startedAt, base)
+      return { ...evaluation, approval }
     } catch (err) {
       if (err instanceof AuthorizationDeniedError) throw err
-      deny("POLICY_UNAVAILABLE", `Capability "${capability.id}" could not be evaluated because the approval subsystem is unavailable. Failing closed.`, autonomy.effectiveLevel)
+      return deny("POLICY_UNAVAILABLE", `Capability "${capability.id}" could not be evaluated because the approval subsystem is unavailable. Failing closed.`, autonomy.effectiveLevel)
     }
   }
 
@@ -216,14 +288,12 @@ export class ExecutionGate implements CapabilityAuthorizer {
     context: AgentExecutionContext,
     capability: CapabilityDefinition,
     input: unknown,
-    authorization: AuthorizationDecision,
-    autonomy: AutonomyDecision,
-    resourceId: string | null,
-    resourceType: string | null,
+    evaluation: GateEvaluation,
     now: Date,
     startedAt: number,
     base: GateEventBase
-  ): Promise<void> {
+  ): Promise<ConsumedApproval> {
+    const { autonomy, resourceId, resourceType } = evaluation
     const level = autonomy.effectiveLevel
     const binding: OperationBinding = {
       connectionId: context.connectionId,
@@ -235,10 +305,8 @@ export class ExecutionGate implements CapabilityAuthorizer {
       resourceType,
       resourceId,
       environment: context.environment,
-      inputDigest: computeInputDigest(input),
-      authorizationPolicyRef: authorization.matchedPolicyVersionId
-        ? `${authorization.matchedPolicyVersionId}@v${authorization.matchedPolicyVersion ?? 0}`
-        : "none",
+      inputDigest: evaluation.inputDigest,
+      authorizationPolicyRef: evaluation.authorizationPolicyRef,
       autonomyPolicyVersion: autonomy.policyVersion,
     }
     const bindingDigest = computeBindingDigest(binding)
@@ -258,7 +326,7 @@ export class ExecutionGate implements CapabilityAuthorizer {
       const consumed = await consumeApproval(live.id, bindingDigest, now)
       if (consumed.ok) {
         recordGateEvent({ ...base, autonomyLevel: level, outcome: "ALLOWED", reasonCode: "APPROVAL_CONSUMED", approvalRef: live.publicRef, approvalState: "CONSUMED", durationMs: Date.now() - startedAt })
-        return
+        return { id: live.id, publicRef: live.publicRef, bindingDigest, expiresAt: live.expiresAt }
       }
       fail(consumed.code, `The approval ${live.publicRef} cannot be used for this execution.`, live.publicRef)
     }
@@ -345,7 +413,7 @@ export class ExecutionGate implements CapabilityAuthorizer {
     if (mismatchCode === "APPROVAL_POLICY_CHANGED") {
       fail("APPROVAL_POLICY_CHANGED", `The previous approval was invalidated because the policy context changed. New approval reference: ${request.publicRef}. ${guidance}`, request.publicRef, "PENDING")
     }
-    fail(
+    return fail(
       "APPROVAL_REQUIRED",
       `Capability "${capability.id}" requires human approval. Approval reference: ${request.publicRef}${created ? "" : " (already pending)"}. ${guidance}`,
       request.publicRef,

@@ -127,6 +127,18 @@ function assertWellFormed(def: CapabilityDefinition): void {
     assertValidCapabilityIdOrThrow(def.executionReference.adapterKey)
   }
 
+  // Phase 8: async support may only be declared on something that can
+  // actually execute. A FORBIDDEN/DISABLED/unwired capability declaring it
+  // is a manifest error, rejected rather than silently ignored.
+  if (def.async.asyncSupported) {
+    if (def.exposure === "FORBIDDEN" || def.exposure === "DISABLED" || def.status === "DISABLED" || def.executionReference === null) {
+      throw new CapabilityError(
+        "INVALID_INPUT",
+        `Capability "${def.id}" declares asyncSupported but is not executable (exposure=${def.exposure}, status=${def.status}, executionReference=${def.executionReference ? "set" : "null"}).`
+      )
+    }
+  }
+
   assertNoDangerousPrimitives(def)
 }
 

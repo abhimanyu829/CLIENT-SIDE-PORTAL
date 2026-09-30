@@ -34,11 +34,20 @@ import type { CapabilityAuthorizer } from "./authorization-hook"
 import { buildExecutionContext } from "../execution/resolver/build-execution-context"
 import type { AgentGatewayRequestContext } from "../shared/types"
 import { recordMcpEvent } from "./observability"
+import type { AgentTaskService } from "../tasks/engine"
+import { assertNoTaskToolCollision, registerTaskTools } from "./task-tools"
 
 export interface McpServerDependencies {
   capabilityRegistry: CapabilityRegistry
   adapterRegistry: AdapterRegistry
   authorizer: CapabilityAuthorizer
+  /**
+   * Phase 8 — when present, the three reserved async task tools
+   * (agent_task_submit / _status / _cancel) are registered. Absent (the
+   * default, and whenever AGENT_GATEWAY_TASKS_ENABLED is off) the tool
+   * surface is exactly Phase 5's.
+   */
+  taskService?: AgentTaskService
 }
 
 const MCP_SERVER_NAME = "abhibhi-agent-gateway"
@@ -62,6 +71,11 @@ export function createMcpServerForRequest(
 
   const resolver = new AdapterResolver(deps.capabilityRegistry, deps.adapterRegistry)
   const tools = projectTools(deps.capabilityRegistry)
+
+  if (deps.taskService) {
+    assertNoTaskToolCollision(tools.map((t) => t.name))
+    registerTaskTools(server, deps.taskService, gatewayContext, environment)
+  }
 
   for (const tool of tools) {
     server.registerTool(

@@ -19,6 +19,7 @@
  *   - `$transaction` is serialized with snapshot/rollback.
  */
 import { vi } from "vitest"
+import { Prisma } from "@prisma/client"
 
 type Row = Record<string, unknown>
 
@@ -42,12 +43,18 @@ function uniqueViolation(target: string): Error & { code: string; meta: { target
   return err
 }
 
+const num = (v: unknown): number => (v instanceof Date ? v.getTime() : (v as number))
+
 function matchesCondition(actual: unknown, cond: unknown): boolean {
   if (cond !== null && typeof cond === "object" && !(cond instanceof Date) && !Array.isArray(cond)) {
     const c = cond as Record<string, unknown>
+    // Like SQL, a range comparison against NULL is never true.
+    const comparable = actual !== null && actual !== undefined
     if ("in" in c) return (c.in as unknown[]).includes(actual)
-    if ("gt" in c) return actual instanceof Date && c.gt instanceof Date ? actual.getTime() > c.gt.getTime() : (actual as number) > (c.gt as number)
-    if ("lt" in c) return actual instanceof Date && c.lt instanceof Date ? actual.getTime() < c.lt.getTime() : (actual as number) < (c.lt as number)
+    if ("gt" in c) return comparable && num(actual) > num(c.gt)
+    if ("gte" in c) return comparable && num(actual) >= num(c.gte)
+    if ("lt" in c) return comparable && num(actual) < num(c.lt)
+    if ("lte" in c) return comparable && num(actual) <= num(c.lte)
     if ("not" in c) return actual !== c.not
     if ("equals" in c) return actual === c.equals
     throw new Error(`fake db: unsupported condition ${JSON.stringify(Object.keys(c))}`)
@@ -76,9 +83,17 @@ export function matchesWhere(row: Row, where: Record<string, unknown> | undefine
   return true
 }
 
+/** Prisma's null sentinels are write-time only: stored and read back as SQL NULL. */
+function unwrapNullSentinel(value: unknown): unknown {
+  return value === Prisma.DbNull || value === Prisma.JsonNull || value === Prisma.AnyNull ? null : value
+}
+
 function applyData(row: Row, data: Record<string, unknown>): Row {
   const next: Row = { ...row }
-  for (const [key, value] of Object.entries(data)) {
+  for (const [key, rawValue] of Object.entries(data)) {
+    // Prisma ignores undefined fields in `data`.
+    if (rawValue === undefined) continue
+    const value = unwrapNullSentinel(rawValue)
     if (value !== null && typeof value === "object" && !(value instanceof Date) && !Array.isArray(value) && "increment" in (value as Row)) {
       next[key] = ((next[key] as number) ?? 0) + ((value as { increment: number }).increment ?? 0)
     } else {
@@ -108,7 +123,7 @@ interface UniqueSpec {
   key: (row: Row) => string | null
 }
 
-function createTable(prefix: string, uniques: UniqueSpec[], defaults: (data: Row) => Row) {
+export function createTable(prefix: string, uniques: UniqueSpec[], defaults: (data: Row) => Row) {
   const rows = new Map<string, Row>()
 
   function assertUnique(candidate: Row, ignoreId?: string) {
@@ -124,7 +139,7 @@ function createTable(prefix: string, uniques: UniqueSpec[], defaults: (data: Row
 
   const api = {
     create: vi.fn(async ({ data, select }: { data: Row; select?: Record<string, boolean> }) => {
-      const row: Row = { id: nextId(prefix), createdAt: createdAtNow(), ...defaults(data), ...data }
+      const row: Row = applyData({ id: nextId(prefix), createdAt: createdAtNow(), updatedAt: new Date(), ...defaults(data) }, data)
       assertUnique(row)
       rows.set(row.id as string, row)
       return project(row, select)
@@ -163,6 +178,15 @@ function createTable(prefix: string, uniques: UniqueSpec[], defaults: (data: Row
       return { ...next }
     }),
     count: vi.fn(async ({ where }: { where?: Row } = {}) => Array.from(rows.values()).filter((r) => matchesWhere(r, where)).length),
+    deleteMany: vi.fn(async ({ where }: { where?: Row } = {}) => {
+      let count = 0
+      for (const [id, row] of rows) {
+        if (!matchesWhere(row, where)) continue
+        rows.delete(id)
+        count += 1
+      }
+      return { count }
+    }),
   }
   return { rows, api }
 }
@@ -205,6 +229,42 @@ export function createApprovalFakeDb() {
     })
   )
   const decisions = createTable("apdec", [{ name: "approvalRequestId", key: (r) => (r.approvalRequestId as string) ?? null }], () => ({ reasonCode: null }))
+  // Phase 8 — AgentTask, with the same unique constraints as the migration.
+  const tasks = createTable(
+    "task",
+    [
+      { name: "taskRef", key: (r) => (r.taskRef as string) ?? null },
+      { name: "idempotencyScope", key: (r) => (r.idempotencyScope as string | null) ?? null },
+      { name: "activeOperationKey", key: (r) => (r.activeOperationKey as string | null) ?? null },
+      { name: "approvalRequestId", key: (r) => (r.approvalRequestId as string | null) ?? null },
+    ],
+    () => ({
+      agentId: null,
+      teamId: null,
+      resourceType: null,
+      resourceId: null,
+      idempotencyKey: null,
+      idempotencyScope: null,
+      activeOperationKey: null,
+      approvalRequestId: null,
+      autonomyPolicyVersion: null,
+      status: "QUEUED",
+      attempts: 0,
+      retryScheduled: false,
+      cancelRequestedAt: null,
+      queuedAt: new Date(),
+      attemptStartedAt: null,
+      startedAt: null,
+      completedAt: null,
+      failedAt: null,
+      cancelledAt: null,
+      finishedAt: null,
+      result: null,
+      resultRemovedAt: null,
+      errorCode: null,
+      errorDetailCode: null,
+    })
+  )
   const connections = new Map<string, Row>()
   const users = new Map<string, FakeUser>()
 
@@ -212,6 +272,7 @@ export function createApprovalFakeDb() {
     agentAutonomyPolicy: autonomy.api,
     agentApprovalRequest: requests.api,
     agentApprovalDecision: decisions.api,
+    agentTask: tasks.api,
     agentConnection: {
       findUnique: vi.fn(async ({ where, select }: { where: { id: string }; select?: Record<string, boolean> }) => project(connections.get(where.id), select)),
     },
@@ -232,7 +293,7 @@ export function createApprovalFakeDb() {
     })
     queue = previous.then(() => next)
     await previous
-    const snap = [autonomy.rows, requests.rows, decisions.rows].map((m) => new Map(m))
+    const snap = [autonomy.rows, requests.rows, decisions.rows, tasks.rows].map((m) => new Map(m))
     try {
       if (Array.isArray(arg)) {
         const results: unknown[] = []
@@ -241,7 +302,7 @@ export function createApprovalFakeDb() {
       }
       return await (arg as (tx: unknown) => Promise<unknown>)(txTarget)
     } catch (err) {
-      ;[autonomy.rows, requests.rows, decisions.rows].forEach((m, i) => {
+      ;[autonomy.rows, requests.rows, decisions.rows, tasks.rows].forEach((m, i) => {
         m.clear()
         for (const [k, v] of snap[i]) m.set(k, v)
       })
@@ -257,10 +318,18 @@ export function createApprovalFakeDb() {
     setTransactionTarget: (target: unknown) => {
       txTarget = target
     },
-    seedConnection: (row: { id: string; name?: string; status?: string }) => connections.set(row.id, { name: null, status: "ACTIVE", ...row }),
+    seedConnection: (row: { id: string; name?: string; status?: string; environment?: string; ownerId?: string; expiresAt?: Date | null }) =>
+      connections.set(row.id, { name: null, status: "ACTIVE", environment: "development", ownerId: "owner_1", expiresAt: null, ...row }),
+    /** Mutates a seeded connection (e.g. suspend/revoke between submission and execution). */
+    updateConnection: (id: string, patch: Row) => {
+      const existing = connections.get(id)
+      if (existing) connections.set(id, { ...existing, ...patch })
+    },
     seedUser: (user: FakeUser) => users.set(user.id, user),
     _autonomy: autonomy.rows,
     _requests: requests.rows,
     _decisions: decisions.rows,
+    _tasks: tasks.rows,
+    _connections: connections,
   }
 }

@@ -19,6 +19,18 @@ export interface GatewayMetricsSnapshot {
   gateway_signature_failure_total: number
   gateway_upstream_errors_total: number
   gateway_request_body_rejections_total: number
+  // Phase 8 — async task lifecycle counters (same in-process mechanism).
+  agent_task_created_total: number
+  agent_task_queued_total: number
+  agent_task_started_total: number
+  agent_task_retrying_total: number
+  agent_task_succeeded_total: number
+  agent_task_failed_total: number
+  agent_task_cancellation_requested_total: number
+  agent_task_cancelled_total: number
+  agent_task_expired_total: number
+  agent_task_timed_out_total: number
+  agent_task_security_violation_total: number
 }
 
 const counters: GatewayMetricsSnapshot = {
@@ -30,6 +42,17 @@ const counters: GatewayMetricsSnapshot = {
   gateway_signature_failure_total: 0,
   gateway_upstream_errors_total: 0,
   gateway_request_body_rejections_total: 0,
+  agent_task_created_total: 0,
+  agent_task_queued_total: 0,
+  agent_task_started_total: 0,
+  agent_task_retrying_total: 0,
+  agent_task_succeeded_total: 0,
+  agent_task_failed_total: 0,
+  agent_task_cancellation_requested_total: 0,
+  agent_task_cancelled_total: 0,
+  agent_task_expired_total: 0,
+  agent_task_timed_out_total: 0,
+  agent_task_security_violation_total: 0,
 }
 
 export function incrementMetric(name: keyof GatewayMetricsSnapshot): void {

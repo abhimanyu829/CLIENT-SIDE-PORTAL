@@ -23,6 +23,21 @@ import { z } from "zod"
 import type { CapabilityDefinition } from "./types"
 import type { CapabilityRegistry } from "./registry"
 
+/**
+ * Phase 8 — READ capabilities may ALSO be submitted for asynchronous
+ * execution through the Task Engine (lib/agent-gateway/tasks/). SYNC stays
+ * their default mode: a direct tool call behaves exactly as before, and no
+ * adapter or business service changes. Their adapters do not honour an
+ * abort mid-query, so cooperative cancellation is not declared.
+ */
+const READ_ASYNC_SUPPORT: CapabilityDefinition["async"] = {
+  executionMode: "SYNC",
+  asyncSupported: true,
+  queue: "agent-task",
+  worker: "agent-task",
+  pollingSupported: true,
+}
+
 const productSummarySchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -50,7 +65,7 @@ const productsList: CapabilityDefinition = {
   permission: { permission: "read:products" },
   sideEffects: { effects: [] },
   idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry; returns the same result set for the same filters.", class: "IDEMPOTENT" },
-  async: { executionMode: "SYNC" },
+  async: READ_ASYNC_SUPPORT,
   rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only, nothing to roll back." },
   executionReference: { adapterKey: "products.listAdapter" },
   securityClassification: "PUBLIC (see DATA-SENSITIVITY-MATRIX.md: product catalog metadata).",
@@ -73,7 +88,7 @@ const productsGet: CapabilityDefinition = {
   permission: { permission: "read:products" },
   sideEffects: { effects: [] },
   idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
-  async: { executionMode: "SYNC" },
+  async: READ_ASYNC_SUPPORT,
   rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
   executionReference: { adapterKey: "products.getAdapter" },
   securityClassification: "PUBLIC (see DATA-SENSITIVITY-MATRIX.md: product catalog metadata).",
@@ -96,7 +111,7 @@ const subscriptionsGet: CapabilityDefinition = {
   permission: { permission: "read:billing" },
   sideEffects: { effects: [] },
   idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
-  async: { executionMode: "SYNC" },
+  async: READ_ASYNC_SUPPORT,
   rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
   executionReference: { adapterKey: "subscriptions.getAdapter" },
   securityClassification: "SENSITIVE (see DATA-SENSITIVITY-MATRIX.md: payment/billing details) — must remain strictly ownership-scoped by the Phase 4 adapter, never a bulk export.",
@@ -119,7 +134,7 @@ const ticketsList: CapabilityDefinition = {
   permission: { permission: "read:tickets" },
   sideEffects: { effects: [] },
   idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
-  async: { executionMode: "SYNC" },
+  async: READ_ASYNC_SUPPORT,
   rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
   executionReference: { adapterKey: "tickets.listAdapter" },
   securityClassification: "INTERNAL/CONFIDENTIAL (see DATA-SENSITIVITY-MATRIX.md) — ownership-scoped only.",

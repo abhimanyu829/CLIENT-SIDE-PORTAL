@@ -4,9 +4,10 @@ import { logger } from "@/lib/logger"
 import { db } from "@/lib/db"
 import {
   emailQueue, invoiceQueue, notifQueue, paymentQueue, subscriptionQueue,
-  previewQueue,
-  INVOICE_JOBS, SUBSCRIPTION_JOBS, PAYMENT_JOBS, EMAIL_JOBS, PREVIEW_JOBS,
+  previewQueue, agentTaskQueue,
+  INVOICE_JOBS, SUBSCRIPTION_JOBS, PAYMENT_JOBS, EMAIL_JOBS, PREVIEW_JOBS, AGENT_TASK_JOBS,
 } from "@/lib/queue"
+import { createAgentTaskWorker, getTaskEngineConfig } from "@/lib/agent-gateway/tasks"
 import { emitEvent, EVENTS } from "@/lib/services/event-bus"
 import { expireOverdueSubscriptions, markSubscriptionPastDue } from "@/lib/services/subscription-service"
 import { generateInvoiceArtifact, sendInvoiceEmail } from "@/lib/services/invoice-service"
@@ -69,6 +70,14 @@ export async function scheduleRecurringJobs() {
     jobId: "payment-reconcile-hourly",
     repeat: { pattern: "5 * * * *" },
   })
+  // Abhibhi Agent Gateway (Phase 8): sweep / reconcile / retention for agent
+  // tasks, on the same repeatable-job mechanism. Only when tasks are enabled.
+  if (getTaskEngineConfig().enabled) {
+    await agentTaskQueue.add(AGENT_TASK_JOBS.MAINTENANCE, {}, {
+      jobId: "agent-task-maintenance-5m",
+      repeat: { pattern: "*/5 * * * *" },
+    })
+  }
 }
 
 export function startWorkers() {
@@ -547,6 +556,21 @@ export function startWorkers() {
       }
     }, 10),
   ]
+
+  // ── Abhibhi Agent Gateway (Phase 8): agent-originated async tasks ──────────
+  // Registered only when AGENT_GATEWAY_TASKS_ENABLED is on, so the existing
+  // worker process is otherwise unchanged. The processor re-verifies each
+  // task and executes it through the existing Phase 4 adapters
+  // (lib/agent-gateway/tasks/worker.ts); it never runs business logic itself.
+  const taskConfig = getTaskEngineConfig()
+  if (taskConfig.enabled) {
+    const agentTaskWorker = createAgentTaskWorker()
+    workers.push(startWorker("agent-task", (job) => agentTaskWorker.process(job), taskConfig.workerConcurrency))
+    // One reconciliation pass at startup (recovers work lost while the worker was down).
+    agentTaskWorker
+      .process({ name: AGENT_TASK_JOBS.MAINTENANCE, data: {} })
+      .catch((error) => logger.error({ error }, "Agent task startup reconciliation failed"))
+  }
 
   return workers
 }

@@ -86,6 +86,15 @@ export const auditQueue = createLazyQueue("audit", {
   },
 })
 
+// Abhibhi Agent Gateway (Phase 8) — agent-originated asynchronous tasks.
+// Retries are decided per task by the Task Engine (lib/agent-gateway/tasks/),
+// never by BullMQ blindly: the engine enqueues one job per attempt. BullMQ's
+// own attempts only cover failures before an attempt is claimed (e.g. the
+// database was unreachable when the job arrived), which never dispatch.
+// NOTE: the engine does NOT rely on this proxy's silent no-op — it treats a
+// missing job as QUEUE_UNAVAILABLE (fail closed).
+export const agentTaskQueue = createLazyQueue("agent-task")
+
 export const EMAIL_JOBS = {
   PROCESS_QUEUE:             "email.process-queue",
   PROCESS_CAMPAIGN:          "email.process-campaign",
@@ -140,6 +149,11 @@ export const INVOICE_JOBS = {
   GENERATE: "generate.invoice",
   SEND: "send.invoice",
   REGENERATE: "regenerate.invoice",
+} as const
+
+export const AGENT_TASK_JOBS = {
+  EXECUTE:     "agent-task.execute",
+  MAINTENANCE: "agent-task.maintenance",
 } as const
 
 export const SUBSCRIPTION_JOBS = {

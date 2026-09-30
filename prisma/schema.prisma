@@ -3487,6 +3487,8 @@ model AgentConnection {
   // this table changes.
   autonomyPolicies AgentAutonomyPolicy[]
   approvalRequests AgentApprovalRequest[]
+  // Phase 8 — back-relation only.
+  tasks            AgentTask[]
 
   @@index([ownerId])
   @@index([teamId])
@@ -3797,6 +3799,8 @@ model AgentApprovalRequest {
 
   connection AgentConnection        @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   decision   AgentApprovalDecision?
+  /// Phase 8 — the async task this approval was consumed for (at most one).
+  task       AgentTask?
 
   @@index([connectionId, status])
   @@index([status, expiresAt])
@@ -3824,4 +3828,90 @@ model AgentApprovalDecision {
   approver        User                 @relation("AgentApprovalDecisionApprover", fields: [approverUserId], references: [id])
 
   @@index([approverUserId])
+}
+
+// ── Abhibhi Agent Gateway — Phase 8: async task engine ───────────────────────
+// One row per agent-originated asynchronous operation. This table is the
+// single source of truth for task state; BullMQ jobs only carry references.
+
+enum AgentTaskStatus {
+  QUEUED
+  STARTING
+  RUNNING
+  CANCELLING
+  SUCCEEDED
+  FAILED
+  RETRY_QUEUED
+  CANCELLED
+  EXPIRED
+  TIMED_OUT
+}
+
+enum AgentTaskRetryClass {
+  SAFE_RETRY
+  CONDITIONAL_RETRY
+  NO_RETRY
+}
+
+model AgentTask {
+  id                     String              @id @default(cuid())
+  /// Unpredictable reference returned to the agent — never the DB id.
+  taskRef                String              @unique
+  requestId              String
+  connectionId           String
+  agentId                String?
+  ownerId                String
+  teamId                 String?
+  capabilityId           String
+  capabilityVersion      Int
+  /// Phase 3 executionReference.adapterKey at submission time.
+  adapterId              String
+  environment            String
+  resourceType           String?
+  resourceId             String?
+  /// Canonical, schema-validated capability input (needed to execute later).
+  input                  Json
+  inputDigest            String
+  idempotencyKey         String?
+  /// "<connectionId>:<idempotencyKey>" — released only when enqueue fails.
+  idempotencyScope       String?             @unique
+  /// Operation dedupe key for key-less submissions; set only while non-terminal.
+  activeOperationKey     String?             @unique
+  /// Phase 7 approval consumed for this task (one approval -> at most one task).
+  approvalRequestId      String?             @unique
+  authorizationPolicyRef String
+  autonomyPolicyVersion  Int?
+  retryClass             AgentTaskRetryClass
+  status                 AgentTaskStatus     @default(QUEUED)
+  attempts               Int                 @default(0)
+  maxAttempts            Int
+  /// True only on a FAILED row whose next attempt is scheduled.
+  retryScheduled         Boolean             @default(false)
+  cancelRequestedAt      DateTime?
+  /// Entry into QUEUED / RETRY_QUEUED (queue-timeout reference).
+  queuedAt               DateTime            @default(now())
+  /// Start of the current RUNNING attempt (execution-timeout reference).
+  attemptStartedAt       DateTime?
+  startedAt              DateTime?
+  completedAt            DateTime?
+  failedAt               DateTime?
+  cancelledAt            DateTime?
+  /// Set on every terminal transition (retention reference).
+  finishedAt             DateTime?
+  /// Overall deadline: no dispatch at or after this instant.
+  expiresAt              DateTime
+  result                 Json?
+  resultRemovedAt        DateTime?
+  errorCode              String?
+  errorDetailCode        String?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  connection      AgentConnection       @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  approvalRequest AgentApprovalRequest? @relation(fields: [approvalRequestId], references: [id], onDelete: SetNull)
+
+  @@index([connectionId, status])
+  @@index([status, expiresAt])
+  @@index([ownerId, createdAt])
+  @@index([finishedAt])
 }

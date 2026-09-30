@@ -36,6 +36,8 @@ import { getCapabilityRegistry } from "../capabilities"
 import { getAdapterRegistry } from "../execution"
 import { PolicyEngineAuthorizer } from "../authorization/authorizer"
 import { ExecutionGate } from "../execution-gate/gate"
+import { getTaskEngineConfig } from "../tasks/config"
+import { createAgentTaskService } from "../tasks"
 import { recordMcpEvent } from "./observability"
 import { getAuditHook } from "../observability/audit-hook"
 import { logGatewayDenial, logGatewayError } from "../observability/request-log"
@@ -130,6 +132,9 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
       extra: buildAuthInfoExtra(gatewayContext, environment),
     }
 
+    // One gate per request, shared by direct tool calls and async submission
+    // (Phase 8), so both run exactly the same authorization/approval chain.
+    const gate = new ExecutionGate({ authorization: new PolicyEngineAuthorizer() })
     const server = createMcpServerForRequest(
       {
         capabilityRegistry: getCapabilityRegistry(),
@@ -145,7 +150,9 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
         // authorization -> autonomy -> human approval (atomic single-use
         // consumption), re-evaluated on every call immediately before the
         // Phase 4 adapter. Fails closed. See docs/agent-gateway/phase-7/10-execution-gate.md.
-        authorizer: new ExecutionGate({ authorization: new PolicyEngineAuthorizer() }),
+        authorizer: gate,
+        // Phase 8 — async task tools, opt-in (AGENT_GATEWAY_TASKS_ENABLED).
+        taskService: getTaskEngineConfig().enabled ? createAgentTaskService(gate) : undefined,
       },
       gatewayContext,
       environment

@@ -122,11 +122,26 @@ export interface IdempotencyMetadata {
 }
 
 export interface AsyncMetadata {
+  /** The capability's default mode. Unchanged by Phase 8: a direct tool call always runs this mode. */
   executionMode: OperationMode
   queue?: string
   worker?: string
   expectedDurationMs?: number
   pollingSupported?: boolean
+  /**
+   * Phase 8 — the capability MAY additionally be submitted for asynchronous
+   * execution through the Task Engine (`agent_task_submit`). It does not
+   * change `executionMode` or the SYNC path. Only allowed on executable,
+   * non-FORBIDDEN, non-DISABLED capabilities (enforced at registration).
+   */
+  asyncSupported?: boolean
+  /**
+   * Phase 8 — the adapter stops promptly when `context.signal` aborts while
+   * the underlying service call is in progress, so a RUNNING task can be
+   * cooperatively cancelled. Absent/false means a RUNNING task cannot be
+   * cancelled and the engine reports CANCELLATION_UNAVAILABLE honestly.
+   */
+  cooperativeCancellation?: boolean
 }
 
 export interface RollbackMetadata {
