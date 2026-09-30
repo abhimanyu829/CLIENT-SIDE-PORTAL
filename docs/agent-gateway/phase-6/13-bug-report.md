@@ -1,0 +1,34 @@
+# Phase 6 — Bug Report
+
+## Methodology
+
+Same as Phase 4/5: implement -> unit test -> integration test -> failure test -> security test -> concurrency test -> end-to-end test -> regression test -> inspect every failure -> reproduce independently -> determine root cause -> classify (P0-P3, PHASE-6 INTRODUCED / PHASE-5 INTEGRATION ISSUE / PHASE-4 ISSUE / PRE-EXISTING / OUT-OF-SCOPE) before editing any code. P0 security failures (per the spec's bug-fixing method) get normal feature work stopped and a full policy/identity/resource/security/race/regression retest cycle before moving on.
+
+## Bugs found and fixed this phase
+
+### Bug #1 — P1, SECURITY, PHASE-6 INTRODUCED — prototype-chain attribute lookup in the policy-condition evaluator
+
+**Symptom**: `authz-policy-language.test.ts`'s "prototype-pollution-shaped attribute name is not a valid resolver key — never matches" test failed — `evaluateCondition(ctx, { operator: "exists", attribute: "constructor" })` returned `true` instead of the expected `false`.
+
+**Root cause**: `resolveAttribute()`'s original implementation used a plain bracket lookup, `ATTRIBUTE_RESOLVERS[name]`. Because `ATTRIBUTE_RESOLVERS` is a plain JavaScript object, `name === "constructor"` resolves through the prototype chain to `Object`'s own `constructor` function (a real, non-resolver function value) rather than correctly returning `undefined` for an attribute this module never declared. The code then called that value as `resolver(ctx)` — not a crash (calling `Object` as a function with one argument doesn't throw), but a genuine attribute-lookup integrity bug: an attacker-chosen attribute name could reach an unintended prototype-chain member instead of being cleanly rejected. The write-time validator (`assertWellFormedCondition`) had the identical class of bug, using `attribute in ATTRIBUTE_RESOLVERS` (the `in` operator also walks the prototype chain).
+
+**Classification rationale**: P1 rather than P0, because no currently-reachable exploit path was found that turns this specific lookup bug into an actual privilege escalation — the "resolved" prototype member (`Object`, `Object.prototype.toString`, etc.) does not produce a value that would make any `equals`/`in`/`contains` comparison spuriously succeed against a realistic attacker-controlled target, and this bug lived entirely within Phase 6's own new code (never touching Phase 1-5). It is nonetheless a genuine security defect in the attribute-resolution integrity guarantee this module explicitly claims to provide ("a policy can only ever reference one of these pre-declared attributes, never ... a prototype-chain property"), so it was fixed immediately per the spec's "STOP normal feature work" instruction for security-classified findings, not deferred.
+
+**Fix**: Both `resolveAttribute()` (read path, `policy-language.ts`) and the attribute check inside `assertWellFormedCondition()` (write path) now use `Object.prototype.hasOwnProperty.call(ATTRIBUTE_RESOLVERS, name)` — a lookup that only ever matches an attribute this module explicitly declared as the object's own property, never one inherited from `Object.prototype`.
+
+**Verification**: `authz-policy-language.test.ts` (17/17) now passes in full, including the specific regression test. Re-ran the complete Phase 6 suite (165/165) and the complete regression suite (538/538 total) — no other test affected. Re-ran `authz-security.test.ts`'s dedicated "prototype pollution" attack test (#14) to confirm the fix generalizes to `__proto__`/`toString` as well as `constructor`.
+
+## Test-code-only defects found and fixed (never shipped in the module itself, documented for completeness per the spec's "document unresolved issues" requirement — these were resolved, not left unresolved)
+
+1. **`authz-fake-db.ts` didn't unwrap `Prisma.JsonNull`**: real Prisma/Postgres stores the `Prisma.JsonNull` sentinel as SQL `NULL` and reads it back as plain `null`; the initial fake stored the sentinel object verbatim, causing `authz-policy-store.test.ts`'s rollback test to fail when `assertWellFormedCondition` received the raw sentinel object instead of `null`. Fixed by adding an `unwrapJsonInput()` helper to the fake that mirrors real Prisma's write-time unwrapping behavior. Classification: test-infrastructure defect, not a defect in `policy-store.ts` itself (which correctly used `Prisma.JsonNull` — the fake was wrong, not the production code).
+2. **Module-identity mismatch across `vi.resetModules()`**: `authz-authorizer.test.ts` initially imported `AuthorizationDeniedError` statically at the top of the file, then called `vi.resetModules()` inside a `setup()` helper before dynamically importing `authorizer.ts` — producing two different module instances of the same class, so `instanceof` checks failed even though the thrown error was, in fact, the correct type. Fixed by importing `AuthorizationDeniedError` dynamically, inside the same `setup()` call, alongside the other dynamically-imported modules. Classification: test-code defect (a well-known Vitest module-isolation gotcha), not a production code issue.
+3. **Two incorrect `@ts-expect-error` directives**: `authz-authorizer.test.ts` and `authz-policy-language.test.ts` each had one test annotated `@ts-expect-error deliberately malformed`, on a call site that, on inspection, does not actually produce a type error (the target function parameter is typed as `unknown` or a sufficiently loose shape). `tsc --noEmit` correctly flagged these as "Unused `@ts-expect-error` directive" errors. Fixed by removing the incorrect directives — the underlying test assertions themselves were already correct and remain unchanged.
+
+## Contract observations (documented, not "fixed" — nothing to fix)
+
+- **The production migration is not yet applied** (see `14-database-verification.md` and `07-authorization-boundary.md`) — not a bug, a deliberate, disclosed deferral of a high-risk production database change pending explicit user confirmation.
+- **`AuthorizationContext.authenticationStrength` defaults to `"BEARER"`** when Phase 5's `AgentExecutionContext` doesn't carry the real value (see `03-resource-scope-boundary.md`) — documented as a clean seam for a future, out-of-scope Phase 5 enhancement, not a Phase 6 defect, since no currently-seeded policy depends on this attribute.
+
+## Verification of "zero unresolved Phase-6-introduced issues" claim
+
+After the security fix and all three test-infrastructure fixes, the full suite was re-run from a clean state: `npx vitest run` (538/538), `npx tsc --noEmit` (clean except the one pre-existing, unrelated `feedback/route.ts` error, present since Phase 1), `npx eslint . --ext .ts,.tsx --format compact` (122 problems, identical baseline, zero new, zero hits under `lib/agent-gateway/authorization/`), and `npm run build` (succeeded, `/api/agent-gateway/mcp` present, no new build errors). No flaky or order-dependent test was observed across repeated runs.

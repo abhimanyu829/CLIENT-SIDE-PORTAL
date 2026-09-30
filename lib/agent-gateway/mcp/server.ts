@@ -103,7 +103,7 @@ export function createMcpServerForRequest(
                 outcome: "DENIED",
                 durationMs: Date.now() - startedAt,
               })
-              return errorResult("AUTHORIZATION_DENIED", err.message)
+              return errorResult(err.code, err.message)
             }
             throw err
           }

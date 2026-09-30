@@ -1,0 +1,62 @@
+/**
+ * lib/agent-gateway/approvals/errors.ts
+ *
+ * Stable, machine-readable Phase 7 error codes. Messages are generic and
+ * never include tokens, OTP codes, internal policy names, SQL/DB errors or
+ * stack traces.
+ */
+export type ApprovalErrorCode =
+  | "AUTONOMY_DENIED"
+  | "APPROVAL_REQUIRED"
+  | "APPROVAL_NOT_FOUND"
+  | "APPROVAL_EXPIRED"
+  | "APPROVAL_REJECTED"
+  | "APPROVAL_CANCELLED"
+  | "APPROVAL_ALREADY_CONSUMED"
+  | "APPROVAL_ALREADY_DECIDED"
+  | "APPROVAL_BINDING_MISMATCH"
+  | "APPROVAL_POLICY_CHANGED"
+  | "HUMAN_APPROVAL_INVALID"
+  | "HUMAN_APPROVER_UNAUTHORIZED"
+  | "STEP_UP_REQUIRED"
+  | "STEP_UP_INVALID"
+  | "STEP_UP_DELIVERY_FAILED"
+  | "STEP_UP_LOCKED"
+  | "CUA_UNAVAILABLE"
+  | "CUA_PERMISSION_DENIED"
+  | "CUA_STATE_MISMATCH"
+  | "EXECUTION_GATE_DENIED"
+  | "POLICY_UNAVAILABLE"
+
+const STATUS_BY_CODE: Record<ApprovalErrorCode, number> = {
+  AUTONOMY_DENIED: 403,
+  APPROVAL_REQUIRED: 403,
+  APPROVAL_NOT_FOUND: 404,
+  APPROVAL_EXPIRED: 409,
+  APPROVAL_REJECTED: 409,
+  APPROVAL_CANCELLED: 409,
+  APPROVAL_ALREADY_CONSUMED: 409,
+  APPROVAL_ALREADY_DECIDED: 409,
+  APPROVAL_BINDING_MISMATCH: 409,
+  APPROVAL_POLICY_CHANGED: 409,
+  HUMAN_APPROVAL_INVALID: 401,
+  HUMAN_APPROVER_UNAUTHORIZED: 403,
+  STEP_UP_REQUIRED: 400,
+  STEP_UP_INVALID: 401,
+  STEP_UP_DELIVERY_FAILED: 503,
+  STEP_UP_LOCKED: 429,
+  CUA_UNAVAILABLE: 503,
+  CUA_PERMISSION_DENIED: 503,
+  CUA_STATE_MISMATCH: 409,
+  EXECUTION_GATE_DENIED: 403,
+  POLICY_UNAVAILABLE: 503,
+}
+
+export class ApprovalError extends Error {
+  readonly statusCode: number
+  constructor(readonly code: ApprovalErrorCode, message: string) {
+    super(message)
+    this.name = "ApprovalError"
+    this.statusCode = STATUS_BY_CODE[code]
+  }
+}

@@ -34,7 +34,8 @@ import { createMcpServerForRequest } from "./server"
 import { buildAuthInfoExtra } from "./identity-context"
 import { getCapabilityRegistry } from "../capabilities"
 import { getAdapterRegistry } from "../execution"
-import { FailClosedAuthorizer } from "./authorization-hook"
+import { PolicyEngineAuthorizer } from "../authorization/authorizer"
+import { ExecutionGate } from "../execution-gate/gate"
 import { recordMcpEvent } from "./observability"
 import { getAuditHook } from "../observability/audit-hook"
 import { logGatewayDenial, logGatewayError } from "../observability/request-log"
@@ -130,7 +131,22 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     }
 
     const server = createMcpServerForRequest(
-      { capabilityRegistry: getCapabilityRegistry(), adapterRegistry: getAdapterRegistry(), authorizer: new FailClosedAuthorizer() },
+      {
+        capabilityRegistry: getCapabilityRegistry(),
+        adapterRegistry: getAdapterRegistry(),
+        // Phase 6 — the real authorization/policy engine, replacing
+        // Phase 5's FailClosedAuthorizer placeholder. PolicyEngineAuthorizer
+        // itself fails closed (denies) on any internal error, so this
+        // substitution never weakens the production default — see
+        // lib/agent-gateway/authorization/authorizer.ts's fail-closed
+        // guarantee and docs/agent-gateway/phase-6/07-authorization-boundary.md.
+        //
+        // Phase 7 — the ExecutionGate wraps Phase 6 (never replaces it):
+        // authorization -> autonomy -> human approval (atomic single-use
+        // consumption), re-evaluated on every call immediately before the
+        // Phase 4 adapter. Fails closed. See docs/agent-gateway/phase-7/10-execution-gate.md.
+        authorizer: new ExecutionGate({ authorization: new PolicyEngineAuthorizer() }),
+      },
       gatewayContext,
       environment
     )

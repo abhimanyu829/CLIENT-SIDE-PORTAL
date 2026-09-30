@@ -73,9 +73,17 @@ export function toMcpSafeError(err: unknown): McpSafeError {
  * structural execution-layer check" unambiguously.
  */
 export class AuthorizationDeniedError extends Error {
-  readonly code = "AUTHORIZATION_DENIED"
-  constructor(message: string) {
+  /**
+   * Stable machine-readable code. Defaults to "AUTHORIZATION_DENIED"
+   * (Phase 5/6 behavior, unchanged). Phase 7's execution gate supplies
+   * more specific stable codes (e.g. "APPROVAL_REQUIRED",
+   * "APPROVAL_BINDING_MISMATCH") through the same throw-to-deny type, so
+   * the MCP layer never needs a second denial error class.
+   */
+  readonly code: string
+  constructor(message: string, code: string = "AUTHORIZATION_DENIED") {
     super(message)
+    this.code = code
     this.name = "AuthorizationDeniedError"
   }
 }

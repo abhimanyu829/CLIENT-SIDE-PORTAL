@@ -405,6 +405,16 @@ model User {
     agentConnectionsCreated      AgentConnection[] @relation("AgentConnectionCreatedBy")
     agentConnectionsUpdated      AgentConnection[] @relation("AgentConnectionUpdatedBy")
     agentCredentialsCreated      AgentCredential[] @relation("AgentCredentialCreatedBy")
+    // Abhibhi Agent Gateway (Phase 6) — policy administration back-relations.
+    // A human admin authoring/versioning an agent policy is a HUMAN
+    // authorization event (see docs/agent-gateway/phase-6/06-rbac-separation.md)
+    // — additive only, does not affect any existing User behavior.
+    agentPoliciesCreated         AgentPolicy[]        @relation("AgentPolicyCreatedBy")
+    agentPolicyVersionsCreated   AgentPolicyVersion[]  @relation("AgentPolicyVersionCreatedBy")
+    // Abhibhi Agent Gateway (Phase 7) — autonomy policy authorship and
+    // human approval decisions. Additive only.
+    agentAutonomyPoliciesCreated AgentAutonomyPolicy[]   @relation("AgentAutonomyPolicyCreatedBy")
+    agentApprovalDecisions       AgentApprovalDecision[] @relation("AgentApprovalDecisionApprover")
 
   @@index([email])
   @@index([role])
@@ -3473,6 +3483,11 @@ model AgentConnection {
 
   credentials      AgentCredential[]
 
+  // Abhibhi Agent Gateway (Phase 7) — back-relations only; no column on
+  // this table changes.
+  autonomyPolicies AgentAutonomyPolicy[]
+  approvalRequests AgentApprovalRequest[]
+
   @@index([ownerId])
   @@index([teamId])
   @@index([status])
@@ -3521,4 +3536,292 @@ model AgentCredential {
   @@index([connectionId])
   @@index([status])
   @@index([fingerprint])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ABHIBHI AGENT GATEWAY — PHASE 6: AUTHORIZATION / CAPABILITY SCOPING / RBAC-ABAC
+//
+// These models hold DECLARATIVE POLICY DATA ONLY — never executable code.
+// `AgentPolicyVersion.conditions` is a constrained JSON condition tree
+// (see lib/agent-gateway/authorization/policy-language.ts) evaluated by a
+// pure, side-effect-free interpreter — there is no eval(), no stored
+// function body, no arbitrary expression string anywhere in this schema.
+//
+// Versioning follows the SAME immutable-snapshot idiom as `ProductVersion`
+// elsewhere in this schema: `AgentPolicy` is the stable, mutable pointer
+// (id/name/enabled/priority + a pointer to the current version);
+// `AgentPolicyVersion` rows are NEVER updated after creation — a policy
+// "change" always creates a new version and repoints `currentVersionId`,
+// preserving full history for audit and rollback (per the Phase 6 spec's
+// "no silent mutation of historical policy" / "rollback to previous known
+// version" requirements).
+//
+// This is additive only — no existing model (User, Team, Product, ...) or
+// Phase 1-5 model is modified. See docs/agent-gateway/phase-6/.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum AgentPolicyEffect {
+  ALLOW
+  DENY
+  REQUIRES_APPROVAL
+}
+
+/// Matches the Phase 6 spec's scoping levels exactly. A version's `scope`
+/// determines how `scopeValue`/`capabilityId` are interpreted — e.g.
+/// scope=OWNER means scopeValue holds an ownerId; scope=CAPABILITY means
+/// capabilityId is the sole matcher and scopeValue is unused.
+enum AgentPolicyScope {
+  GLOBAL
+  OWNER
+  TEAM
+  CONNECTION
+  CAPABILITY
+  RESOURCE_TYPE
+  RESOURCE
+  ENVIRONMENT
+}
+
+/// Per-version lifecycle state, distinct from AgentConnectionStatus's
+/// terminology (spec: "don't introduce DISABLED when SUSPENDED/REVOKED
+/// already cover that semantic space" — that guidance applies to
+/// CONNECTION status; policy VERSIONS are a different domain where
+/// ACTIVE/DISABLED/SUPERSEDED are the correct, non-overlapping terms).
+enum AgentPolicyVersionStatus {
+  ACTIVE
+  DISABLED
+  SUPERSEDED
+}
+
+model AgentPolicy {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+
+  /// Kill switch — disabling a policy here takes effect immediately
+  /// (subject only to the policy CACHE's short TTL, never bypassable by
+  /// a stale ALLOW; see lib/agent-gateway/authorization/policy-cache.ts).
+  enabled     Boolean  @default(true)
+
+  /// Higher priority evaluated first among same-specificity matches.
+  /// Explicit DENY still always wins over ALLOW regardless of priority
+  /// (see docs/agent-gateway/phase-6/04-precedence.md) — priority only
+  /// orders among decisions of the SAME effect class.
+  priority    Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdById String
+
+  /// The currently-live version. Null only in the brief window between
+  /// creating an AgentPolicy row and creating its first version — the
+  /// policy store treats a policy with no current version as inert
+  /// (never matched), never as an error.
+  currentVersionId String? @unique
+
+  createdBy      User                @relation("AgentPolicyCreatedBy", fields: [createdById], references: [id])
+  currentVersion AgentPolicyVersion? @relation("AgentPolicyCurrentVersion", fields: [currentVersionId], references: [id])
+  versions       AgentPolicyVersion[] @relation("AgentPolicyVersions")
+
+  @@index([enabled])
+  @@index([priority])
+}
+
+model AgentPolicyVersion {
+  id     String @id @default(cuid())
+  policyId String
+  /// 1-based, monotonically increasing per policyId. Immutable once created.
+  version  Int
+
+  status AgentPolicyVersionStatus @default(ACTIVE)
+
+  effect AgentPolicyEffect
+
+  scope      AgentPolicyScope
+  /// Interpretation depends on `scope` — see the enum's doc comment.
+  /// Null for GLOBAL scope.
+  scopeValue String?
+
+  /// Phase 3 capability id (e.g. "products.get"). Null means "any
+  /// capability" (only meaningful for scope=GLOBAL/OWNER/TEAM/CONNECTION/
+  /// ENVIRONMENT rules that aren't capability-specific).
+  capabilityId String?
+
+  /// Constrained declarative condition tree (JSON) — see
+  /// lib/agent-gateway/authorization/policy-language.ts for the exact
+  /// allowed operator set. NEVER a code string, NEVER eval'd.
+  conditions Json?
+
+  /// Optional cap expressed as a Phase 3 RiskTier string
+  /// ("READ"|"LOW_RISK_WRITE"|"HIGH_RISK_MUTATION"|"CRITICAL") — the
+  /// policy denies if the capability's own risk tier exceeds this.
+  riskConstraint String?
+
+  /// If true, a capability that would otherwise be ALLOWed by this
+  /// version instead resolves to REQUIRES_APPROVAL (Phase 7 owns actually
+  /// acting on that result — Phase 6 only emits it).
+  approvalRequirement Boolean @default(false)
+
+  note String?
+
+  createdAt   DateTime @default(now())
+  createdById String
+
+  policy    AgentPolicy @relation("AgentPolicyVersions", fields: [policyId], references: [id], onDelete: Cascade)
+  createdBy User        @relation("AgentPolicyVersionCreatedBy", fields: [createdById], references: [id])
+  /// Back-reference from AgentPolicy.currentVersionId — lets Prisma
+  /// resolve the 1:1 "this version is somebody's current version" link.
+  currentOf AgentPolicy? @relation("AgentPolicyCurrentVersion")
+
+  @@unique([policyId, version])
+  @@index([policyId])
+  @@index([capabilityId])
+  @@index([scope])
+  @@index([status])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ABHIBHI AGENT GATEWAY — PHASE 7: AUTONOMY LEVELS / APPROVAL ENGINE / HITL
+//
+// Operational state that prevents unsafe execution — NOT the Phase 11 audit
+// ledger. No credential, token, OTP code or payment secret is ever stored:
+// operation binding uses SHA-256 digests; the step-up code is stored only
+// as a hash; the human-facing display summary is redacted before storage.
+// See docs/agent-gateway/phase-7/.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum AgentAutonomyLevel {
+  OBSERVE_ONLY
+  ASSISTED
+  APPROVAL_REQUIRED
+  LIMITED_AUTONOMY
+  FULL_SCOPED_AUTONOMY
+}
+
+enum AgentAutonomyPolicyStatus {
+  ACTIVE
+  SUPERSEDED
+  DISABLED
+}
+
+enum AgentApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  CANCELLED
+  CONSUMED
+}
+
+enum AgentApprovalDecisionKind {
+  APPROVED
+  REJECTED
+}
+
+/// Versioned, per-connection autonomy bounds. Rows are never edited in
+/// place: a change creates version N+1 and marks the previous ACTIVE row
+/// SUPERSEDED (same idiom as AgentPolicyVersion). Phase 6 remains the
+/// authorization source of truth — this only narrows what may run
+/// WITHOUT a fresh human approval.
+model AgentAutonomyPolicy {
+  id                     String                    @id @default(cuid())
+  connectionId           String
+  version                Int
+  status                 AgentAutonomyPolicyStatus @default(ACTIVE)
+  autonomyLevel          AgentAutonomyLevel
+  /// Phase 3 RiskTier ceiling. Capabilities above it are denied outright.
+  maxRiskTier            String
+  /// Empty = every Phase-6-authorized capability; otherwise an allowlist.
+  allowedCapabilityIds   String[]
+  /// Capability ids that always need a human approval at this connection.
+  approvalRequiredFor    String[]
+  /// Empty = any environment; otherwise an allowlist.
+  environmentScope       String[]
+  resourceScopeReference String?
+  expiresAt              DateTime?
+  note                   String?
+  createdAt              DateTime                  @default(now())
+  createdById            String
+
+  connection AgentConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  createdBy  User            @relation("AgentAutonomyPolicyCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([connectionId, version])
+  @@index([connectionId, status])
+}
+
+model AgentApprovalRequest {
+  id                     String              @id @default(cuid())
+  /// Display-safe, unpredictable reference (never the DB primary key).
+  publicRef              String              @unique
+  requestId              String
+  connectionId           String
+  agentId                String?
+  ownerId                String
+  teamId                 String?
+  capabilityId           String
+  capabilityVersion      Int
+  resourceType           String?
+  resourceId             String?
+  environment            String
+  riskTier               String
+  autonomyLevel          AgentAutonomyLevel
+  autonomyPolicyVersion  Int?
+  /// Phase 6 policy version that produced the authorization decision.
+  authorizationPolicyRef String?
+  inputDigest            String
+  /// SHA-256 over the canonical operation binding (see approvals/binding.ts).
+  bindingDigest          String
+  /// Set to "<connectionId>:<bindingDigest>" while PENDING/APPROVED and
+  /// cleared on every terminal transition — the unique index makes
+  /// concurrent identical requests collapse onto one live approval.
+  activeBindingKey       String?             @unique
+  status                 AgentApprovalStatus @default(PENDING)
+  requiredApproverScope  String
+  approvalMethod         String
+  /// Redacted, human-readable description of what is being approved.
+  displaySummary         Json
+  /// Out-of-band step-up challenge — SHA-256 hash only, bound to one approver.
+  stepUpCodeHash         String?
+  stepUpApproverId       String?
+  stepUpExpiresAt        DateTime?
+  stepUpAttempts         Int                 @default(0)
+  cancelReason           String?
+  createdAt              DateTime            @default(now())
+  expiresAt              DateTime
+  approvedAt             DateTime?
+  rejectedAt             DateTime?
+  cancelledAt            DateTime?
+  expiredAt              DateTime?
+  consumedAt             DateTime?
+
+  connection AgentConnection        @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  decision   AgentApprovalDecision?
+
+  @@index([connectionId, status])
+  @@index([status, expiresAt])
+  @@index([ownerId])
+  @@index([bindingDigest])
+}
+
+/// At most one decision per request (unique approvalRequestId).
+model AgentApprovalDecision {
+  id                 String                    @id @default(cuid())
+  approvalRequestId  String                    @unique
+  decision           AgentApprovalDecisionKind
+  approverUserId     String
+  approverRole       String
+  /// SHA-256 of the approver's session reference — never the session token.
+  approverSessionRef String
+  approvalMethod     String
+  decisionVersion    Int                       @default(1)
+  /// Must equal the request's bindingDigest at decision time.
+  scopeDigest        String
+  reasonCode         String?
+  createdAt          DateTime                  @default(now())
+
+  approvalRequest AgentApprovalRequest @relation(fields: [approvalRequestId], references: [id], onDelete: Cascade)
+  approver        User                 @relation("AgentApprovalDecisionApprover", fields: [approverUserId], references: [id])
+
+  @@index([approverUserId])
 }

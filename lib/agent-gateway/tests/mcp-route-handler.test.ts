@@ -204,10 +204,14 @@ describe("handleMcpRequest", () => {
     const { handleMcpRequest } = await import("../mcp/route-handler")
     const res = await handleMcpRequest(mcpRequest({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "products.get", arguments: { id: "p1" } } }))
     const body = await res.json()
-    // FailClosedAuthorizer is wired in production — every real tool call
-    // is denied by default until Phase 6 exists. Confirms the production
-    // default is active even through the FULL route-handler pipeline.
+    // Production wiring (Phase 7: ExecutionGate wrapping Phase 6's
+    // PolicyEngineAuthorizer) fails closed through the FULL route-handler
+    // pipeline. This test's fake DB has no policy tables, so the policy
+    // store is unavailable; Phase 7 reports that with its own stable code
+    // (POLICY_UNAVAILABLE) where Phase 6 alone reported AUTHORIZATION_DENIED.
+    // Either way the call is denied and the adapter never runs.
     expect(body.result.isError).toBe(true)
-    expect(body.result.content[0].text).toContain("AUTHORIZATION_DENIED")
+    expect(body.result.content[0].text).toMatch(/^(AUTHORIZATION_DENIED|POLICY_UNAVAILABLE):/)
+    expect(body.result.structuredContent).toBeUndefined()
   })
 })

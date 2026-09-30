@@ -3846,10 +3846,10 @@
     "semantic_hash": "e98328815378efb8445a4aa8b6c41ddc"
   },
   "next-env.d.ts": {
-    "mtime": 1789336123.0507393,
-    "seen": 1790700469.5675614,
-    "ast_hash": "29f60a376e12bf72b67d4994fcc84214",
-    "semantic_hash": "29f60a376e12bf72b67d4994fcc84214"
+    "mtime": 1790744924.4494326,
+    "seen": 1790761220.7721307,
+    "ast_hash": "b698cdd97fe8e3bd16dcd74899ad7cef",
+    "semantic_hash": ""
   },
   "next.config.js": {
     "mtime": 1785949988.4269621,
@@ -3858,9 +3858,9 @@
     "semantic_hash": "4e964c0f6826daf3cb796335d28e1f75"
   },
   "package.json": {
-    "mtime": 1790704798.2224221,
-    "seen": 1790742982.9922519,
-    "ast_hash": "e46baa97d19e0082f4b0dbde6cad8bcc",
+    "mtime": 1790753774.6976454,
+    "seen": 1790761220.7721307,
+    "ast_hash": "a7b93cac3b623a5b9561e9f68c23ffdd",
     "semantic_hash": ""
   },
   "postcss.config.js": {
@@ -4418,13 +4418,13 @@
   "prisma/migrations/20260929000000_agent_gateway_phase2_identity/migration.sql": {
     "mtime": 1790710283.2398996,
     "seen": 1790742982.9922519,
-    "ast_hash": "a890d8bc96219e5f655f2a8364f0338c",
+    "ast_hash": "",
     "semantic_hash": ""
   },
   "vitest.config.ts": {
-    "mtime": 1790704269.5280087,
-    "seen": 1790742982.9922519,
-    "ast_hash": "d2a58bf0f26b289ff94bc20961ea1194",
+    "mtime": 1790755939.291639,
+    "seen": 1790761220.7771308,
+    "ast_hash": "9aa900202deb46561e8fbeb79da27cda",
     "semantic_hash": ""
   },
   ".kiro/skills/graphify/SKILL.md": {
@@ -4617,6 +4617,624 @@
     "mtime": 1786197015.276425,
     "seen": 1790742982.9922519,
     "ast_hash": "0302af804e5ab840f61721d2fff84a02",
+    "semantic_hash": ""
+  },
+  "app/api/agent-gateway/mcp/route.ts": {
+    "mtime": 1790754329.0719745,
+    "seen": 1790761220.7189236,
+    "ast_hash": "affea6bcf8b116b11f405c7734b334ba",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/capabilities/dangerous-primitive-guard.ts": {
+    "mtime": 1790743720.6865168,
+    "seen": 1790761220.7601306,
+    "ast_hash": "96ef22f26508d78d41367dd37b5f79eb",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/capabilities/errors.ts": {
+    "mtime": 1790743683.4330435,
+    "seen": 1790761220.7601306,
+    "ast_hash": "59061c3d32dd376555022816e74c253f",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/capabilities/id.ts": {
+    "mtime": 1790743667.5966883,
+    "seen": 1790761220.7601306,
+    "ast_hash": "ef6ff027c15dc0a33520a3aa530b7fc7",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/capabilities/index.ts": {
+    "mtime": 1790743881.0146396,
+    "seen": 1790761220.7601306,
+    "ast_hash": "bcadc453858ce390d9092f42d6d56a5e",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/capabilities/manifest.ts": {
+    "mtime": 1790743864.9137273,
+    "seen": 1790761220.7601306,
+    "ast_hash": "ea122c20b44d5cacd64ce3ba17bc11ff",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/capabilities/registry.ts": {
+    "mtime": 1790754117.2595754,
+    "seen": 1790761220.7601306,
+    "ast_hash": "0ded8f7dc58de2df12954d3240fae6b2",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/capabilities/schema-validation.ts": {
+    "mtime": 1790743732.4627903,
+    "seen": 1790761220.7601306,
+    "ast_hash": "c82dd8b5a64e70d70824828cda582b71",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/capabilities/types.ts": {
+    "mtime": 1790743647.3545637,
+    "seen": 1790761220.7601306,
+    "ast_hash": "28fb74c544bf33da82f97c2addd985fa",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/adapters/index.ts": {
+    "mtime": 1790750536.8548255,
+    "seen": 1790761220.7601306,
+    "ast_hash": "b082e0b30147e02b631d2bedd09472e2",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/adapters/products-get-adapter.ts": {
+    "mtime": 1790750460.6214435,
+    "seen": 1790761220.7601306,
+    "ast_hash": "d03da3d0b1b2dded8303f802cda68736",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/adapters/products-list-adapter.ts": {
+    "mtime": 1790750443.1936114,
+    "seen": 1790761220.7601306,
+    "ast_hash": "ee43d481e28f82565b0d99e63ad120b9",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/adapters/subscriptions-get-adapter.ts": {
+    "mtime": 1790750482.241585,
+    "seen": 1790761220.7601306,
+    "ast_hash": "6638b6b8a272b2b24ff2a9688087ea94",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/adapters/tickets-list-adapter.ts": {
+    "mtime": 1790750523.0571048,
+    "seen": 1790761220.7601306,
+    "ast_hash": "f285678e4e594b02ef5e55089bbe1798",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/contracts/adapter.ts": {
+    "mtime": 1790750083.407394,
+    "seen": 1790761220.7601306,
+    "ast_hash": "5cab215803fac1bfb27e19fd8cbdfe38",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/contracts/execution-context.ts": {
+    "mtime": 1790750044.0059822,
+    "seen": 1790761220.7601306,
+    "ast_hash": "932f0dd4aaaf2a02bf46d351c3240de8",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/contracts/execution-error.ts": {
+    "mtime": 1790750058.4220102,
+    "seen": 1790761220.7601306,
+    "ast_hash": "b9bee494fd120706043195f355e60057",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/contracts/execution-result.ts": {
+    "mtime": 1790750069.7235568,
+    "seen": 1790761220.7601306,
+    "ast_hash": "fbc46819f36d3833f99cf69ebd5ba792",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/idempotency/idempotency-guard.ts": {
+    "mtime": 1790750353.6306906,
+    "seen": 1790761220.7601306,
+    "ast_hash": "0c9b4161d3d2f5b255b609d25a1aa06f",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/index.ts": {
+    "mtime": 1790750550.189142,
+    "seen": 1790761220.7601306,
+    "ast_hash": "f237c2cbbb02d12a34ac414b038b4821",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/observability/execution-log.ts": {
+    "mtime": 1790750391.1749036,
+    "seen": 1790761220.7601306,
+    "ast_hash": "57bc63785a4029bc670a250fd3afc237",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/resolver/adapter-registry.ts": {
+    "mtime": 1790750099.879342,
+    "seen": 1790761220.7601306,
+    "ast_hash": "55a245b233c928ce7e73452fc07d536f",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/resolver/adapter-resolver.ts": {
+    "mtime": 1790750329.3516102,
+    "seen": 1790761220.7601306,
+    "ast_hash": "c1199d4db8a16fdeddac8948c1b4c09e",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/resolver/build-execution-context.ts": {
+    "mtime": 1790750169.4646325,
+    "seen": 1790761220.7601306,
+    "ast_hash": "f39b6138f7bb5b57ac0eb2364b8054fd",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/execution/resolver/hard-safety-checks.ts": {
+    "mtime": 1790750198.7917688,
+    "seen": 1790761220.7601306,
+    "ast_hash": "915a8e8d4b15880964c8f0850953f9d0",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/mcp/authorization-hook.ts": {
+    "mtime": 1790755832.1226287,
+    "seen": 1790761220.7611306,
+    "ast_hash": "25ec3770f708129f1b8ac9559cb8ec6e",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/mcp/config.ts": {
+    "mtime": 1790753900.0544238,
+    "seen": 1790761220.7611306,
+    "ast_hash": "1a72f6244ec811b88fb69f0e5dd8bca6",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/mcp/errors.ts": {
+    "mtime": 1790753925.601348,
+    "seen": 1790761220.7611306,
+    "ast_hash": "7738d45cb6d0819590fe23b97d501455",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/mcp/identity-context.ts": {
+    "mtime": 1790754065.6328936,
+    "seen": 1790761220.7611306,
+    "ast_hash": "484fa610dcc5863d242717b8756192af",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/mcp/index.ts": {
+    "mtime": 1790754345.715729,
+    "seen": 1790761220.7611306,
+    "ast_hash": "508208e1ab54f76d5577436d30448c12",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/mcp/observability.ts": {
+    "mtime": 1790754234.6193202,
+    "seen": 1790761220.7611306,
+    "ast_hash": "d0931da098037cffdc220a9873b15259",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/mcp/route-handler.ts": {
+    "mtime": 1790755347.740761,
+    "seen": 1790761220.7611306,
+    "ast_hash": "3b27f7caabc80054ab144fa1473d93cd",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/mcp/server.ts": {
+    "mtime": 1790754217.5010867,
+    "seen": 1790761220.7611306,
+    "ast_hash": "1e01e92f1f126d3068692917f18c5d33",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/mcp/tool-projection.ts": {
+    "mtime": 1790754667.1214938,
+    "seen": 1790761220.7611306,
+    "ast_hash": "25abd4e2d039683a02eea06e840ccf14",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/mcp/transport-security.ts": {
+    "mtime": 1790754001.385258,
+    "seen": 1790761220.7611306,
+    "ast_hash": "1594a6edd43384c80d9f555e119f0cde",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/adapter-registry.test.ts": {
+    "mtime": 1790750875.8997886,
+    "seen": 1790761220.762131,
+    "ast_hash": "fb5261ada7ce9f471aecc66334cd2ca1",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/adapter-resolver-e2e.test.ts": {
+    "mtime": 1790751218.7069159,
+    "seen": 1790761220.762131,
+    "ast_hash": "1124cf9937f89c464f70256e27c6308e",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/capability-failure.test.ts": {
+    "mtime": 1790744216.3850305,
+    "seen": 1790761220.762131,
+    "ast_hash": "7a068cb51b87f4d61a068e74dd58f1bd",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/capability-id.test.ts": {
+    "mtime": 1790744059.7970374,
+    "seen": 1790761220.762131,
+    "ast_hash": "c7309e5a822b27a29e73e78e61434a03",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/capability-manifest.test.ts": {
+    "mtime": 1790744189.223899,
+    "seen": 1790761220.762131,
+    "ast_hash": "6dc2e0b6ccabfd06439edef92ce06f94",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/capability-registry.test.ts": {
+    "mtime": 1790744163.7464695,
+    "seen": 1790761220.762131,
+    "ast_hash": "aa1d70800f684fa26a6782b39a173595",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/capability-schema-validation.test.ts": {
+    "mtime": 1790744113.832823,
+    "seen": 1790761220.762131,
+    "ast_hash": "e1b30312d88caf6968bd7bfd46f61f84",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/capability-security.test.ts": {
+    "mtime": 1790744248.089796,
+    "seen": 1790761220.762131,
+    "ast_hash": "27383d51552858c213feafdcc76111ff",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/dangerous-primitive-guard.test.ts": {
+    "mtime": 1790744088.2188215,
+    "seen": 1790761220.7631307,
+    "ast_hash": "f2b15adefce390cd8fe325914fab96a3",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/execution-data-integrity.test.ts": {
+    "mtime": 1790751392.376651,
+    "seen": 1790761220.7631307,
+    "ast_hash": "1ffe23029de6a719f13b965cb87a84e6",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/execution-fake-db.ts": {
+    "mtime": 1790750771.7132607,
+    "seen": 1790761220.7631307,
+    "ast_hash": "867de9c64f28a5d1b9b764486707ef4f",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/execution-security.test.ts": {
+    "mtime": 1790751322.4268851,
+    "seen": 1790761220.7631307,
+    "ast_hash": "0458cc10a38cc00066ed93843ee651ca",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/hard-safety-checks.test.ts": {
+    "mtime": 1790750904.1131022,
+    "seen": 1790761220.7631307,
+    "ast_hash": "ae02f411ee41c0813b7957b3af31ee48",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/idempotency-guard.test.ts": {
+    "mtime": 1790751163.598078,
+    "seen": 1790761220.7631307,
+    "ast_hash": "74ab2bc4fa3efb462714c3a4eae9a001",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/mcp-authorization-hook.test.ts": {
+    "mtime": 1790754572.166535,
+    "seen": 1790761220.7631307,
+    "ast_hash": "4d363ef4975ed4a207eb68d73e028d51",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/mcp-errors.test.ts": {
+    "mtime": 1790754556.3953133,
+    "seen": 1790761220.7631307,
+    "ast_hash": "6614f35486f5d619e48a5eaaeaf4a21a",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/mcp-identity-context.test.ts": {
+    "mtime": 1790754607.769887,
+    "seen": 1790761220.7631307,
+    "ast_hash": "e1878a1abcd598b54cf4ca854d82937b",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/mcp-route-handler.test.ts": {
+    "mtime": 1790755262.5634847,
+    "seen": 1790761220.7631307,
+    "ast_hash": "84f5ac36a34e5bb89fb427d1c53e4081",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/mcp-security-extra.test.ts": {
+    "mtime": 1790755676.084831,
+    "seen": 1790761220.7631307,
+    "ast_hash": "ebdad6168e3b9bb2d4d2b0be17c08a67",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/mcp-server-integration.test.ts": {
+    "mtime": 1790755111.2852652,
+    "seen": 1790761220.7631307,
+    "ast_hash": "66b08aa563847620b075e1dd707b9437",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/mcp-tool-projection.test.ts": {
+    "mtime": 1790754538.4272032,
+    "seen": 1790761220.7631307,
+    "ast_hash": "a2270b98d3fbc8bd7f0ddb87dbd3a9fb",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/mcp-transport-security.test.ts": {
+    "mtime": 1790754589.5283792,
+    "seen": 1790761220.7631307,
+    "ast_hash": "a3976dc908bf565a87e1870a37750493",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/products-get-adapter.test.ts": {
+    "mtime": 1790750820.4802196,
+    "seen": 1790761220.7631307,
+    "ast_hash": "a980d5bc9c9de75d9d178cdf4cb0a91d",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/products-list-adapter.test.ts": {
+    "mtime": 1790750803.025206,
+    "seen": 1790761220.7631307,
+    "ast_hash": "fb94ebd6ab1260999fea69e7a7964edd",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/subscriptions-get-adapter.test.ts": {
+    "mtime": 1790750842.1831102,
+    "seen": 1790761220.7641306,
+    "ast_hash": "40e49c320176873aa61e38daa07c6163",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/tickets-list-adapter.test.ts": {
+    "mtime": 1790750859.1798017,
+    "seen": 1790761220.7641306,
+    "ast_hash": "f22c0cbed4df453a03c7c3dd066ec6d4",
+    "semantic_hash": ""
+  },
+  "prisma/migrations/20260916090000_catalog_intelligence/migration.sql": {
+    "mtime": 1789300265.2575238,
+    "seen": 1790761220.7731304,
+    "ast_hash": "4faa5442759c9ab855682e9e3e22d6d2",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-3/01-capability-architecture.md": {
+    "mtime": 1790747562.0212715,
+    "seen": 1790761220.7811325,
+    "ast_hash": "fca29fbd1551ec91047a10e45378bbbf",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-3/02-capability-schema.md": {
+    "mtime": 1790747583.6198776,
+    "seen": 1790761220.7811325,
+    "ast_hash": "abada30f33fc32879172d21b9397136a",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-3/03-capability-id-versioning.md": {
+    "mtime": 1790747605.1959107,
+    "seen": 1790761220.7811325,
+    "ast_hash": "39dec1e482e973a1183ca9f8b3187c5a",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-3/04-capability-registry.md": {
+    "mtime": 1790747628.9047084,
+    "seen": 1790761220.7811325,
+    "ast_hash": "345e8840b809f51e71a56645114c3bba",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-3/05-schema-validation.md": {
+    "mtime": 1790747647.6035,
+    "seen": 1790761220.7811325,
+    "ast_hash": "2301ffbcbed120905021bebdc385d912",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-3/06-risk-and-side-effect-metadata.md": {
+    "mtime": 1790747672.1471732,
+    "seen": 1790761220.7811325,
+    "ast_hash": "7ff7f26e07fde9f804c2af3371c62a09",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-3/07-security-boundary.md": {
+    "mtime": 1790747699.1420338,
+    "seen": 1790761220.7811325,
+    "ast_hash": "e0b27eefe9188777ecd93c4382fb27bc",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-3/08-capability-exposure-matrix.md": {
+    "mtime": 1790747721.1406627,
+    "seen": 1790761220.7811325,
+    "ast_hash": "a2728ae1da09f00b147fdfcaa9500bcf",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-3/09-dependency-map.md": {
+    "mtime": 1790747742.3874726,
+    "seen": 1790761220.7811325,
+    "ast_hash": "0ac7e37370e2419bea13405cdbfdf37b",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-3/10-test-report.md": {
+    "mtime": 1790747774.1880434,
+    "seen": 1790761220.7811325,
+    "ast_hash": "052df153a9ef476a5c85cd282a6a5b27",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-3/11-bug-report.md": {
+    "mtime": 1790747803.2198665,
+    "seen": 1790761220.7811325,
+    "ast_hash": "cb54f5311b3d621ad20af3884a1aebba",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-3/12-phase-3-exit-checklist.md": {
+    "mtime": 1790747830.2052095,
+    "seen": 1790761220.7811325,
+    "ast_hash": "6b695e82eecb1081603e76e8950330b8",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/01-execution-architecture.md": {
+    "mtime": 1790751762.8411274,
+    "seen": 1790761220.7811325,
+    "ast_hash": "8e24d0f54b874b744cd3f30918d575f6",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/02-adapter-contract.md": {
+    "mtime": 1790751802.145293,
+    "seen": 1790761220.7811325,
+    "ast_hash": "5097e4e85a1718c58290fd1e02f6a70b",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/03-capability-adapter-map.md": {
+    "mtime": 1790751872.9338634,
+    "seen": 1790761220.7811325,
+    "ast_hash": "6ae645f347b2ca9e5f72d843fed15be5",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/04-existing-service-mapping.md": {
+    "mtime": 1790751938.9130135,
+    "seen": 1790761220.7811325,
+    "ast_hash": "7dfaf9e442190261a1e9069219037942",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/05-input-output-contracts.md": {
+    "mtime": 1790751985.164438,
+    "seen": 1790761220.7811325,
+    "ast_hash": "1decb42d7631f03f6d8af802e5f7f3ec",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/06-error-mapping.md": {
+    "mtime": 1790752011.1842291,
+    "seen": 1790761220.7811325,
+    "ast_hash": "efd685c7c03953d80045be6d7b8e58cf",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/07-idempotency.md": {
+    "mtime": 1790752032.2967105,
+    "seen": 1790761220.7811325,
+    "ast_hash": "f92a3770418461d7ed5700da04ff88bb",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/08-async-execution.md": {
+    "mtime": 1790752052.2868476,
+    "seen": 1790761220.7811325,
+    "ast_hash": "e4872b5b61264b298a150e2eb183fe57",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/09-security-boundary.md": {
+    "mtime": 1790752082.8667698,
+    "seen": 1790761220.7811325,
+    "ast_hash": "340c46e8f2b331e15a2bb418eafe84fc",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/10-execution-flow.md": {
+    "mtime": 1790752109.08603,
+    "seen": 1790761220.7811325,
+    "ast_hash": "78decfa93bc92b61302842ad81666edc",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/11-test-report.md": {
+    "mtime": 1790752153.6223695,
+    "seen": 1790761220.7811325,
+    "ast_hash": "a7c60db2df95d2d73003c4c8bd61e418",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/12-bug-report.md": {
+    "mtime": 1790752185.942554,
+    "seen": 1790761220.7811325,
+    "ast_hash": "7bd7507e8a53e3cbfccc8f8229ce1253",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/13-data-integrity-report.md": {
+    "mtime": 1790752216.3697605,
+    "seen": 1790761220.7811325,
+    "ast_hash": "d03d740b7694aadedd9a18aeb7db73a7",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/14-ui-consistency-report.md": {
+    "mtime": 1790752244.5773115,
+    "seen": 1790761220.7811325,
+    "ast_hash": "60151a2fa5f0d53afc34266275c00e9f",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-4/15-phase-4-exit-checklist.md": {
+    "mtime": 1790752301.834512,
+    "seen": 1790761220.7811325,
+    "ast_hash": "14db4409fceadd9ffd95c2aa9dcdb04a",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/01-architecture.md": {
+    "mtime": 1790756134.9859865,
+    "seen": 1790761220.7811325,
+    "ast_hash": "90673e122cec34f73c362920bd9ff316",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/02-mcp-sdk-selection.md": {
+    "mtime": 1790756157.3811312,
+    "seen": 1790761220.7811325,
+    "ast_hash": "d76914520b2ac48bda60a9b5dffd38ba",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/03-transport-and-protocol.md": {
+    "mtime": 1790756183.6361728,
+    "seen": 1790761220.7811325,
+    "ast_hash": "78a49120406c73dc4dc31c0c450ce7e8",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/04-authentication-integration.md": {
+    "mtime": 1790756253.8348577,
+    "seen": 1790761220.7811325,
+    "ast_hash": "55542db8a4ff045a6e056fbd1314aa8f",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/05-tools-architecture.md": {
+    "mtime": 1790756456.448364,
+    "seen": 1790761220.7811325,
+    "ast_hash": "e2e436ede89c3722b60dd2e1675ee19b",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/06-execution-flow.md": {
+    "mtime": 1790756475.4828677,
+    "seen": 1790761220.7811325,
+    "ast_hash": "b91bc1858446c236f91de442efbdb429",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/07-authorization-boundary.md": {
+    "mtime": 1790756504.7588735,
+    "seen": 1790761220.7811325,
+    "ast_hash": "baf03d93b18d15fb366fc245d9aeb17c",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/08-async-operations.md": {
+    "mtime": 1790756520.0229475,
+    "seen": 1790761220.7811325,
+    "ast_hash": "55bc0911c68b493f42098373361bc8a0",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/09-security-boundary.md": {
+    "mtime": 1790756545.9068122,
+    "seen": 1790761220.7811325,
+    "ast_hash": "2d4f5d05a3ff54f25be194bf18c041a2",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/10-observability.md": {
+    "mtime": 1790756560.8264031,
+    "seen": 1790761220.7811325,
+    "ast_hash": "85c57e25833e5cfa9acab56883268040",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/11-error-model.md": {
+    "mtime": 1790756579.4718344,
+    "seen": 1790761220.7811325,
+    "ast_hash": "80d02437fc6310fe0a1db1ec46c50bc5",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/12-bug-report.md": {
+    "mtime": 1790756623.4649117,
+    "seen": 1790761220.7811325,
+    "ast_hash": "bbf4cad0a4de73ddd6d66ab19e08840e",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/13-test-report.md": {
+    "mtime": 1790756604.3256588,
+    "seen": 1790761220.7811325,
+    "ast_hash": "6f107332cac5ba47363654a45c486b00",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-5/14-phase-5-exit-checklist.md": {
+    "mtime": 1790757384.4648414,
+    "seen": 1790761220.7811325,
+    "ast_hash": "1007a72598402c2cb6732e59267f4aaf",
     "semantic_hash": ""
   }
 }
