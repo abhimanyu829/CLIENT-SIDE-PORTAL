@@ -399,6 +399,12 @@ model User {
     subscriptionPayments SubscriptionPayment[]
     purchasedServices    PurchasedService[]
     serviceUpgrades      ServiceUpgrade[]
+    // Abhibhi Agent Gateway (Phase 2) — machine identity back-relations.
+    // Additive only; does not affect any existing User behavior.
+    agentConnectionsOwned        AgentConnection[] @relation("AgentConnectionOwner")
+    agentConnectionsCreated      AgentConnection[] @relation("AgentConnectionCreatedBy")
+    agentConnectionsUpdated      AgentConnection[] @relation("AgentConnectionUpdatedBy")
+    agentCredentialsCreated      AgentCredential[] @relation("AgentCredentialCreatedBy")
 
   @@index([email])
   @@index([role])
@@ -1907,6 +1913,8 @@ model Team {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   members      TeamMember[]
+  // Abhibhi Agent Gateway (Phase 2) — machine identity back-relation.
+  agentConnections AgentConnection[] @relation("AgentConnectionTeam")
 
   @@index([ownerId])
 }
@@ -3384,3 +3392,133 @@ model AddonCatalogItem {
   @@index([isActive, category])
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ABHIBHI AGENT GATEWAY — PHASE 2: MACHINE IDENTITY / AGENT CONNECTION LIFECYCLE
+//
+// These models represent a MACHINE identity, never a human user, admin account,
+// or AI agent itself. They are additive only — no existing model is modified.
+// ownerId/teamId reference the EXISTING User/Team models (no duplicate identity
+// system is created). See docs/agent-gateway/phase-2/PHASE-2-ARCHITECTURE.md.
+//
+// Credential secrets are NEVER stored here in plaintext:
+//   - AgentCredential.secretHash is a one-way hash (SHA-256), used only to
+//     look up a presented bearer token — never reversible, never compared with
+//     ordinary string equality by application code (constant-time only).
+//   - AgentCredential.fingerprint is separate, non-secret identification
+//     metadata (safe to display/log), NOT usable as a credential itself.
+//   - AgentCredential.signingSecretRef is a reference placeholder for a real
+//     secret manager (Phase 2 stores it encrypted via the EXISTING
+//     lib/encryption.ts AES-256-GCM utility as an interim measure — see the
+//     architecture doc's "Secret Manager" section for the explicit rationale
+//     and the Phase 3+ migration path to a dedicated secret store).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum AgentConnectionStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REVOKED
+  EXPIRED
+}
+
+enum AgentAuthMethod {
+  BEARER
+  SIGNED_REQUEST
+}
+
+enum AgentCredentialStatus {
+  ACTIVE
+  ROTATING
+  REVOKED
+  EXPIRED
+}
+
+model AgentConnection {
+  id               String                 @id @default(cuid())
+
+  name             String
+  /// Free-text provider label (e.g. "claude", "hermes", "paperclip", "custom").
+  /// Metadata only — the backend is never coupled to a specific AI product.
+  provider         String
+  externalAgentId  String?
+  description      String?
+
+  ownerId          String
+  teamId           String?
+
+  status           AgentConnectionStatus  @default(PENDING)
+  authMethod       AgentAuthMethod        @default(BEARER)
+  /// development | staging | production — informational; the credential
+  /// store itself is the actual environment boundary (separate env vars /
+  /// separate DB per deployment, per the existing deployment topology).
+  environment      String                 @default("development")
+
+  lastAuthenticatedAt DateTime?
+  lastSeenAt          DateTime?
+  expiresAt           DateTime?
+  revokedAt           DateTime?
+  suspendedAt         DateTime?
+
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  createdById      String
+  updatedById      String?
+
+  owner            User                   @relation("AgentConnectionOwner", fields: [ownerId], references: [id])
+  team             Team?                  @relation("AgentConnectionTeam", fields: [teamId], references: [id])
+  createdBy        User                   @relation("AgentConnectionCreatedBy", fields: [createdById], references: [id])
+  updatedBy        User?                  @relation("AgentConnectionUpdatedBy", fields: [updatedById], references: [id])
+
+  credentials      AgentCredential[]
+
+  @@index([ownerId])
+  @@index([teamId])
+  @@index([status])
+  @@index([provider])
+  @@index([externalAgentId])
+}
+
+model AgentCredential {
+  id                 String                @id @default(cuid())
+
+  connectionId       String
+
+  status             AgentCredentialStatus @default(ACTIVE)
+
+  /// SHA-256 hash of the bearer token, OR of the HMAC key-id's associated
+  /// secret when authMethod is SIGNED_REQUEST. Never the raw secret.
+  secretHash         String                @unique
+  /// Non-secret identification metadata (safe to display/log). Derived
+  /// deterministically from the secret but never usable to authenticate.
+  fingerprint        String
+  /// Public key id for SIGNED_REQUEST credentials (X-Abhibhi-Key-Id header
+  /// value). Null for BEARER credentials.
+  keyId              String?               @unique
+  /// AES-256-GCM ciphertext of the HMAC signing secret (via the EXISTING
+  /// lib/encryption.ts utility), present only for SIGNED_REQUEST
+  /// credentials. Null for BEARER — bearer tokens are identified solely by
+  /// secretHash and are never stored reversibly at all.
+  signingSecretRef   String?
+
+  /// Supports safe rotation-with-overlap: the credential this one replaces.
+  replacesCredentialId String?             @unique
+
+  createdAt          DateTime              @default(now())
+  activatedAt         DateTime?
+  expiresAt           DateTime?
+  lastUsedAt          DateTime?
+  revokedAt           DateTime?
+
+  createdById        String
+
+  connection         AgentConnection       @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  createdBy          User                  @relation("AgentCredentialCreatedBy", fields: [createdById], references: [id])
+  replaces           AgentCredential?      @relation("AgentCredentialReplacement", fields: [replacesCredentialId], references: [id])
+  replacedBy         AgentCredential?      @relation("AgentCredentialReplacement")
+
+  @@index([connectionId])
+  @@index([status])
+  @@index([fingerprint])
+}
