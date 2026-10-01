@@ -55,6 +55,22 @@ export interface SetAutonomyPolicyInput {
   note?: string
   /** Server-resolved human admin id — never taken from a request body. */
   actorId: string
+  /**
+   * Phase 10 optimistic concurrency (optional; omitted = previous behaviour):
+   * the latest version number the administrator saw (0 when the connection
+   * never had a policy). A stale value writes nothing and throws
+   * AutonomyConflictError.
+   */
+  expectedVersion?: number
+}
+
+/** Phase 10: an autonomy write based on a stale view (someone else changed it first). */
+export class AutonomyConflictError extends Error {
+  readonly code = "CONFLICT" as const
+  constructor(message = "The autonomy policy was changed by someone else. Reload and try again.") {
+    super(message)
+    this.name = "AutonomyConflictError"
+  }
 }
 
 /**
@@ -68,6 +84,13 @@ export async function setAutonomyPolicy(input: SetAutonomyPolicyInput): Promise<
   return db.$transaction(async (tx) => {
     const connection = await tx.agentConnection.findUnique({ where: { id: input.connectionId }, select: { id: true } })
     if (!connection) throw new Error("Connection not found.")
+
+    if (input.expectedVersion !== undefined) {
+      // Checked before any write: a stale view changes nothing. A concurrent
+      // writer that passes the same check loses on the unique (connectionId, version).
+      const head = await tx.agentAutonomyPolicy.findFirst({ where: { connectionId: input.connectionId }, orderBy: { version: "desc" }, select: { version: true } })
+      if ((head?.version ?? 0) !== input.expectedVersion) throw new AutonomyConflictError()
+    }
 
     await tx.agentAutonomyPolicy.updateMany({
       where: { connectionId: input.connectionId, status: "ACTIVE" },
@@ -93,15 +116,34 @@ export async function setAutonomyPolicy(input: SetAutonomyPolicyInput): Promise<
         note: input.note,
         createdById: input.actorId,
       },
+    }).catch((err: unknown) => {
+      if (input.expectedVersion !== undefined && typeof err === "object" && err !== null && (err as { code?: string }).code === "P2002") {
+        throw new AutonomyConflictError()
+      }
+      throw err
     })
     return { id: created.id, version: created.version }
   })
 }
 
-/** Disables autonomy entirely for a connection (falls back to OBSERVE_ONLY). */
-export async function disableAutonomyPolicy(connectionId: string): Promise<void> {
-  await db.agentAutonomyPolicy.updateMany({
-    where: { connectionId, status: "ACTIVE" },
+/**
+ * Disables autonomy entirely for a connection (falls back to OBSERVE_ONLY).
+ * With `expectedVersion` (Phase 10), only that ACTIVE version is disabled;
+ * a different ACTIVE version is a conflict; no ACTIVE version is a no-op.
+ */
+export async function disableAutonomyPolicy(connectionId: string, expectedVersion?: number): Promise<void> {
+  if (expectedVersion === undefined) {
+    await db.agentAutonomyPolicy.updateMany({
+      where: { connectionId, status: "ACTIVE" },
+      data: { status: "DISABLED" },
+    })
+    return
+  }
+  const result = await db.agentAutonomyPolicy.updateMany({
+    where: { connectionId, status: "ACTIVE", version: expectedVersion },
     data: { status: "DISABLED" },
   })
+  if (result.count > 0) return
+  const active = await db.agentAutonomyPolicy.findFirst({ where: { connectionId, status: "ACTIVE" }, select: { version: true } })
+  if (active) throw new AutonomyConflictError()
 }

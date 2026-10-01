@@ -56,6 +56,8 @@ const NAV_ITEMS: NavigationItem[] = [
   { name: "Email Center",       path: "/admin/emails",      icon: Settings, resource: "Email Center" },
   { name: "Analytics",           path: "/admin/analytics",   icon: BarChart3, resource: "Analytics" },
   { name: "AI Monitoring",       path: "/admin/ai-monitoring", icon: Bot, resource: "Analytics" },
+  // Abhibhi Agent Gateway (Phase 10): super administrators only (no sub-admin resource exists for it).
+  { name: "Agent Governance",    path: "/admin/agent-governance", icon: Bot, superAdminOnly: true },
   { name: "Webhooks & Events",  path: "/admin/webhooks",    icon: Webhook },
   { name: "Security & Audit",   path: "/admin/audit",       icon: ShieldCheck, superAdminOnly: true },
   { name: "Platform Settings",   path: "/admin/settings",    icon: Settings },

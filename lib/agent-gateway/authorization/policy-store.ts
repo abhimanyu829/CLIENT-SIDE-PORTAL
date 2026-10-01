@@ -161,6 +161,25 @@ export interface CreatePolicyVersionInput {
   approvalRequirement?: boolean
   note?: string
   actorId: string
+  /**
+   * Phase 10 optimistic concurrency (optional; omitted = previous behaviour).
+   * The latest version number the administrator was looking at. When it is
+   * no longer the latest, nothing is written and PolicyConflictError is thrown.
+   */
+  expectedCurrentVersion?: number
+}
+
+/** Phase 10: a policy write based on a stale view (someone else published first). */
+export class PolicyConflictError extends Error {
+  readonly code = "CONFLICT" as const
+  constructor(message = "The policy was changed by someone else. Reload and try again.") {
+    super(message)
+    this.name = "PolicyConflictError"
+  }
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  return typeof err === "object" && err !== null && (err as { code?: string }).code === "P2002"
 }
 
 /**
@@ -187,6 +206,12 @@ export async function createPolicyVersion(input: CreatePolicyVersionInput): Prom
 
   const result = await db.$transaction(async (tx) => {
     let policyId = input.policyId
+
+    if (policyId && input.expectedCurrentVersion !== undefined) {
+      // Checked before any write: a stale view changes nothing.
+      const head = await tx.agentPolicyVersion.findFirst({ where: { policyId }, orderBy: { version: "desc" }, select: { version: true } })
+      if ((head?.version ?? 0) !== input.expectedCurrentVersion) throw new PolicyConflictError()
+    }
 
     if (!policyId) {
       if (!input.name) throw new Error("name is required when creating a new policy.")
@@ -217,22 +242,28 @@ export async function createPolicyVersion(input: CreatePolicyVersionInput): Prom
     })
     const nextVersion = (lastVersion?.version ?? 0) + 1
 
-    const created = await tx.agentPolicyVersion.create({
-      data: {
-        policyId,
-        version: nextVersion,
-        status: "ACTIVE",
-        effect: input.effect,
-        scope: input.scope,
-        scopeValue: input.scopeValue ?? null,
-        capabilityId: input.capabilityId ?? null,
-        conditions: input.conditions === undefined || input.conditions === null ? Prisma.JsonNull : (input.conditions as object),
-        riskConstraint: input.riskConstraint ?? null,
-        approvalRequirement: input.approvalRequirement ?? false,
-        note: input.note,
-        createdById: input.actorId,
-      },
-    })
+    const created = await tx.agentPolicyVersion
+      .create({
+        data: {
+          policyId,
+          version: nextVersion,
+          status: "ACTIVE",
+          effect: input.effect,
+          scope: input.scope,
+          scopeValue: input.scopeValue ?? null,
+          capabilityId: input.capabilityId ?? null,
+          conditions: input.conditions === undefined || input.conditions === null ? Prisma.JsonNull : (input.conditions as object),
+          riskConstraint: input.riskConstraint ?? null,
+          approvalRequirement: input.approvalRequirement ?? false,
+          note: input.note,
+          createdById: input.actorId,
+        },
+      })
+      .catch((err: unknown) => {
+        // (policyId, version) is unique: a concurrent publisher took this version number.
+        if (input.expectedCurrentVersion !== undefined && isUniqueViolation(err)) throw new PolicyConflictError()
+        throw err
+      })
 
     await tx.agentPolicy.update({ where: { id: policyId }, data: { currentVersionId: created.id } })
 
@@ -261,7 +292,12 @@ export async function enablePolicy(policyId: string): Promise<void> {
  * target historical version — preserving the "no silent mutation of
  * historical policy" guarantee even during rollback.
  */
-export async function rollbackToVersion(policyId: string, targetVersion: number, actorId: string): Promise<{ policyVersionId: string; version: number }> {
+export async function rollbackToVersion(
+  policyId: string,
+  targetVersion: number,
+  actorId: string,
+  expectedCurrentVersion?: number
+): Promise<{ policyVersionId: string; version: number }> {
   const target = await db.agentPolicyVersion.findUnique({ where: { policyId_version: { policyId, version: targetVersion } } })
   if (!target) throw new Error(`No version ${targetVersion} exists for policy "${policyId}".`)
 
@@ -276,6 +312,7 @@ export async function rollbackToVersion(policyId: string, targetVersion: number,
     approvalRequirement: target.approvalRequirement,
     note: `Rollback to version ${targetVersion}.`,
     actorId,
+    expectedCurrentVersion,
   })
   return { policyVersionId: result.policyVersionId, version: result.version }
 }

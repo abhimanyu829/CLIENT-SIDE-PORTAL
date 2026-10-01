@@ -166,10 +166,13 @@ export function createTable(prefix: string, uniques: UniqueSpec[], defaults: (da
       const found = sortRows(Array.from(rows.values()).filter((r) => matchesWhere(r, where)), orderBy)[0]
       return project(found, select)
     }),
-    findMany: vi.fn(async ({ where, orderBy, take, select }: { where?: Row; orderBy?: Record<string, "asc" | "desc">; take?: number; select?: Record<string, boolean> } = {}) => {
-      const found = sortRows(Array.from(rows.values()).filter((r) => matchesWhere(r, where)), orderBy)
-      return found.slice(0, take ?? found.length).map((r) => project(r, select) as Row)
-    }),
+    findMany: vi.fn(
+      async ({ where, orderBy, take, skip, select }: { where?: Row; orderBy?: Record<string, "asc" | "desc">; take?: number; skip?: number; select?: Record<string, boolean> } = {}) => {
+        const found = sortRows(Array.from(rows.values()).filter((r) => matchesWhere(r, where)), orderBy)
+        const start = skip ?? 0
+        return found.slice(start, take === undefined ? found.length : start + take).map((r) => project(r, select) as Row)
+      }
+    ),
     // One synchronous check-and-set per row: the in-memory analogue of a
     // single conditional UPDATE ... WHERE statement.
     updateMany: vi.fn(async ({ where, data }: { where: Row; data: Row }) => {
@@ -210,6 +213,9 @@ export interface FakeUser {
   phone: string | null
   phoneVerified: boolean
   role?: string
+  isBanned?: boolean
+  name?: string | null
+  email?: string | null
 }
 
 export function createApprovalFakeDb() {
@@ -333,7 +339,43 @@ export function createApprovalFakeDb() {
       completedAt: null,
     })
   )
-  const connections = new Map<string, Row>()
+  // Phase 10 — AgentConnection / AgentCredential / AuditLog as full tables, so
+  // the real Phase 2 connection service and the governance queries run here.
+  const connectionTable = createTable("conn", [], () => ({
+    name: null,
+    provider: "custom",
+    externalAgentId: null,
+    description: null,
+    ownerId: "owner_1",
+    teamId: null,
+    status: "PENDING",
+    authMethod: "BEARER",
+    environment: "development",
+    lastAuthenticatedAt: null,
+    lastSeenAt: null,
+    expiresAt: null,
+    revokedAt: null,
+    suspendedAt: null,
+    updatedById: null,
+  }))
+  const credentials = createTable(
+    "cred",
+    [
+      { name: "secretHash", key: (r) => (r.secretHash as string | null) ?? null },
+      { name: "keyId", key: (r) => (r.keyId as string | null) ?? null },
+    ],
+    () => ({ status: "ACTIVE", fingerprint: null, keyId: null, signingSecretRef: null, activatedAt: null, expiresAt: null, lastUsedAt: null, revokedAt: null, replacesCredentialId: null })
+  )
+  const auditLogs = createTable("audit", [], () => ({ userId: null, entity: null, entityId: null, beforeJson: null, afterJson: null, ip: null, userAgent: null }))
+  const connections = connectionTable.rows
+  // `include: { connection: true }` (Phase 2 credential authentication).
+  const credentialFindUnique = credentials.api.findUnique
+  credentials.api.findUnique = vi.fn(async (args: { where: Row; select?: Record<string, boolean>; include?: { connection?: boolean } }) => {
+    const row = await credentialFindUnique({ where: args.where, select: args.select })
+    if (!row || !args.include?.connection) return row
+    const connection = connections.get(row.connectionId as string)
+    return { ...row, connection: connection ? { ...connection } : null }
+  }) as typeof credentials.api.findUnique
   const users = new Map<string, FakeUser>()
 
   const client = {
@@ -343,9 +385,9 @@ export function createApprovalFakeDb() {
     agentTask: tasks.api,
     agentTrigger: triggers.api,
     agentTriggerRun: triggerRuns.api,
-    agentConnection: {
-      findUnique: vi.fn(async ({ where, select }: { where: { id: string }; select?: Record<string, boolean> }) => project(connections.get(where.id), select)),
-    },
+    agentConnection: connectionTable.api,
+    agentCredential: credentials.api,
+    auditLog: auditLogs.api,
     user: {
       findUnique: vi.fn(async ({ where, select }: { where: { id: string }; select?: Record<string, boolean> }) => project(users.get(where.id) as Row | undefined, select)),
     },
@@ -353,6 +395,19 @@ export function createApprovalFakeDb() {
   }
 
   // Serialized, snapshot/rollback transaction (same semantics as authz-fake-db.ts).
+  // Extra maps (e.g. the Phase 6 policy tables of a merged fake) can be
+  // registered so a rollback restores them too.
+  const allTables: Array<Map<string, unknown>> = [
+    autonomy.rows,
+    requests.rows,
+    decisions.rows,
+    tasks.rows,
+    triggers.rows,
+    triggerRuns.rows,
+    connectionTable.rows,
+    credentials.rows,
+    auditLogs.rows,
+  ]
   let queue: Promise<unknown> = Promise.resolve()
   let txTarget: unknown = client
   client.$transaction = vi.fn(async (arg: unknown) => {
@@ -363,7 +418,7 @@ export function createApprovalFakeDb() {
     })
     queue = previous.then(() => next)
     await previous
-    const snap = [autonomy.rows, requests.rows, decisions.rows, tasks.rows, triggers.rows, triggerRuns.rows].map((m) => new Map(m))
+    const snap = allTables.map((m) => new Map(m))
     try {
       if (Array.isArray(arg)) {
         const results: unknown[] = []
@@ -372,7 +427,7 @@ export function createApprovalFakeDb() {
       }
       return await (arg as (tx: unknown) => Promise<unknown>)(txTarget)
     } catch (err) {
-      ;[autonomy.rows, requests.rows, decisions.rows, tasks.rows, triggers.rows, triggerRuns.rows].forEach((m, i) => {
+      allTables.forEach((m, i) => {
         m.clear()
         for (const [k, v] of snap[i]) m.set(k, v)
       })
@@ -388,8 +443,32 @@ export function createApprovalFakeDb() {
     setTransactionTarget: (target: unknown) => {
       txTarget = target
     },
-    seedConnection: (row: { id: string; name?: string; status?: string; environment?: string; ownerId?: string; expiresAt?: Date | null }) =>
-      connections.set(row.id, { name: null, status: "ACTIVE", environment: "development", ownerId: "owner_1", expiresAt: null, ...row }),
+    /** Registers more maps for transactional rollback (merged fakes). */
+    registerTransactionalTables: (...maps: Array<Map<string, unknown>>) => {
+      allTables.push(...maps)
+    },
+    seedConnection: (row: { id: string; name?: string; status?: string; environment?: string; ownerId?: string; expiresAt?: Date | null; teamId?: string | null }) =>
+      connections.set(row.id, {
+        name: null,
+        provider: "custom",
+        externalAgentId: null,
+        description: null,
+        teamId: null,
+        status: "ACTIVE",
+        authMethod: "BEARER",
+        environment: "development",
+        ownerId: "owner_1",
+        expiresAt: null,
+        lastAuthenticatedAt: null,
+        lastSeenAt: null,
+        revokedAt: null,
+        suspendedAt: null,
+        createdById: "admin_1",
+        updatedById: null,
+        createdAt: createdAtNow(),
+        updatedAt: new Date(),
+        ...row,
+      }),
     /** Mutates a seeded connection (e.g. suspend/revoke between submission and execution). */
     updateConnection: (id: string, patch: Row) => {
       const existing = connections.get(id)
@@ -403,5 +482,8 @@ export function createApprovalFakeDb() {
     _triggers: triggers.rows,
     _triggerRuns: triggerRuns.rows,
     _connections: connections,
+    _credentials: credentials.rows,
+    _auditLogs: auditLogs.rows,
+    _users: users,
   }
 }

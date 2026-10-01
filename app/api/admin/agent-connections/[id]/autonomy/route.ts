@@ -15,10 +15,16 @@ import { z } from "zod"
 import { requireHumanApprover } from "@/lib/agent-gateway/approvals/human-session"
 import { approvalErrorResponse } from "@/lib/agent-gateway/approvals/http"
 import { AUTONOMY_LEVELS } from "@/lib/agent-gateway/autonomy/types"
-import { disableAutonomyPolicy, loadEffectiveAutonomyPolicy, setAutonomyPolicy } from "@/lib/agent-gateway/autonomy/policy-store"
+import { AutonomyConflictError, disableAutonomyPolicy, loadEffectiveAutonomyPolicy, setAutonomyPolicy } from "@/lib/agent-gateway/autonomy/policy-store"
+
+/** Phase 10: optimistic concurrency is optional here (older callers omit it). */
+const conflictResponse = () =>
+  NextResponse.json({ success: false, code: "CONFLICT", error: "The autonomy policy was changed by someone else. Reload and try again." }, { status: 409 })
 
 const policySchema = z
   .object({
+    /** Phase 10: the latest version the administrator saw (0 = none yet). */
+    expectedVersion: z.number().int().min(0).optional(),
     autonomyLevel: z.enum(AUTONOMY_LEVELS),
     maxRiskTier: z.enum(["READ", "LOW_RISK_WRITE", "HIGH_RISK_MUTATION", "CRITICAL"]),
     allowedCapabilityIds: z.array(z.string().min(1).max(200)).max(500).optional(),
@@ -61,6 +67,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (!result) return NextResponse.json({ success: false, error: "Connection not found" }, { status: 404 })
     return NextResponse.json({ success: true, policy: result })
   } catch (err) {
+    if (err instanceof AutonomyConflictError) return conflictResponse()
     return approvalErrorResponse(err)
   }
 }
@@ -69,9 +76,17 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     await requireHumanApprover(req)
     const { id } = await params
-    await disableAutonomyPolicy(id)
+    // Phase 10: optional `?expectedVersion=<n>` (the ACTIVE version being disabled).
+    const raw = new URL(req.url).searchParams.get("expectedVersion")
+    let expectedVersion: number | undefined
+    if (raw !== null) {
+      if (!/^\d{1,9}$/.test(raw)) return NextResponse.json({ success: false, error: "Invalid expectedVersion" }, { status: 400 })
+      expectedVersion = Number(raw)
+    }
+    await disableAutonomyPolicy(id, expectedVersion)
     return NextResponse.json({ success: true, effectiveDefault: "OBSERVE_ONLY" })
   } catch (err) {
+    if (err instanceof AutonomyConflictError) return conflictResponse()
     return approvalErrorResponse(err)
   }
 }

@@ -95,9 +95,22 @@ export function createAuthzFakeDb() {
         return updated
       }),
       findUnique: vi.fn(async ({ where }: { where: { id: string } }) => policies.get(where.id) ?? null),
+      // Phase 10 governance lists.
+      findMany: vi.fn(async ({ where, skip, take }: { where?: { enabled?: boolean }; orderBy?: unknown; skip?: number; take?: number } = {}) => {
+        const rows = Array.from(policies.values())
+          .filter((p) => where?.enabled === undefined || p.enabled === where.enabled)
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id))
+        const start = skip ?? 0
+        return rows.slice(start, take === undefined ? rows.length : start + take)
+      }),
+      count: vi.fn(async ({ where }: { where?: { enabled?: boolean } } = {}) => Array.from(policies.values()).filter((p) => where?.enabled === undefined || p.enabled === where.enabled).length),
     },
     agentPolicyVersion: {
       create: vi.fn(async ({ data }: { data: Partial<FakeAgentPolicyVersionRow> }) => {
+        // @@unique([policyId, version]) — same P2002 shape as Prisma.
+        if (Array.from(versions.values()).some((v) => v.policyId === data.policyId && v.version === data.version)) {
+          throw Object.assign(new Error("Unique constraint failed on the fields: (`policyId`,`version`)"), { code: "P2002" })
+        }
         const now = new Date()
         const row: FakeAgentPolicyVersionRow = {
           id: nextId("policyver"),
@@ -137,14 +150,33 @@ export function createAuthzFakeDb() {
         const target = where.policyId_version
         return Array.from(versions.values()).find((v) => v.policyId === target.policyId && v.version === target.version) ?? null
       }),
-      findMany: vi.fn(async ({ where }: { where?: { status?: string; policy?: { enabled?: boolean } } }) => {
-        let rows = Array.from(versions.values())
-        if (where?.status) rows = rows.filter((r) => r.status === where.status)
-        if (where?.policy?.enabled !== undefined) {
-          rows = rows.filter((r) => policies.get(r.policyId)?.enabled === where.policy!.enabled)
+      findMany: vi.fn(
+        async ({
+          where,
+          orderBy,
+          skip,
+          take,
+        }: {
+          where?: { status?: string; policyId?: string; id?: { in: string[] }; policy?: { enabled?: boolean } }
+          orderBy?: { version?: "asc" | "desc" }
+          skip?: number
+          take?: number
+        } = {}) => {
+          let rows = Array.from(versions.values())
+          if (where?.status) rows = rows.filter((r) => r.status === where.status)
+          if (where?.policyId) rows = rows.filter((r) => r.policyId === where.policyId)
+          if (where?.id?.in) rows = rows.filter((r) => where.id!.in.includes(r.id))
+          if (where?.policy?.enabled !== undefined) {
+            rows = rows.filter((r) => policies.get(r.policyId)?.enabled === where.policy!.enabled)
+          }
+          if (orderBy?.version) rows.sort((a, b) => (orderBy.version === "desc" ? b.version - a.version : a.version - b.version))
+          const start = skip ?? 0
+          return rows.slice(start, take === undefined ? rows.length : start + take).map(withPolicy)
         }
-        return rows.map(withPolicy)
-      }),
+      ),
+      count: vi.fn(async ({ where }: { where?: { status?: string; policyId?: string } } = {}) =>
+        Array.from(versions.values()).filter((r) => (!where?.status || r.status === where.status) && (!where?.policyId || r.policyId === where.policyId)).length
+      ),
     },
     // Same real (in-memory) transactional snapshot/rollback + serialization
     // semantics as tests/fake-db.ts — see that file's comment for the full
