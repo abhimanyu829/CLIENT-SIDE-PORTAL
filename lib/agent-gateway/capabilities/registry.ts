@@ -17,6 +17,7 @@ import { assertValidCapabilityId, parseCapabilityRef, storageKey } from "./id"
 import { assertNoDangerousPrimitives } from "./dangerous-primitive-guard"
 import { validateAgainstSchema } from "./schema-validation"
 import { assertValidRecoverySpec } from "../recovery/spec"
+import { inspectAgentInput } from "../security/input-hygiene"
 
 /**
  * Structural validation applied to every definition before it is ever
@@ -141,6 +142,11 @@ function assertWellFormed(def: CapabilityDefinition): void {
   }
 
   assertNoDangerousPrimitives(def)
+
+  // Phase 12: a content-trust declaration must be one of the two known classes.
+  if (def.contentTrust !== undefined && def.contentTrust !== "SYSTEM_GENERATED" && def.contentTrust !== "THIRD_PARTY_CONTENT") {
+    throw new CapabilityError("INVALID_INPUT", `Capability "${def.id}" declares an unknown contentTrust "${String(def.contentTrust)}".`)
+  }
 
   // Phase 11: a declared recovery mapping must be explicit and well formed.
   try {
@@ -300,6 +306,16 @@ export class CapabilityRegistry {
     }
     if (!def.inputSchema) {
       throw new CapabilityError("INVALID_INPUT", `Capability "${ref}" has no inputSchema to validate against.`)
+    }
+    // Phase 12: structural hygiene first (control / bidi / tag characters,
+    // prototype keys, structural bombs) — it only ever rejects more.
+    const hygiene = inspectAgentInput(input)
+    if (!hygiene.ok) {
+      throw new CapabilityError(
+        "INVALID_INPUT",
+        `Input for capability "${ref}" contains characters or structure that are not accepted (${hygiene.reason}).`,
+        { hygiene: hygiene.reason, path: hygiene.path }
+      )
     }
     return validateAgainstSchema(def.inputSchema, input, `Input for capability "${ref}"`)
   }

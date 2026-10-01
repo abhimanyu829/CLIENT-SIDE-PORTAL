@@ -116,6 +116,32 @@ export function recordAuditThrottled(input: AuditEventInput, key: string, window
   recordAudit({ ...input, metadata: { ...(input.metadata ?? {}), ...(suppressed > 0 ? { suppressedCount: suppressed } : {}) } })
 }
 
+/**
+ * Best effort, for evidence whose content needs an async lookup first
+ * (e.g. "record only if changed"). `produce` returns the event, or null to
+ * record nothing. Tracked like recordAudit, so flushAuditLedger() waits for
+ * it; never throws.
+ */
+export function recordAuditDeferred(produce: () => Promise<AuditEventInput | null>): void {
+  const run = (async () => {
+    let input: AuditEventInput | null
+    try {
+      input = await produce()
+    } catch {
+      return
+    }
+    if (!input) return
+    const enriched = enrich(input)
+    try {
+      await timedAppend(enriched)
+    } catch (err) {
+      reportFailure(enriched, err)
+    }
+  })()
+  pending.add(run)
+  void run.finally(() => pending.delete(run))
+}
+
 /** Waits for in-flight best-effort appends (tests, graceful shutdown). */
 export async function flushAuditLedger(): Promise<void> {
   for (let i = 0; i < 20 && pending.size > 0; i += 1) {

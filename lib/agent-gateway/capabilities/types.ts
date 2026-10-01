@@ -204,4 +204,12 @@ export interface CapabilityDefinition<TInput = unknown, TOutput = unknown> {
   /** Security classification note — free text pointer back to Phase 0's DATA-SENSITIVITY-MATRIX.md tier for this domain, for human review, not machine-enforced here. */
   securityClassification?: string
   metadata?: Record<string, string>
+  /**
+   * Phase 12 — who can author the strings in this capability's output.
+   * "SYSTEM_GENERATED" only when no third party (vendor, customer,
+   * webhook sender) can write any of them (ids, enums, timestamps).
+   * Absent = "THIRD_PARTY_CONTENT": results are labelled as untrusted data
+   * for the agent (security/content-guard.ts). Fail safe by default.
+   */
+  contentTrust?: "SYSTEM_GENERATED" | "THIRD_PARTY_CONTENT"
 }

@@ -15,6 +15,8 @@
  *   - agent_requests_total{protocol, outcome}.
  */
 import { recordAuditThrottled } from "../audit-ledger/recorder"
+import { getCapabilityRegistry } from "../capabilities"
+import { recordRegistryFingerprintOnce } from "../capabilities/registry-evidence"
 import { countMetric } from "./agent-metrics"
 import { deriveTraceId, runWithTraceContext } from "./trace-context"
 import { withAgentSpan } from "./tracing"
@@ -22,6 +24,8 @@ import { withAgentSpan } from "./tracing"
 export type AgentProtocol = "HTTP" | "MCP"
 
 export function withRequestTrace<T>(protocol: AgentProtocol, requestId: string, run: () => Promise<T>): Promise<T> {
+  // Phase 12: the capability surface in force is evidence (once per process, only when changed).
+  recordRegistryFingerprintOnce(getCapabilityRegistry)
   return runWithTraceContext({ traceId: deriveTraceId(), requestId }, () =>
     withAgentSpan("agent.request", { "agent.protocol": protocol, "agent.request.id": requestId }, run)
   )

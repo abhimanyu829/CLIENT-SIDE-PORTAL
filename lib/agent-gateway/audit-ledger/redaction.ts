@@ -15,6 +15,7 @@
  * only drop or replace.
  */
 import type { AuditMetadata, AuditMetadataValue } from "./types"
+import { scrubSecrets } from "../security/secret-patterns"
 
 const IDENTIFIER = /^[A-Za-z0-9_.:@/-]{1,200}$/
 const DIGEST = /^[0-9a-f]{64}$/
@@ -84,30 +85,13 @@ const MAX_STRING = 256
 const MAX_ARRAY = 20
 const MAX_OBJECT_KEYS = 10
 
-const SECRET_PATTERNS: RegExp[] = [
-  /agw_[0-9a-f]{16,}/gi, // gateway bearer tokens
-  /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/g, // JWTs
-  /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(-----END [A-Z ]*PRIVATE KEY-----|$)/g,
-  /\b(sk|rk|pk)_(live|test)_[A-Za-z0-9]{8,}/g,
-  /\brzp_(live|test)_[A-Za-z0-9]{6,}/g,
-  /\bwhsec_[A-Za-z0-9]{8,}/g,
-  /\bAKIA[0-9A-Z]{16}\b/g,
-  /\bgh[pousr]_[A-Za-z0-9]{20,}/g,
-  /\bxox[abprs]-[A-Za-z0-9-]{10,}/g,
-  /\b[a-z][a-z0-9+.-]*:\/\/[^\s:/@]+:[^\s@]+@/gi, // credentials in URLs
-  /\b[0-9a-f]{40,}\b/gi, // long hex runs: signing secrets, keys, raw digests
-]
-
-/** Replaces anything credential-shaped. Returns the scrubbed string and how many replacements were made. */
+/**
+ * Replaces anything credential-shaped. Returns the scrubbed string and how
+ * many replacements were made. Phase 12: the patterns live in
+ * security/secret-patterns.ts, shared with the agent output guard.
+ */
 export function scrubSecretLikeText(value: string): { value: string; redacted: number } {
-  let redacted = 0
-  let out = value
-  for (const pattern of SECRET_PATTERNS) {
-    out = out.replace(pattern, () => {
-      redacted += 1
-      return "[redacted]"
-    })
-  }
+  const { value: out, redacted } = scrubSecrets(value)
   return { value: out, redacted }
 }
 

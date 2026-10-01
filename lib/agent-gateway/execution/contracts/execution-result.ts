@@ -15,4 +15,9 @@ export interface ExecutionResult<TOutput = unknown> {
   /** Present only for ASYNC executions — an opaque reference from the EXISTING job/queue system, never a newly invented task-state model. */
   taskReference?: string
   durationMs: number
+  /**
+   * Phase 12 — set by the resolver's content guard (never by an adapter):
+   * the result's content-trust class, removed secrets, injection signals.
+   */
+  content?: import("../../security/content-guard").ContentFindings
 }

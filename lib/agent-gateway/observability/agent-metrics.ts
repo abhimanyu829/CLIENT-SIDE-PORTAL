@@ -33,6 +33,8 @@ export const AGENT_COUNTERS = {
   agent_circuit_transition_total: ["scope", "state"],
   agent_kill_switch_block_total: ["scope"],
   agent_rollout_block_total: ["stage"],
+  // Phase 12 — content security findings (secrets removed, injection signals, refused inputs / outputs / outbound calls).
+  agent_content_findings_total: ["kind", "capability"],
 } as const
 
 export const AGENT_HISTOGRAMS = {
@@ -58,6 +60,7 @@ const CLOSED_VALUES: Record<string, ReadonlySet<string>> = {
   state: new Set(["CLOSED", "OPEN", "HALF_OPEN"]),
   stage: new Set(["DISABLED", "INTERNAL", "CANARY", "LIMITED", "EXPANDED", "ACTIVE", "PAUSED", "ROLLED_BACK", "NONE"]),
   recovery_class: new Set(["REVERSIBLE", "COMPENSATABLE", "PARTIALLY_REVERSIBLE", "IRREVERSIBLE"]),
+  kind: new Set(["SECRET_REDACTED", "INJECTION_SUSPECTED", "INPUT_REJECTED", "OUTPUT_WITHHELD", "OUTBOUND_BLOCKED"]),
   category: new Set([
     "AUTHENTICATION",
     "IDENTITY",

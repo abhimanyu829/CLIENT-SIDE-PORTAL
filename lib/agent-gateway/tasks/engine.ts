@@ -47,6 +47,9 @@ import { toTaskView } from "./view"
 import type { AgentTaskRow, AgentTaskView, CancelTaskResult, SubmitTaskResult, TaskCallerIdentity } from "./types"
 import { currentTraceContext } from "../observability/trace-context"
 import { withAgentSpan } from "../observability/tracing"
+import { guardAgentOutput, type ContentFindings } from "../security/content-guard"
+import { isInputHygieneDetails } from "../security/input-hygiene"
+import { recordInputRejected } from "../security/evidence"
 
 /** The part of the ExecutionGate the engine uses (grant = authorize + consumed approval). */
 export interface TaskGate extends PolicyEvaluator {
@@ -133,7 +136,7 @@ export class AgentTaskService {
     }
 
     const capability = this.resolveAsyncCapability(args.capabilityId)
-    const validated = this.validateInput(capability, args.input)
+    const validated = this.validateInput(capability, args.input, gatewayContext)
 
     let canonical: string
     try {
@@ -264,18 +267,36 @@ export class AgentTaskService {
   // ── Status / result ─────────────────────────────────────────────────────
 
   async getStatus(identity: TaskCallerIdentity, taskRef: unknown): Promise<AgentTaskView> {
+    return (await this.getStatusWithContent(identity, taskRef)).view
+  }
+
+  /**
+   * Phase 12 — the status view plus the content findings of its result. A
+   * stored result is guarded again on every read (secrets, size, injection
+   * signals, content trust), so rows written before Phase 12 are covered.
+   */
+  async getStatusWithContent(identity: TaskCallerIdentity, taskRef: unknown): Promise<{ view: AgentTaskView; content: ContentFindings | null }> {
     const row = await this.loadOwned(identity, taskRef)
     const view = toTaskView(row)
+    let content: ContentFindings | null = null
     if (row.status === "SUCCEEDED") {
       if (row.resultRemovedAt || row.result === null || row.result === undefined) {
         view.resultUnavailable = "REMOVED"
       } else if (await this.resultStillReadable(row)) {
-        view.result = row.result
+        const capability = this.deps.capabilityRegistry.getVersion(row.capabilityId, row.capabilityVersion)
+        const toolNames = this.deps.capabilityRegistry.list({ includeDisabled: true, includeForbidden: true }).map((d) => d.id)
+        const guarded = guardAgentOutput(capability ?? { contentTrust: undefined, outputSchema: null }, row.result, { toolNames })
+        if (guarded.ok) {
+          view.result = guarded.output
+          content = guarded.findings
+        } else {
+          view.resultUnavailable = "WITHHELD"
+        }
       } else {
         view.resultUnavailable = "AUTHORIZATION_REVOKED"
       }
     }
-    return view
+    return { view, content }
   }
 
   // ── Cancel ──────────────────────────────────────────────────────────────
@@ -373,11 +394,22 @@ export class AgentTaskService {
     return capability
   }
 
-  private validateInput(capability: CapabilityDefinition, input: unknown): unknown {
+  private validateInput(capability: CapabilityDefinition, input: unknown, gatewayContext?: AgentGatewayRequestContext): unknown {
     try {
       return this.deps.capabilityRegistry.validateInput(`${capability.id}@v${capability.version}`, input ?? {})
     } catch (err) {
-      if (err instanceof CapabilityError) throw new TaskError("INVALID_INPUT", err.message)
+      if (err instanceof CapabilityError) {
+        // Phase 12: a hostile input is refused before it is ever stored.
+        if (isInputHygieneDetails(err.details)) {
+          recordInputRejected(
+            { connectionId: gatewayContext?.machine?.connectionId, ownerId: gatewayContext?.machine?.ownerId, capabilityId: capability.id, requestId: gatewayContext?.requestId },
+            err.details.hygiene,
+            err.details.path,
+            "TASK"
+          )
+        }
+        throw new TaskError("INVALID_INPUT", err.message)
+      }
       throw new TaskError("INVALID_INPUT", "The input failed validation.")
     }
   }

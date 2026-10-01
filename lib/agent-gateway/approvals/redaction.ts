@@ -6,6 +6,8 @@
  * they approve; secrets are redacted before anything is persisted.
  */
 import type { CapabilityDefinition } from "../capabilities/types"
+import { scrubSecrets } from "../security/secret-patterns"
+import { detectInjection } from "../security/injection-detector"
 
 const SENSITIVE_KEY_PATTERN = /pass(word)?|secret|token|api[-_]?key|private|credential|authorization|cookie|session|otp|pin|cvv|cvc|card|iban|account[-_]?number|signature/i
 const MAX_STRING = 200
@@ -17,7 +19,11 @@ export const REDACTED = "[REDACTED]"
 export function redactValue(value: unknown, depth = 0): unknown {
   if (value === null || value === undefined) return value ?? null
   if (depth >= MAX_DEPTH) return "[TRUNCATED]"
-  if (typeof value === "string") return value.length > MAX_STRING ? `${value.slice(0, MAX_STRING)}…` : value
+  if (typeof value === "string") {
+    // Phase 12: credential-shaped VALUES are removed too, not only sensitive keys.
+    const scrubbed = scrubSecrets(value).value
+    return scrubbed.length > MAX_STRING ? `${scrubbed.slice(0, MAX_STRING)}…` : scrubbed
+  }
   if (typeof value === "number" || typeof value === "boolean") return value
   if (Array.isArray(value)) return value.slice(0, MAX_KEYS).map((v) => redactValue(v, depth + 1))
   if (typeof value === "object") {
@@ -43,9 +49,19 @@ export interface DisplaySummaryInput {
   input: unknown
 }
 
-/** Plain JSON object — safe to persist and render. Contains no credential. */
+/**
+ * Plain JSON object — safe to persist and render. Contains no credential.
+ *
+ * Phase 12: the agent's input is untrusted text shown to a HUMAN. When it
+ * resembles instructions (prompt-injection signals, hidden characters) the
+ * summary carries `inputWarnings`, and the approval page shows them before
+ * the decision buttons. The signals are advisory; the binding digest and
+ * the SMS step-up remain the controls.
+ */
 export function buildDisplaySummary(s: DisplaySummaryInput): Record<string, unknown> {
+  const warnings = detectInjection(s.input).signals
   return {
+    ...(warnings.length > 0 ? { inputWarnings: warnings } : {}),
     capabilityId: s.capability.id,
     capabilityVersion: s.capability.version,
     action: s.capability.name,
@@ -55,7 +71,8 @@ export function buildDisplaySummary(s: DisplaySummaryInput): Record<string, unkn
     sideEffects: s.capability.sideEffects.effects,
     environment: s.environment,
     resourceType: s.resourceType,
-    resourceId: s.resourceId,
+    // Phase 12: the resource id is agent input too (derived from the resource locator).
+    resourceId: s.resourceId === null ? null : scrubSecrets(s.resourceId).value,
     autonomyLevel: s.autonomyLevel,
     agent: { name: s.connectionName ?? null, agentId: s.agentId },
     owner: { ownerId: s.ownerId, teamId: s.teamId },

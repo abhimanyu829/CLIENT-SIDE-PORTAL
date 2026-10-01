@@ -27,8 +27,12 @@ import type { ServerRequest, ServerNotification, CallToolResult } from "@modelco
 import type { CapabilityRegistry } from "../capabilities/registry"
 import type { AdapterRegistry } from "../execution/resolver/adapter-registry"
 import { AdapterResolver } from "../execution/resolver/adapter-resolver"
-import { projectTools, resolveProjectedTool } from "./tool-projection"
+import { projectTools, resolveProjectedTool, toolAnnotationsFor } from "./tool-projection"
 import { extractTrustedIdentity } from "./identity-context"
+import { toolSuccessResult } from "./content-result"
+import { CapabilityError } from "../capabilities/errors"
+import { isInputHygieneDetails } from "../security/input-hygiene"
+import { recordInputRejected } from "../security/evidence"
 import { toMcpSafeError, AuthorizationDeniedError } from "./errors"
 import type { CapabilityAuthorizer } from "./authorization-hook"
 import { buildExecutionContext } from "../execution/resolver/build-execution-context"
@@ -70,7 +74,8 @@ export function createMcpServerForRequest(
   )
 
   const resolver = new AdapterResolver(deps.capabilityRegistry, deps.adapterRegistry)
-  const tools = projectTools(deps.capabilityRegistry)
+  // Phase 12: executable-only — a capability without a registered adapter is never a tool.
+  const tools = projectTools(deps.capabilityRegistry, deps.adapterRegistry)
 
   if (deps.taskService) {
     assertNoTaskToolCollision(tools.map((t) => t.name))
@@ -87,6 +92,8 @@ export function createMcpServerForRequest(
         // through, never redefine it here.
         inputSchema: tool.capability.inputSchema ?? undefined,
         outputSchema: tool.capability.outputSchema ?? undefined,
+        // Phase 12: client hints derived from Phase 3 metadata (never a control).
+        annotations: toolAnnotationsFor(tool.capability),
       },
       async (args: unknown, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<CallToolResult> => {
         const startedAt = Date.now()
@@ -96,9 +103,28 @@ export function createMcpServerForRequest(
 
           // Re-resolve the tool at call time — a capability could have
           // been disabled between tools/list and tools/call.
-          const resolved = resolveProjectedTool(deps.capabilityRegistry, tool.name)
+          const resolved = resolveProjectedTool(deps.capabilityRegistry, tool.name, deps.adapterRegistry)
           if (!resolved) {
             return errorResult("CAPABILITY_NOT_FOUND", `Tool "${tool.name}" is not currently available.`)
+          }
+
+          // Phase 12: input hygiene (and the Phase 3 schema) BEFORE the gate,
+          // so a hostile input never reaches an approval request a human reads.
+          try {
+            deps.capabilityRegistry.validateInput(`${resolved.capability.id}@v${resolved.capability.version}`, args)
+          } catch (err) {
+            if (err instanceof CapabilityError) {
+              if (isInputHygieneDetails(err.details)) {
+                recordInputRejected(
+                  { connectionId: gatewayContext.machine?.connectionId, ownerId: gatewayContext.machine?.ownerId, capabilityId: resolved.capability.id, requestId: gatewayContext.requestId },
+                  err.details.hygiene,
+                  err.details.path,
+                  "MCP"
+                )
+              }
+              return errorResult("INVALID_INPUT", err.message)
+            }
+            throw err
           }
 
           // Phase 6 authorization hook — fails closed by default (see
@@ -145,11 +171,8 @@ export function createMcpServerForRequest(
             durationMs: Date.now() - startedAt,
           })
 
-          return {
-            content: [{ type: "text", text: JSON.stringify(result.output) }],
-            structuredContent: result.output as Record<string, unknown>,
-            isError: false,
-          }
+          // Phase 12: the content notice + trust annotation travel with the data.
+          return toolSuccessResult(result.output as Record<string, unknown>, result.content)
         } catch (rawErr) {
           const safe = toMcpSafeError(rawErr)
           recordMcpEvent({

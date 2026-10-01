@@ -69,6 +69,8 @@ const productsList: CapabilityDefinition = {
   rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only, nothing to roll back." },
   executionReference: { adapterKey: "products.listAdapter" },
   securityClassification: "PUBLIC (see DATA-SENSITIVITY-MATRIX.md: product catalog metadata).",
+  // Phase 12: product names and slugs are authored by vendors.
+  contentTrust: "THIRD_PARTY_CONTENT",
 }
 
 const productsGet: CapabilityDefinition = {
@@ -91,7 +93,8 @@ const productsGet: CapabilityDefinition = {
   async: READ_ASYNC_SUPPORT,
   rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
   executionReference: { adapterKey: "products.getAdapter" },
-  securityClassification: "PUBLIC (see DATA-SENSITIVITY-MATRIX.md: product catalog metadata).",
+  securityClassification: "PUBLIC (see DATA-SENSITIVITY-MATRIX.md: product catalog metadata). Phase 12: published (AVAILABLE) products only.",
+  contentTrust: "THIRD_PARTY_CONTENT",
 }
 
 const subscriptionsGet: CapabilityDefinition = {
@@ -115,6 +118,8 @@ const subscriptionsGet: CapabilityDefinition = {
   rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
   executionReference: { adapterKey: "subscriptions.getAdapter" },
   securityClassification: "SENSITIVE (see DATA-SENSITIVITY-MATRIX.md: payment/billing details) — must remain strictly ownership-scoped by the Phase 4 adapter, never a bulk export.",
+  // Phase 12: ids and status enums only; nothing a third party can write.
+  contentTrust: "SYSTEM_GENERATED",
 }
 
 const ticketsList: CapabilityDefinition = {
@@ -138,6 +143,8 @@ const ticketsList: CapabilityDefinition = {
   rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
   executionReference: { adapterKey: "tickets.listAdapter" },
   securityClassification: "INTERNAL/CONFIDENTIAL (see DATA-SENSITIVITY-MATRIX.md) — ownership-scoped only.",
+  // Phase 12: ticket subjects are written by customers.
+  contentTrust: "THIRD_PARTY_CONTENT",
 }
 
 // ── LOW_RISK_WRITE tier ─────────────────────────────────────────────────
@@ -187,6 +194,7 @@ const productsCreateDraft: CapabilityDefinition = {
   rollback: { reversibility: "REVERSIBLE", mechanism: "Delete the draft product (products.delete, not yet registered)." },
   executionReference: { adapterKey: "products.createDraftAdapter" },
   securityClassification: "PUBLIC once published; DRAFT rows are INTERNAL_ONLY until an admin changes status.",
+  contentTrust: "THIRD_PARTY_CONTENT",
 }
 
 const couponsCreate: CapabilityDefinition = {
@@ -228,6 +236,7 @@ const couponsCreate: CapabilityDefinition = {
   rollback: { reversibility: "REVERSIBLE", mechanism: "Delete the coupon (coupons.delete, not yet registered)." },
   executionReference: { adapterKey: "coupons.createAdapter" },
   securityClassification: "INTERNAL (marketing configuration, admin-authored today).",
+  contentTrust: "THIRD_PARTY_CONTENT",
 }
 
 // ── HIGH_RISK_MUTATION tier — described, but NOT freely agent-available ──
@@ -272,6 +281,7 @@ const productsUpdatePricing: CapabilityDefinition = {
   rollback: { reversibility: "REVERSIBLE", mechanism: "Admin manually re-sets the previous price; PricingHistory provides an audit trail but no auto-revert." },
   executionReference: null,
   securityClassification: "CONFIDENTIAL (pricing is business-sensitive; see RISK-MATRIX.md HIGH_RISK_MUTATION rationale).",
+  contentTrust: "SYSTEM_GENERATED",
 }
 
 // ── CRITICAL tier — described and ACTIVELY BLOCKED ──────────────────────

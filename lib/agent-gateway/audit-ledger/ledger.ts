@@ -131,6 +131,11 @@ export function appendAuditEvent(input: AuditEventInput): Promise<AuditEventRow>
   })
 }
 
+/** The most recent event of one action (read only; e.g. the last recorded registry fingerprint). */
+export async function findLatestEventByAction(action: AuditEventInput["action"]): Promise<AuditEventRow | null> {
+  return ((await db.agentAuditEvent.findFirst({ where: { action }, orderBy: { sequence: "desc" } })) as AuditEventRow | null) ?? null
+}
+
 export async function findAuditEventByEventId(eventId: string): Promise<AuditEventRow | null> {
   if (!/^aud_[0-9a-f]{32}$/.test(eventId)) return null
   return ((await db.agentAuditEvent.findUnique({ where: { eventId } })) as AuditEventRow | null) ?? null

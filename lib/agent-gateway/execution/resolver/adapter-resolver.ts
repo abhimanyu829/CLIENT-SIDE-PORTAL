@@ -45,6 +45,9 @@ import { withAgentSpan } from "../../observability/tracing"
 import { countMetric, observeMetric } from "../../observability/agent-metrics"
 import { getCircuitBreakers, isBreakerFailure, type BreakerScope } from "../../resilience/circuit-breaker"
 import { captureRecoveryInput, resolveRecoverySpec } from "../../recovery/spec"
+import { guardAgentOutput } from "../../security/content-guard"
+import { recordContentFindings, recordInputRejected, recordOutputWithheld } from "../../security/evidence"
+import { isInputHygieneDetails } from "../../security/input-hygiene"
 
 type AuditBase = Omit<AuditEventInput, "action" | "outcome">
 
@@ -91,6 +94,33 @@ export class AdapterResolver {
       },
       () => this.run(capabilityRef, rawInput, gatewayContext, idempotencyKey)
     )
+  }
+
+  /** Every registered capability id: a mention of one inside third-party content is an injection signal. */
+  private toolNamesForDetection(): string[] {
+    try {
+      return this.capabilityRegistry.list({ includeDisabled: true, includeForbidden: true }).map((d) => d.id)
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * Phase 12 — the content guard (security/content-guard.ts), applied to
+   * every result before it can reach an agent. Mutates and returns
+   * `result`; throws (withholds the result) when it cannot be delivered
+   * safely. `content` is always overwritten: an adapter cannot pre-set it.
+   */
+  private guardResult(definition: CapabilityDefinition, result: ExecutionResult, audit: AuditBase): ExecutionResult {
+    const guarded = guardAgentOutput(definition, result.output, { toolNames: this.toolNamesForDetection() })
+    if (!guarded.ok) {
+      recordOutputWithheld(audit)
+      throw new ExecutionError("INTERNAL_ERROR", `The result of "${definition.id}" was withheld because it could not be delivered safely.`, { withheld: guarded.reason })
+    }
+    result.output = guarded.output
+    result.content = guarded.findings
+    recordContentFindings(audit, guarded.findings)
+    return result
   }
 
   private admitThroughBreakers(definition: CapabilityDefinition, connectionId: string, audit: AuditBase): Array<[BreakerScope, string]> {
@@ -149,6 +179,14 @@ export class AdapterResolver {
         validatedInput = this.capabilityRegistry.validateInput(`${definition.id}@v${definition.version}`, rawInput)
       } catch (err) {
         if (err instanceof CapabilityError) {
+          if (isInputHygieneDetails(err.details)) {
+            recordInputRejected(
+              { connectionId: gatewayContext.machine?.connectionId, ownerId: gatewayContext.machine?.ownerId, capabilityId: definition.id, requestId: gatewayContext.requestId },
+              err.details.hygiene,
+              err.details.path,
+              "EXECUTION"
+            )
+          }
           throw new ExecutionError("INVALID_INPUT", err.message, err.details)
         }
         throw err
@@ -204,7 +242,8 @@ export class AdapterResolver {
         })
         recordAudit({ ...audit, action: "execution.replayed", outcome: "SUCCESS", metadata: { idempotencyReplay: true } })
         countMetric("agent_execution_total", { capability: definition.id, outcome: "REPLAYED", risk_tier: definition.operationType })
-        return idempotencyOutcome.result
+        // Phase 12: a replayed result is guarded again (the cache is not a trust anchor).
+        return this.guardResult(definition, idempotencyOutcome.result, audit)
       }
 
       // Phase 11: circuit breakers (narrow scopes, never global).
@@ -249,6 +288,11 @@ export class AdapterResolver {
         }
         result.output = parsed.data
       }
+
+      // Phase 12: secrets removed (fail closed), size bounded, injection
+      // signals and content trust attached — before anything is cached,
+      // digested or returned.
+      this.guardResult(definition, result, audit)
 
       if (idempotencyOutcome.kind === "NEW_KEY") {
         await recordIdempotencyResult(definition, gatewayContext.machine!.connectionId, idempotencyKey!, result)
@@ -316,7 +360,15 @@ export class AdapterResolver {
         errorCode: err.code,
       })
       if (audit) {
-        recordAudit({ ...audit, action: "execution.failed", outcome: "FAILED", executionStatus: dispatched ? "FAILED" : "REFUSED", errorCode: err.code, metadata: { durationMs } })
+        const withheld = typeof err.details?.withheld === "string" ? err.details.withheld : undefined
+        recordAudit({
+          ...audit,
+          action: "execution.failed",
+          outcome: "FAILED",
+          executionStatus: dispatched ? "FAILED" : "REFUSED",
+          errorCode: err.code,
+          metadata: { durationMs, detailCode: withheld },
+        })
       }
       countMetric("agent_execution_total", { capability: capabilityIdForLog, outcome: "FAILURE", risk_tier: definitionForLog?.operationType })
       observeMetric("agent_execution_duration_ms", durationMs, { capability: capabilityIdForLog, outcome: "FAILURE" })

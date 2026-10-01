@@ -49,6 +49,19 @@ async function setup() {
   registerCoreCapabilities(capabilityRegistry)
   const adapterRegistry = new AdapterRegistry()
   registerCoreAdapters(adapterRegistry)
+  // Phase 12: the MCP tool surface lists executable capabilities only, and
+  // coupons.create has no production adapter. Scenarios 8-9 exercise the
+  // gate for a LOW_RISK_WRITE tool, so they register a recording stand-in
+  // adapter — and can now also prove the adapter is never reached.
+  const couponCalls = { count: 0 }
+  adapterRegistry.register({
+    capabilityId: "coupons.create",
+    capabilityVersion: 1,
+    async execute() {
+      couponCalls.count += 1
+      return { output: { id: "coupon_1", code: "SAVE10", isActive: true }, executionMode: "SYNC", durationMs: 0 }
+    },
+  })
   // Exactly the production wiring in mcp/route-handler.ts.
   const authorizer = new ExecutionGate({ authorization: new PolicyEngineAuthorizer() })
 
@@ -81,7 +94,7 @@ async function setup() {
   const allowProductsGet = () => createPolicyVersion({ name: "allow products.get", effect: "ALLOW", scope: "CAPABILITY", capabilityId: "products.get", riskConstraint: "READ", actorId: "admin_1" })
   const statusOf = (ref: string) => Array.from(approvalFake._requests.values()).find((r) => r.publicRef === ref)?.status
 
-  return { execFake, approvalFake, callTool, humanApprove, humanReject, allowProductsGet, createPolicyVersion, autonomyStore, statusOf }
+  return { execFake, approvalFake, callTool, humanApprove, humanReject, allowProductsGet, createPolicyVersion, autonomyStore, statusOf, couponCalls }
 }
 
 function gatewayCtx(): AgentGatewayRequestContext {
@@ -220,6 +233,7 @@ describe("Section U — end-to-end scenarios (MCP -> Gate -> Policy -> Adapter)"
     const r = await t.callTool("coupons.create", { code: "SAVE10", discountType: "PERCENTAGE", discountValue: 10 })
     expect(r.content[0].text.startsWith("AUTONOMY_DENIED:")).toBe(true)
     expect(t.approvalFake._requests.size).toBe(0)
+    expect(t.couponCalls.count).toBe(0)
   })
 
   it("9. ASSISTED mutation requires approval; the approval surface path is returned to the agent", async () => {
@@ -230,6 +244,7 @@ describe("Section U — end-to-end scenarios (MCP -> Gate -> Policy -> Adapter)"
     expect(r.content[0].text).toMatch(/^APPROVAL_REQUIRED: .*\/admin\/agent-approvals\/apr_[0-9a-f]{32}/)
     const row = Array.from(t.approvalFake._requests.values())[0]
     expect((row.displaySummary as Record<string, unknown>).riskTier).toBe("LOW_RISK_WRITE")
+    expect(t.couponCalls.count).toBe(0)
   })
 
   it("10. the agent cannot approve through MCP: no tool exists for approvals or autonomy", async () => {
@@ -239,12 +254,16 @@ describe("Section U — end-to-end scenarios (MCP -> Gate -> Policy -> Adapter)"
     const { CapabilityRegistry } = await import("../capabilities/registry")
     const { registerCoreCapabilities } = await import("../capabilities/manifest")
     const { AdapterRegistry } = await import("../execution/resolver/adapter-registry")
+    const { registerCoreAdapters } = await import("../execution/adapters/index")
     const reg = new CapabilityRegistry()
     registerCoreCapabilities(reg)
+    // Phase 12: tools are listed only for executable capabilities, so the core adapters are registered.
+    const adapters = new AdapterRegistry()
+    registerCoreAdapters(adapters)
     const { ExecutionGate } = await import("../execution-gate/gate")
     const { PolicyEngineAuthorizer } = await import("../authorization/authorizer")
     const res = await sendOneStatelessRequest(
-      () => createMcpServerForRequest({ capabilityRegistry: reg, adapterRegistry: new AdapterRegistry(), authorizer: new ExecutionGate({ authorization: new PolicyEngineAuthorizer() }) }, ctx, "development"),
+      () => createMcpServerForRequest({ capabilityRegistry: reg, adapterRegistry: adapters, authorizer: new ExecutionGate({ authorization: new PolicyEngineAuthorizer() }) }, ctx, "development"),
       { jsonrpc: "2.0", id: 1, method: "tools/list", params: {} },
       ctx
     )

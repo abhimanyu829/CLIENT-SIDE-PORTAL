@@ -51,7 +51,13 @@ export class ProductsGetAdapter implements AgentCapabilityAdapter<ProductsGetInp
       select: { id: true, name: true, slug: true, status: true, type: true },
     })
 
-    if (!product) {
+    // Phase 12 (data exfiltration): an agent reads the PUBLISHED catalog
+    // only, exactly like products.list. DRAFT / ARCHIVED products are not
+    // public; they are reported as not found, indistinguishable from a
+    // missing id, so the capability cannot probe unpublished products.
+    // (The human /api/products/[slug] route returns any status; that
+    // pre-existing behaviour is outside the agent gateway and unchanged.)
+    if (!product || product.status !== "AVAILABLE") {
       // Mirrors the real route's explicit 404 semantics (Phase 0/4 error
       // translation table: "resource missing -> RESOURCE_NOT_FOUND").
       throw new ExecutionError("RESOURCE_NOT_FOUND", "No product exists for the given id.")

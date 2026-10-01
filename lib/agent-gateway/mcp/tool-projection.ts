@@ -17,6 +17,34 @@
 import type { CapabilityRegistry } from "../capabilities/registry"
 import type { CapabilityDefinition } from "../capabilities/types"
 
+/**
+ * Phase 12 — the executable-only rule. When the adapter registry is given
+ * (production always gives it), a capability is a tool only if it can
+ * actually run: it declares an execution reference AND an adapter is
+ * registered for its exact version. A contract-only capability is never
+ * listed, so an agent can never be steered (or steer a human approver)
+ * towards an operation that cannot execute.
+ */
+export interface ExecutableCheck {
+  has(capabilityId: string, version: number): boolean
+}
+
+function isExecutable(capability: CapabilityDefinition, adapters: ExecutableCheck | undefined): boolean {
+  if (!adapters) return true
+  return capability.executionReference !== null && adapters.has(capability.id, capability.version)
+}
+
+/** MCP tool annotations derived from Phase 3 metadata (client hints only; never a security control). */
+export function toolAnnotationsFor(capability: CapabilityDefinition): { readOnlyHint: boolean; destructiveHint: boolean; idempotentHint: boolean; openWorldHint: boolean } {
+  const readOnly = capability.operationType === "READ"
+  return {
+    readOnlyHint: readOnly,
+    destructiveHint: !readOnly && capability.rollback.reversibility === "IRREVERSIBLE",
+    idempotentHint: capability.idempotency.class === "IDEMPOTENT",
+    openWorldHint: false,
+  }
+}
+
 export interface ProjectedTool {
   /** Deterministic, stable, collision-safe: the capability's own id (already unique) plus its version. Matches "products.get" style naming — never "prisma.product.update" or similar implementation-detail names, since Phase 3's id.ts already enforces this format. */
   name: string
@@ -45,7 +73,7 @@ export function toolNameFor(capability: CapabilityDefinition): string {
  * deduplicating in first-seen (insertion) order so overall ordering
  * still matches `list()`'s deterministic order.
  */
-export function projectTools(registry: CapabilityRegistry): ProjectedTool[] {
+export function projectTools(registry: CapabilityRegistry, adapters?: ExecutableCheck): ProjectedTool[] {
   const seenIds = new Set<string>()
   const tools: ProjectedTool[] = []
 
@@ -61,6 +89,7 @@ export function projectTools(registry: CapabilityRegistry): ProjectedTool[] {
     const capability = registry.get(row.id)
     if (!capability) continue // fully disabled/absent by the time we resolved it
     if (capability.exposure !== "AGENT_AVAILABLE" || capability.status !== "ACTIVE") continue
+    if (!isExecutable(capability, adapters)) continue
 
     tools.push({ name: toolNameFor(capability), title: capability.name, description: capability.description, capability })
   }
@@ -75,9 +104,10 @@ export function projectTools(registry: CapabilityRegistry): ProjectedTool[] {
  * after the last `tools/list` call, or is `INTERNAL_ONLY`) must resolve
  * to "not found" here, not fall through to execution.
  */
-export function resolveProjectedTool(registry: CapabilityRegistry, name: string): ProjectedTool | null {
+export function resolveProjectedTool(registry: CapabilityRegistry, name: string, adapters?: ExecutableCheck): ProjectedTool | null {
   const capability = registry.get(name)
   if (!capability) return null
   if (capability.exposure !== "AGENT_AVAILABLE" || capability.status !== "ACTIVE") return null
+  if (!isExecutable(capability, adapters)) return null
   return { name: toolNameFor(capability), title: capability.name, description: capability.description, capability }
 }

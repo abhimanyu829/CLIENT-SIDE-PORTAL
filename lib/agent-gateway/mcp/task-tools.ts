@@ -25,6 +25,7 @@ import { TaskError } from "../tasks/errors"
 import { extractTrustedIdentity } from "./identity-context"
 import { AuthorizationDeniedError, toMcpSafeError } from "./errors"
 import { recordMcpEvent } from "./observability"
+import { toolSuccessResult } from "./content-result"
 
 export const TASK_TOOL_NAMES = {
   SUBMIT: "agent_task_submit",
@@ -118,9 +119,10 @@ export function registerTaskTools(
       const startedAt = Date.now()
       try {
         const identity = extractTrustedIdentity(extra.authInfo)
-        const view = await service.getStatus({ connectionId: identity.connectionId, ownerId: identity.ownerId }, args.taskRef)
+        const { view, content } = await service.getStatusWithContent({ connectionId: identity.connectionId, ownerId: identity.ownerId }, args.taskRef)
         record(TASK_TOOL_NAMES.STATUS, "ALLOWED", startedAt)
-        return ok({ ...view })
+        // Phase 12: a stored capability result carries the same content notice as a direct call.
+        return view.result !== undefined ? toolSuccessResult({ ...view }, content) : ok({ ...view })
       } catch (err) {
         const result = toResult(err)
         record(TASK_TOOL_NAMES.STATUS, "DENIED", startedAt, (result.content[0] as { text: string }).text.split(":")[0])

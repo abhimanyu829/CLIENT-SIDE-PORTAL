@@ -81,8 +81,12 @@ export interface AgentTaskView {
   origin: "AGENT" | "TRIGGER"
   /** Present only when status is SUCCEEDED and the result is still retained and readable. */
   result?: unknown
-  /** SUCCEEDED but the result is not returned: "REMOVED" (retention) or "AUTHORIZATION_REVOKED". */
-  resultUnavailable?: "REMOVED" | "AUTHORIZATION_REVOKED"
+  /**
+   * SUCCEEDED but the result is not returned: "REMOVED" (retention),
+   * "AUTHORIZATION_REVOKED", or (Phase 12) "WITHHELD" when the stored result
+   * cannot pass the content guard (e.g. a pre-Phase-12 row).
+   */
+  resultUnavailable?: "REMOVED" | "AUTHORIZATION_REVOKED" | "WITHHELD"
   /** For TIMED_OUT: the deadline was reached; the underlying service call may still have completed. */
   note?: string
 }

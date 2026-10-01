@@ -10,12 +10,15 @@
 import type { CapabilityDefinition } from "../capabilities/types"
 import { classifyRetry } from "../tasks/retry-policy"
 import { mandatoryApprovalReason } from "../autonomy/approval-requirements"
+import { scrubSecrets } from "../security/secret-patterns"
 
 export const iso = (d: Date | string | null | undefined): string | null => (d ? new Date(d).toISOString() : null)
 const isoReq = (d: Date | string): string => new Date(d).toISOString()
 
 type Row = Record<string, unknown>
 const str = (v: unknown): string | null => (typeof v === "string" ? v : null)
+/** Phase 12: an agent-supplied value shown to administrators never carries a credential-shaped string. */
+const agentStr = (v: unknown): string | null => (typeof v === "string" ? scrubSecrets(v).value : null)
 
 // ── Connections ──────────────────────────────────────────────────────────
 
@@ -209,7 +212,7 @@ export function toApprovalListAdminView(row: Row, now: Date): ApprovalListAdminV
     connectionId: String(row.connectionId ?? ""),
     environment: String(row.environment ?? ""),
     resourceType: str(row.resourceType),
-    resourceId: str(row.resourceId),
+    resourceId: agentStr(row.resourceId),
     createdAt: isoReq(row.createdAt as Date),
     expiresAt: expiresAt.toISOString(),
   }
@@ -267,7 +270,7 @@ export function toTaskAdminView(row: Row, refs: { triggerRef?: string | null; ap
     agentId: str(row.agentId),
     environment: String(row.environment ?? ""),
     resourceType: str(row.resourceType),
-    resourceId: str(row.resourceId),
+    resourceId: agentStr(row.resourceId),
     status: String(row.status ?? ""),
     attempts: Number(row.attempts ?? 0),
     maxAttempts: Number(row.maxAttempts ?? 1),

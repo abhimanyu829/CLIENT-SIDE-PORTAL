@@ -115,18 +115,18 @@ describe("MCP server integration — initialize + tools/list + tools/call", () =
     expect(names).toContain("subscriptions.get")
     expect(names).toContain("tickets.list")
     // Phase 3 marks products.createDraft/coupons.create AGENT_AVAILABLE
-    // (their CONTRACT is agent-available in principle) — they ARE listed,
-    // but per Phase 4's Step 0 audit they have NO registered adapter, so
-    // tools/call on them must fail with ADAPTER_NOT_FOUND (see the
-    // dedicated test below), never execute. Listing != executability.
-    expect(names).toContain("products.createDraft")
-    expect(names).toContain("coupons.create")
+    // (their CONTRACT is agent-available in principle), but they have NO
+    // registered adapter. Phase 5 listed them anyway ("listing !=
+    // executability"); Phase 12 tightened the tool surface to executable
+    // capabilities only, so they are no longer listed (see below).
+    expect(names).not.toContain("products.createDraft")
+    expect(names).not.toContain("coupons.create")
     // Never exposed regardless: INTERNAL_ONLY / FORBIDDEN capabilities.
     expect(names).not.toContain("products.updatePricing")
     expect(names).not.toContain("refunds.process")
   })
 
-  it("a listed-but-unadaptered tool (products.createDraft) is visible in tools/list but fails ADAPTER_NOT_FOUND on tools/call — listing never implies executability", async () => {
+  it("an unadaptered capability (products.createDraft) is not a tool: tools/call is refused and nothing executes (Phase 12 executable-only)", async () => {
     const { capabilityRegistry, adapterRegistry, createMcpServerForRequest, authorizer } = await setup()
     const callRes = await sendOneStatelessRequest(
       () => createMcpServerForRequest({ capabilityRegistry, adapterRegistry, authorizer }, gatewayCtx(), "development"),
@@ -134,7 +134,8 @@ describe("MCP server integration — initialize + tools/list + tools/call", () =
     )
     const body = await callRes.json()
     expect(body.result.isError).toBe(true)
-    expect(body.result.content[0].text).toContain("ADAPTER_NOT_FOUND")
+    expect(body.result.content[0].text).toMatch(/not found/i)
+    expect(body.result.structuredContent).toBeUndefined()
   })
 
   it("10/12. tools/call with valid arguments executes through Phase 4 and returns structured output", async () => {
