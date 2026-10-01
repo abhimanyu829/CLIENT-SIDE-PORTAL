@@ -35,7 +35,7 @@ Every probe fails closed: forged identity / owner / environment / version fields
 | 9 | 5 | 5 | P2 | corrupted stored schedule fired once (P2); stale-slot age from `receivedAt` (P2); activation accepted a non-current version (P3); approval/dropped runs counted as failures (P3); fake DB (P3) |
 | 10 | 4 | 4 | P2 | no optimistic concurrency for policy versions (P2) and autonomy (P2); inconsistent conflict code (P3); fake DB (P3) |
 
-No P0 / P1. Pre-existing, documented, not changed (protected systems): Phase 1 signature does not bind the nonce (P2, PHASE-1); Phase 2 lifecycle read-then-update race (P2, PHASE-2); lazy-queue silent no-op, Upstash client from `REDIS_URL`, cron-parser 4.x unmaintained upstream (P3, INFRASTRUCTURE); Phase 4 idempotency cache fails open (P3, PHASE-4); lifecycle routes take no reason (P3, PHASE-2); approvals pages not in the sidebar (P3, PHASE-7); feedback TS error and 122 lint problems (P3, APP).
+No P0 / P1. Pre-existing, documented: Phase 1 signature does not bind the nonce (P2, PHASE-1) and Phase 2 lifecycle read-then-update race (P2, PHASE-2) — **both fixed after Phase 10**, see "FOLLOW-UP FIXES" below. Not changed (protected systems): lazy-queue silent no-op, Upstash client from `REDIS_URL`, cron-parser 4.x unmaintained upstream (P3, INFRASTRUCTURE); Phase 4 idempotency cache fails open (P3, PHASE-4); lifecycle routes take no reason (P3, PHASE-2); approvals pages not in the sidebar (P3, PHASE-7); feedback TS error and 122 lint problems (P3, APP).
 
 ## DATABASE
 
@@ -60,6 +60,14 @@ Phase 8 `6d2c146`, Phase 9 `ed57835`, Phase 10 this commit — all on `master`, 
 ## PROTECTED SYSTEMS
 
 Not changed: human auth and RBAC (`requireAdmin`, `requireSuperAdmin`, sub-admin policy), gateway transport, connection service, capability semantics, adapters, authorization engine, approval engine, MCP SYNC path, marketplace, products, pricing, cart, checkout, payment gateways, orders, invoices, subscriptions, deployment, provisioning, storage, customer portal. Additive touch points: `lib/queue.ts` / `lib/workers.ts` registrations (off by default), one no-throw call at the end of `emitEvent` (no-op while disabled), one sidebar item, optional concurrency parameters on the Phase 6 / Phase 7 stores and the autonomy route, a best-effort trigger revocation in the connection revoke route.
+
+## FOLLOW-UP FIXES (after Phase 10)
+
+The two pre-existing P2 issues were fixed in a separate commit after the Phase 10 exit. This is the only change to the Phase 1 signature verifier and the Phase 2 connection service; no schema change.
+
+- **Phase 1 — the signed-request signature covers the nonce.** Canonical message `abhibhi.request.v2`: version line, timestamp, nonce, METHOD, path, sha256(body). No v1 fallback (no downgrade). **Breaking for SIGNED_REQUEST clients**, which must sign v2; signing is opt-in (`AGENT_GATEWAY_SIGNING_ENABLED`, default off). Tests: `signature-verifier.test.ts`, `signed-request-nonce.test.ts`.
+- **Phase 2 — lifecycle transitions are compare-and-set.** `suspend` / `reactivate` / `revoke` write with `updateMany({ where: { id, status: <read status> } })`, re-read on a lost race (bounded), and refuse illegal transitions with 409, so a concurrent suspend can no longer overwrite `REVOKED`. Same root cause, fixed together: the opportunistic expiry writes are conditional on `ACTIVE`; rotation takes the connection row lock first and re-reads the credential under it (revoke always wins; concurrent rotations leave one ACTIVE credential). Test: `connection-lifecycle-race.test.ts` (7 of 9 fail against the old code).
+- Verification: 81 files, 1002 / 1002; integration 9 / 9; typecheck and lint at baseline, changed files lint-clean; build passes. Details: `phase-10/14-bug-report.md` (F1, F2), `phase-1/PHASE-1-ARCHITECTURE.md` §6, `phase-2/PHASE-2-ARCHITECTURE.md` §11.
 
 ## DOCS
 

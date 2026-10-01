@@ -35,7 +35,7 @@
 8. **Security** — `05`, `06`; every probe fails closed.
 9. **Bugs discovered** — 5 (`12`).
 10. **Bugs fixed** — 5.
-11. **Pre-existing** — Phase 1 signature does not bind the nonce (P2, documented), lazy-queue no-op, Upstash client from `REDIS_URL`, feedback TS error, 122 lint problems.
+11. **Pre-existing** — Phase 1 signature does not bind the nonce (P2, documented; fixed after Phase 10 — `abhibhi.request.v2`), lazy-queue no-op, Upstash client from `REDIS_URL`, feedback TS error, 122 lint problems.
 12. **Out of scope** — management UI/API (Phase 10), audit ledger, third-party webhook formats, workflows.
 13. **Typecheck** — baseline. 14. **Lint** — baseline. 15. **Build** — pass.
 16. **DB verification** — `13`.

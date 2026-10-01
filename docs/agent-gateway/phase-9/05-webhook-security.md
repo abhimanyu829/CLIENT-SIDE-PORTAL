@@ -16,7 +16,7 @@ x-abhibhi-signature = hex(HMAC-SHA256(trigger secret, message))
 ```
 
 - The path is the canonical path computed from the trigger ref, not the request URL (proxies cannot change what is verified).
-- Unlike the Phase 1 request signature, the nonce and the event id are inside the signed message: neither can be swapped on a captured request.
+- The nonce and the event id are inside the signed message: neither can be swapped on a captured request. (When Phase 9 shipped, the Phase 1 request signature did not sign its nonce; it has since moved to `abhibhi.request.v2`, which does — see `phase-1/PHASE-1-ARCHITECTURE.md` §6.)
 - Comparison is constant-time (`shared/crypto.ts constantTimeEqual`); only 64-hex signatures are considered.
 - Reused primitives: `hmacSha256Hex`, `sha256Hex`, the `x-abhibhi-*` header family, `lib/encryption.ts` for the secret at rest (AES-256-GCM, exactly how Phase 2 stores signing secrets).
 

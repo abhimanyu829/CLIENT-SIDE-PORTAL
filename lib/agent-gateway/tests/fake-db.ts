@@ -61,6 +61,24 @@ function nextId(prefix: string): string {
   return `${prefix}_${idCounter}`
 }
 
+/**
+ * The subset of Prisma's WhereInput that connection-service.ts uses with
+ * `updateMany`: per-field equality, or `{ not: value }`. Anything else
+ * throws, so a new query shape can't silently match everything.
+ */
+function matchesWhere(row: object, where: Record<string, unknown>): boolean {
+  const fields = row as Record<string, unknown>
+  for (const [key, cond] of Object.entries(where)) {
+    if (cond !== null && typeof cond === "object" && !(cond instanceof Date)) {
+      if (!("not" in cond)) throw new Error(`fake db: unsupported condition on ${key}: ${JSON.stringify(cond)}`)
+      if (fields[key] === (cond as { not: unknown }).not) return false
+    } else if (fields[key] !== cond) {
+      return false
+    }
+  }
+  return true
+}
+
 export function createFakeDb() {
   const users = new Map<string, FakeUserRow>()
   const teams = new Map<string, FakeTeamRow>()
@@ -123,6 +141,19 @@ export function createFakeDb() {
         connections.set(where.id, updated)
         return updated
       }),
+      // WHERE evaluation and write happen in one synchronous step (no await
+      // in between): the in-memory equivalent of one conditional
+      // `UPDATE ... WHERE id = $1 AND status = $2`, which is what makes the
+      // service's compare-and-set lifecycle transitions testable here.
+      updateMany: vi.fn(async ({ where, data }: { where: Record<string, unknown>; data: Partial<FakeAgentConnectionRow> }) => {
+        let count = 0
+        for (const [id, row] of connections) {
+          if (!matchesWhere(row, where)) continue
+          connections.set(id, { ...row, ...data, updatedAt: new Date() })
+          count += 1
+        }
+        return { count }
+      }),
       findUnique: vi.fn(async ({ where }: { where: { id: string } }) => findConnection(where.id)),
       findMany: vi.fn(async () => Array.from(connections.values())),
     },
@@ -155,24 +186,15 @@ export function createFakeDb() {
         credentials.set(where.id, updated)
         return updated
       }),
-      updateMany: vi.fn(
-        async ({
-          where,
-          data,
-        }: {
-          where: { connectionId: string; status?: { not: string } }
-          data: Partial<FakeAgentCredentialRow>
-        }) => {
-          let count = 0
-          for (const [id, row] of credentials) {
-            if (row.connectionId !== where.connectionId) continue
-            if (where.status && row.status === where.status.not) continue
-            credentials.set(id, { ...row, ...data })
-            count += 1
-          }
-          return { count }
+      updateMany: vi.fn(async ({ where, data }: { where: Record<string, unknown>; data: Partial<FakeAgentCredentialRow> }) => {
+        let count = 0
+        for (const [id, row] of credentials) {
+          if (!matchesWhere(row, where)) continue
+          credentials.set(id, { ...row, ...data })
+          count += 1
         }
-      ),
+        return { count }
+      }),
       findUnique: vi.fn(
         async ({
           where,

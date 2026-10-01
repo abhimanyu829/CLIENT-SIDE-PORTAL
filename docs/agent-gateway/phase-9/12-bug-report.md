@@ -22,7 +22,7 @@ No P0/P1 defects were found.
 
 | Issue | Severity | Owner | Impact | Why not changed |
 |---|---|---|---|---|
-| The Phase 1 signed-request canonical message (`auth/signature-verifier.ts`) is `timestamp, METHOD, path, sha256(body)` — the nonce is **not** signed | P2 | PHASE-1 | a captured signed request can be replayed within the 300 s skew window by swapping in a fresh nonce | changing the signed-request protocol breaks every existing SIGNED_REQUEST client and touches a protected system; the Phase 9 webhook signature binds the nonce and event id instead. Recommended for a Phase 1 protocol v2 |
+| The Phase 1 signed-request canonical message (`auth/signature-verifier.ts`) is `timestamp, METHOD, path, sha256(body)` — the nonce is **not** signed | P2 | PHASE-1 | a captured signed request can be replayed within the 300 s skew window by swapping in a fresh nonce | **FIXED after Phase 10**: canonical message v2 `abhibhi.request.v2, timestamp, nonce, METHOD, path, sha256(body)`, no v1 fallback (no downgrade). Breaking for SIGNED_REQUEST clients, which must sign v2; signing is opt-in and off by default. See `phase-1/PHASE-1-ARCHITECTURE.md` §6 |
 | `lib/queue.ts` lazy queues silently no-op without `REDIS_URL` | P3 | INFRASTRUCTURE | events would not reach triggers in a misconfigured environment | changing it alters every producer; the intake detects the no-op and logs `agent_gateway_trigger_event_not_enqueued` |
 | `lib/redis.ts` builds an Upstash REST client from a plain `REDIS_URL` | P3 | INFRASTRUCTURE | webhook nonces and rate limits need `UPSTASH_REDIS_REST_*`; without it webhooks answer 503 (fail closed) | pre-existing infrastructure |
 | `app/api/feedback/route.ts(128,11)` TS2322 | P3 | APP | typecheck baseline | unrelated |

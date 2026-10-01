@@ -15,12 +15,27 @@ Test-expectation corrections (product behaviour right, first draft of the test w
 
 No P0/P1 defects were found.
 
+## Fixed after Phase 10 (the two pre-existing P2 issues)
+
+| # | Severity | Owner | Issue | Fix | Tests |
+|---|---|---|---|---|---|
+| F1 | P2 | PHASE-2 | Lifecycle transitions were read-then-`update` (`suspend`, `reactivate`, `revoke` did not condition the write on the status they read). A `suspend` racing a `revoke` could overwrite `REVOKED` with `SUSPENDED` (a `reactivate` could even write `ACTIVE`). Credentials stayed revoked, so the agent still could not authenticate, but "revoke is terminal" did not hold under that race. | Every transition is compare-and-set: `updateMany({ where: { id, status: <read status> } })`; on count 0 the service re-reads and re-judges (already in target → idempotent no-op; otherwise the state machine → `409 ILLEGAL_STATE_TRANSITION`), at most 3 attempts. Revoke's CAS and its credential sweep share one transaction. Audit events record the real previous status, once. | `connection-lifecycle-race.test.ts` (9 tests, deterministic interleavings; 7 fail against the old code) |
+| F2 | P2 | PHASE-1 | The signed-request canonical message did not include the nonce: a captured request could be replayed within the 300 s skew window with a fresh nonce. | Canonical message v2: `abhibhi.request.v2`, timestamp, nonce, METHOD, path, sha256(body). No v1 fallback (no downgrade). **Breaking for SIGNED_REQUEST clients**: they must sign v2. Signing is opt-in (`AGENT_GATEWAY_SIGNING_ENABLED`, default off). The nonce is still consumed only after the signature passes. | `signature-verifier.test.ts` (nonce swap, legacy v1, every signed part), `signed-request-nonce.test.ts` (end to end with Redis semantics and a Phase 2 database credential) |
+
+Same root cause as F1, fixed with it:
+
+- The opportunistic expiry in `evaluateCredentialForAuth` wrote `EXPIRED` unconditionally, so an authentication that read `ACTIVE` before a concurrent revoke could turn `REVOKED` into `EXPIRED` (connection and credential). Both writes are now conditional on `ACTIVE`.
+- Rotation's in-transaction re-read took no lock, so under Postgres READ COMMITTED a revoke committing mid-rotation could still leave a new `ACTIVE` credential under a `REVOKED` connection (the serialized test fake hid this). The rotation transaction now starts with a conditional write on the connection row (`status: "ACTIVE"`), which takes its row lock: revoke either wins outright or waits and then revokes the new credential.
+- Two concurrent rotations could both replace the same credential and leave two `ACTIVE` credentials. The credential being replaced is now read under that row lock, so exactly one stays `ACTIVE`.
+
+No schema change. Existing rows are not rewritten; the fixes prevent new occurrences.
+
 ## Pre-existing (not changed by Phase 10)
 
 | Issue | Severity | Owner | Impact | Why not changed |
 |---|---|---|---|---|
-| Phase 2 lifecycle transitions are read-then-`update` (`suspend`, `reactivate`, `revoke` do not condition the write on the status they read). A `suspend` racing a `revoke` can overwrite `REVOKED` with `SUSPENDED`. Credentials stay revoked (the connection cannot authenticate and cannot be rotated), but "revoke is terminal" is not guaranteed under that race. | P2 | PHASE-2 | narrow race between two administrators | the connection service is a protected Phase 2 system; recommended fix: `updateMany({ where: { id, status: <read status> } })` and `ILLEGAL_STATE_TRANSITION` on count 0 |
-| The Phase 1 signed-request canonical message does not include the nonce | P2 | PHASE-1 | replay within the skew window with a fresh nonce | protocol change; documented in Phase 9 |
+| Phase 2 lifecycle read-then-`update` race | P2 | PHASE-2 | — | **FIXED after Phase 10** (F1 above) |
+| The Phase 1 signed-request canonical message does not include the nonce | P2 | PHASE-1 | — | **FIXED after Phase 10** (F2 above) |
 | The Phase 2 lifecycle routes accept no reason, so the governance confirmation for suspend / revoke / rotate cannot audit one | P3 | PHASE-2 | less audit context | protected route contract |
 | `/admin/agent-approvals` pages are not in the sidebar | P3 | PHASE-7 | discoverability | governance links to them from Approvals |
 | `lib/queue.ts` lazy no-op, Upstash client from `REDIS_URL`, feedback TS error, 122 lint problems | P3 | INFRASTRUCTURE / APP | see Phases 8–9 | unrelated |

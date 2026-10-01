@@ -14,6 +14,10 @@
  *   - Property 8: rotation never exposes the old secret.
  *   - Property 9: revocation checks live status, never trusts a cache
  *     alone (see identity/connection-cache.ts's fail-open-to-DB design).
+ *   - Every status write is compare-and-set on the status it was judged
+ *     from (`transition()`, the conditional expiry writes, rotation's
+ *     row lock), so concurrent writers can never overwrite a committed
+ *     REVOKED: revoke is terminal even under races.
  *
  * This service uses the EXISTING Prisma client (lib/db.ts) and the
  * EXISTING User/Team models — it does not duplicate identity storage.
@@ -33,6 +37,14 @@ import {
   fingerprintSecret,
 } from "../shared/crypto"
 import { AGENT_LIFECYCLE_EVENTS, recordLifecycleEvent } from "../observability/lifecycle-events"
+
+/**
+ * How many times a lifecycle transition re-reads and retries after losing a
+ * compare-and-set race (see PrismaAgentConnectionService.transition). One
+ * retry already covers a single concurrent administrator; the bound only
+ * stops a connection whose status keeps changing from looping forever.
+ */
+const MAX_TRANSITION_ATTEMPTS = 3
 
 // ── Input/output contracts ──────────────────────────────────────────────────
 
@@ -307,14 +319,21 @@ export class PrismaAgentConnectionService implements AgentConnectionService {
       // only records that expiry already happened, so the admin-facing
       // status reflects reality rather than staying ACTIVE forever until
       // some unrelated process notices.
+      //
+      // Both writes are conditional on the ACTIVE status read above: an
+      // administrator's revoke/suspend (or a rotation) that committed after
+      // this request's read must win. An unconditional write here could
+      // turn REVOKED into EXPIRED, and REVOKED is terminal.
       if (connectionExpired && connection.status === "ACTIVE") {
         void db.agentConnection
-          .update({ where: { id: connection.id }, data: { status: "EXPIRED" } })
+          .updateMany({ where: { id: connection.id, status: "ACTIVE" }, data: { status: "EXPIRED" } })
           .then(() => invalidateConnectionStatus(connection.id))
           .catch(() => {})
       }
       if (credentialExpired && credential.status === "ACTIVE") {
-        void db.agentCredential.update({ where: { id: credential.id }, data: { status: "EXPIRED" } }).catch(() => {})
+        void db.agentCredential
+          .updateMany({ where: { id: credential.id, status: "ACTIVE" }, data: { status: "EXPIRED" } })
+          .catch(() => {})
       }
       return null
     }
@@ -353,38 +372,57 @@ export class PrismaAgentConnectionService implements AgentConnectionService {
    * unlike suspend/revoke). What IS guaranteed is that at most one
    * credential is ever ACTIVE per connection after rotation completes
    * (Property: "new credential must become the only active credential
-   * after grace completion").
+   * after grace completion") — including when two rotations run at once,
+   * because the credential being replaced is read under the connection's
+   * row lock (see the transaction below).
    */
   async rotateCredential(connectionId: string, actorId: string): Promise<CredentialRotationResult> {
     const connection = await db.agentConnection.findUnique({ where: { id: connectionId } })
     if (!connection) throw new GatewayError("CONNECTION_NOT_FOUND", "Connection not found.")
 
-    const currentActive = await db.agentCredential.findFirst({
+    // Fast, clear failure before any lock is taken; repeated under the lock below.
+    const activeBeforeLock = await db.agentCredential.findFirst({
       where: { connectionId, status: "ACTIVE" },
       orderBy: { createdAt: "desc" },
     })
-    if (!currentActive) {
+    if (!activeBeforeLock) {
       throw new GatewayError("VALIDATION_FAILED", "No active credential exists to rotate.")
     }
 
     const authMethod = connection.authMethod
 
     const result = await db.$transaction(async (tx) => {
-      // Re-check the connection's live status from inside the transaction.
-      // The reads above (findUnique/findFirst) happened before this
-      // transaction acquired its slot, so a concurrent revoke() could have
-      // already committed in the gap between those reads and this point.
-      // Without this re-check, rotation would create a brand-new ACTIVE
-      // credential under a connection that is no longer ACTIVE — exactly
-      // the "revoked connection with a live credential" state Property 1/9
-      // forbid. Aborting here (and letting the transaction roll back)
-      // guarantees revoke() always wins a race against rotate().
-      const freshConnection = await tx.agentConnection.findUnique({ where: { id: connectionId } })
-      if (!freshConnection || freshConnection.status !== "ACTIVE") {
+      // The FIRST statement is a conditional write on the connection row.
+      // It only matches while the connection is still ACTIVE, and in
+      // Postgres it holds that row's lock until this transaction ends. A
+      // plain re-read (the previous approach) takes no lock: a revoke()
+      // committing after that read but before this commit could still
+      // leave a brand-new ACTIVE credential under a REVOKED connection —
+      // exactly the "revoked connection with a live credential" state
+      // Property 1/9 forbid. With the lock, a concurrent revoke() either
+      // committed first (nothing matches here and rotation aborts, rolling
+      // back) or waits for this transaction and then revokes the new
+      // credential too. revoke() always wins a race against rotate().
+      const locked = await tx.agentConnection.updateMany({
+        where: { id: connectionId, status: "ACTIVE" },
+        data: { updatedById: actorId },
+      })
+      if (locked.count === 0) {
         throw new GatewayError(
           "ILLEGAL_STATE_TRANSITION",
           "Connection is no longer ACTIVE; rotation aborted to avoid racing a concurrent lifecycle change."
         )
+      }
+
+      // Re-read under the lock. A rotation that committed while this one
+      // waited has already replaced the credential read above; rotating
+      // that stale one would leave two ACTIVE credentials.
+      const currentActive = await tx.agentCredential.findFirst({
+        where: { connectionId, status: "ACTIVE" },
+        orderBy: { createdAt: "desc" },
+      })
+      if (!currentActive) {
+        throw new GatewayError("VALIDATION_FAILED", "No active credential exists to rotate.")
       }
 
       // Mark the old credential ROTATING first (still authenticatable —
@@ -456,78 +494,116 @@ export class PrismaAgentConnectionService implements AgentConnectionService {
 
   /** Idempotent: suspending an already-SUSPENDED connection is a deterministic no-op success. */
   async suspend(connectionId: string, actorId: string): Promise<void> {
-    const connection = await this.requireConnection(connectionId)
-    if (connection.status === "SUSPENDED") return // idempotent no-op
-    assertLegalTransition(connection.status, "SUSPENDED")
-
-    await db.agentConnection.update({
-      where: { id: connectionId },
-      data: { status: "SUSPENDED", suspendedAt: new Date(), updatedById: actorId },
+    const from = await this.transition(connectionId, "SUSPENDED", async (expected) => {
+      const { count } = await db.agentConnection.updateMany({
+        where: { id: connectionId, status: expected },
+        data: { status: "SUSPENDED", suspendedAt: new Date(), updatedById: actorId },
+      })
+      return count > 0
     })
+    if (from === null) return // idempotent no-op
+
     await invalidateConnectionStatus(connectionId)
     recordLifecycleEvent({
       action: AGENT_LIFECYCLE_EVENTS.CONNECTION_SUSPENDED,
       actorId,
       connectionId,
-      before: { status: connection.status },
+      before: { status: from },
       after: { status: "SUSPENDED" },
     })
   }
 
   /** The AI itself can never call this — only an authorized admin action path may invoke reactivate(). */
   async reactivate(connectionId: string, actorId: string): Promise<void> {
-    const connection = await this.requireConnection(connectionId)
-    if (connection.status === "ACTIVE") return // idempotent no-op
-    assertLegalTransition(connection.status, "ACTIVE")
-
-    await db.agentConnection.update({
-      where: { id: connectionId },
-      data: { status: "ACTIVE", suspendedAt: null, updatedById: actorId },
+    const from = await this.transition(connectionId, "ACTIVE", async (expected) => {
+      const { count } = await db.agentConnection.updateMany({
+        where: { id: connectionId, status: expected },
+        data: { status: "ACTIVE", suspendedAt: null, updatedById: actorId },
+      })
+      return count > 0
     })
+    if (from === null) return // idempotent no-op
+
     await invalidateConnectionStatus(connectionId)
     recordLifecycleEvent({
       action: AGENT_LIFECYCLE_EVENTS.CONNECTION_REACTIVATED,
       actorId,
       connectionId,
-      before: { status: connection.status },
+      before: { status: from },
       after: { status: "ACTIVE" },
     })
   }
 
   /** Idempotent and terminal: revoking an already-REVOKED connection is a deterministic no-op success. */
   async revoke(connectionId: string, actorId: string): Promise<void> {
-    const connection = await this.requireConnection(connectionId)
-    if (connection.status === "REVOKED") return // idempotent no-op
-    assertLegalTransition(connection.status, "REVOKED")
+    const from = await this.transition(connectionId, "REVOKED", (expected) =>
+      // Callback-form transaction (not array-form): array-form bundles
+      // already-constructed query promises, which can start executing before
+      // the transaction actually acquires its lock/slot. The callback form
+      // guarantees both writes below execute atomically as a single unit,
+      // which matters here because rotateCredential() locks the connection
+      // row from inside its own transaction — it must never observe a
+      // partially-applied revoke.
+      db.$transaction(async (tx) => {
+        const revokedAt = new Date()
+        const { count } = await tx.agentConnection.updateMany({
+          where: { id: connectionId, status: expected },
+          data: { status: "REVOKED", revokedAt, updatedById: actorId },
+        })
+        // Lost a race: nothing was written, so there is nothing to roll back.
+        if (count === 0) return false
+        // Revoking the connection also revokes every non-revoked credential
+        // under it — a revoked connection must never leave a technically
+        // "ACTIVE" credential row that a stale check might still honor.
+        await tx.agentCredential.updateMany({
+          where: { connectionId, status: { not: "REVOKED" } },
+          data: { status: "REVOKED", revokedAt },
+        })
+        return true
+      })
+    )
+    if (from === null) return // idempotent no-op
 
-    // Callback-form transaction (not array-form): array-form bundles
-    // already-constructed query promises, which can start executing before
-    // the transaction actually acquires its lock/slot. The callback form
-    // guarantees both writes below execute atomically as a single unit,
-    // which matters here because rotateCredential() re-checks connection
-    // status from inside its own transaction — that re-check must never
-    // observe a partially-applied revoke.
-    await db.$transaction(async (tx) => {
-      await tx.agentConnection.update({
-        where: { id: connectionId },
-        data: { status: "REVOKED", revokedAt: new Date(), updatedById: actorId },
-      })
-      // Revoking the connection also revokes every non-revoked credential
-      // under it — a revoked connection must never leave a technically
-      // "ACTIVE" credential row that a stale check might still honor.
-      await tx.agentCredential.updateMany({
-        where: { connectionId, status: { not: "REVOKED" } },
-        data: { status: "REVOKED", revokedAt: new Date() },
-      })
-    })
     await invalidateConnectionStatus(connectionId)
     recordLifecycleEvent({
       action: AGENT_LIFECYCLE_EVENTS.CONNECTION_REVOKED,
       actorId,
       connectionId,
-      before: { status: connection.status },
+      before: { status: from },
       after: { status: "REVOKED" },
     })
+  }
+
+  /**
+   * Compare-and-set status change shared by suspend / reactivate / revoke.
+   *
+   * `write(expected)` must apply the change ONLY while the row still has
+   * status `expected` (a conditional `updateMany`, i.e. one
+   * `UPDATE ... WHERE id = $1 AND status = $2`) and report whether it did.
+   * The previous read-then-`update` let two administrators overwrite each
+   * other: a suspend that read ACTIVE could land after a concurrent revoke
+   * and turn REVOKED back into SUSPENDED (or a reactivate turn it into
+   * ACTIVE). Now the losing write matches nothing, and the loop re-reads
+   * and judges again: the target already reached is the usual idempotent
+   * no-op; anything else goes back through the state machine, so every
+   * transition out of REVOKED is ILLEGAL_STATE_TRANSITION (409).
+   *
+   * Returns the status the connection actually moved from, or null when it
+   * was already in `target` (nothing written, nothing to record).
+   */
+  private async transition(
+    connectionId: string,
+    target: AgentConnectionStatus,
+    write: (expected: AgentConnectionStatus) => Promise<boolean>
+  ): Promise<AgentConnectionStatus | null> {
+    for (let attempt = 0; attempt < MAX_TRANSITION_ATTEMPTS; attempt += 1) {
+      const connection = await this.requireConnection(connectionId)
+      if (connection.status === target) return null
+      assertLegalTransition(connection.status, target)
+      if (await write(connection.status)) return connection.status
+    }
+    // Only reachable when the status changed underneath on every attempt.
+    throw new GatewayError("ILLEGAL_STATE_TRANSITION", "The connection changed concurrently; reload it and try again.")
   }
 
   private async requireConnection(connectionId: string): Promise<AgentConnection> {

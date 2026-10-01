@@ -3648,9 +3648,9 @@
     "semantic_hash": "58b47e6b250bc7608188078393000975"
   },
   "lib/queue.ts": {
-    "mtime": 1790792279.2598157,
-    "seen": 1790795289.7717738,
-    "ast_hash": "527090ac1145d6c69ae36df263d5da6e",
+    "mtime": 1790797033.3936765,
+    "seen": 1790827273.3405936,
+    "ast_hash": "457629d8ead28e5762763f7fa72c6344",
     "semantic_hash": ""
   },
   "lib/r2.ts": {
@@ -3732,10 +3732,10 @@
     "semantic_hash": "4a2a6ae30cf2f4fc18dc85fecd0679d3"
   },
   "lib/services/event-bus.ts": {
-    "mtime": 1779938535.0519238,
-    "seen": 1790700469.5675614,
-    "ast_hash": "d5ebc6eb51e9a7c759dd5f68c4f24dd3",
-    "semantic_hash": "d5ebc6eb51e9a7c759dd5f68c4f24dd3"
+    "mtime": 1790797487.5008512,
+    "seen": 1790827273.3405936,
+    "ast_hash": "5edb4c3f702e4fa427356dffd92ad424",
+    "semantic_hash": ""
   },
   "lib/services/invoice-service.ts": {
     "mtime": 1779611606.2979522,
@@ -3828,9 +3828,9 @@
     "semantic_hash": "2c09a49223675fb9af939cba5edf03d0"
   },
   "lib/workers.ts": {
-    "mtime": 1790793445.0473118,
-    "seen": 1790795289.7827733,
-    "ast_hash": "9d8fdfa3b1da05b957cf0b18e82f382c",
+    "mtime": 1790797582.1879733,
+    "seen": 1790827273.3553524,
+    "ast_hash": "f3a6712843841119859509f42a06024d",
     "semantic_hash": ""
   },
   "login_page_build.js": {
@@ -3858,9 +3858,9 @@
     "semantic_hash": "4e964c0f6826daf3cb796335d28e1f75"
   },
   "package.json": {
-    "mtime": 1790753774.6976454,
-    "seen": 1790761220.7721307,
-    "ast_hash": "a7b93cac3b623a5b9561e9f68c23ffdd",
+    "mtime": 1790795710.6173346,
+    "seen": 1790827273.35637,
+    "ast_hash": "d467da88c463a0c26624d8413ddaade7",
     "semantic_hash": ""
   },
   "postcss.config.js": {
@@ -4056,9 +4056,9 @@
     "semantic_hash": ""
   },
   "app/api/admin/agent-connections/[id]/revoke/route.ts": {
-    "mtime": 1790780817.045934,
-    "seen": 1790783436.8181903,
-    "ast_hash": "e229a6c8707ff7fdb6289186c6ce245a",
+    "mtime": 1790797552.8804052,
+    "seen": 1790827273.2574596,
+    "ast_hash": "6d4daf1aba18479215163a6c9c924002",
     "semantic_hash": ""
   },
   "app/api/admin/agent-connections/[id]/rotate/route.ts": {
@@ -5508,9 +5508,9 @@
     "semantic_hash": ""
   },
   "lib/agent-gateway/tests/approval-fake-db.ts": {
-    "mtime": 1790793586.0455773,
-    "seen": 1790795289.7284007,
-    "ast_hash": "58ebe9804bb51268f534f2651f72ee3f",
+    "mtime": 1790797617.0825114,
+    "seen": 1790827273.3240387,
+    "ast_hash": "a829b0a9b2b831c3de74c9c07b4d1fa2",
     "semantic_hash": ""
   },
   "lib/agent-gateway/tests/authz-authorizer.test.ts": {
@@ -5874,9 +5874,9 @@
     "semantic_hash": ""
   },
   "lib/agent-gateway/tasks/engine.ts": {
-    "mtime": 1790794561.3300664,
-    "seen": 1790795289.7277198,
-    "ast_hash": "246a98c3b8ef3c1430455131755a98a8",
+    "mtime": 1790797138.6787186,
+    "seen": 1790827273.3240387,
+    "ast_hash": "4d1689fec20c7df6ef7670726e7f9c40",
     "semantic_hash": ""
   },
   "lib/agent-gateway/tasks/errors.ts": {
@@ -5892,15 +5892,15 @@
     "semantic_hash": ""
   },
   "lib/agent-gateway/tasks/ids.ts": {
-    "mtime": 1790792561.8655474,
-    "seen": 1790795289.7277198,
-    "ast_hash": "e9100477df26f8d37b0ce5e0ecea8814",
+    "mtime": 1790797133.09233,
+    "seen": 1790827273.3240387,
+    "ast_hash": "c27a2eb1a92add833f935099e153b3be",
     "semantic_hash": ""
   },
   "lib/agent-gateway/tasks/index.ts": {
-    "mtime": 1790793299.5594206,
-    "seen": 1790795289.7277198,
-    "ast_hash": "80ac6cf8d7aaa645193dca43c4d20673",
+    "mtime": 1790797147.7568064,
+    "seen": 1790827273.3240387,
+    "ast_hash": "82f70c9fb8ca4f4c7196795e2a4bd9c2",
     "semantic_hash": ""
   },
   "lib/agent-gateway/tasks/lifecycle.ts": {
@@ -5952,15 +5952,15 @@
     "semantic_hash": ""
   },
   "lib/agent-gateway/tasks/types.ts": {
-    "mtime": 1790793120.3284724,
-    "seen": 1790795289.7277198,
-    "ast_hash": "14fb95bc7960362cbc3694b5a24b9418",
+    "mtime": 1790797075.777008,
+    "seen": 1790827273.3240387,
+    "ast_hash": "82f303a4bc56ce920e8ad647991bac06",
     "semantic_hash": ""
   },
   "lib/agent-gateway/tasks/view.ts": {
-    "mtime": 1790792821.6009383,
-    "seen": 1790795289.7277198,
-    "ast_hash": "2a162ccfc0e51aacc54227a7f87ca039",
+    "mtime": 1790797078.3727455,
+    "seen": 1790827273.3240387,
+    "ast_hash": "5f35d7a7724bb5c743a754a95bed2f36",
     "semantic_hash": ""
   },
   "lib/agent-gateway/tasks/worker.ts": {
@@ -6117,6 +6117,228 @@
     "mtime": 1790795215.4195912,
     "seen": 1790795289.8475263,
     "ast_hash": "838497e82573d06893e17697c768cb2e",
+    "semantic_hash": ""
+  },
+  "app/api/agent-webhooks/[ref]/route.ts": {
+    "mtime": 1790797524.0276833,
+    "seen": 1790827273.2740333,
+    "ast_hash": "b938655d7c4870bc186e869ace2085ab",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/p9-bullmq.integration.ts": {
+    "mtime": 1790799667.1823492,
+    "seen": 1790827273.3405936,
+    "ast_hash": "3ab3bc2bfed60810dfb7d9929a41bc0f",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/p9-cross-phase.test.ts": {
+    "mtime": 1790827076.318552,
+    "seen": 1790827273.3405936,
+    "ast_hash": "bc369d49d21b854f932cfdb20f5e9362",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/p9-trigger-primitives.test.ts": {
+    "mtime": 1790798021.2971952,
+    "seen": 1790827273.3405936,
+    "ast_hash": "2c8ca1d0789e13672003f6d9a58fd51c",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/p9-trigger-runtime.test.ts": {
+    "mtime": 1790827069.4685082,
+    "seen": 1790827273.3405936,
+    "ast_hash": "87fede7f2af17000dee026f333e40f60",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/p9-trigger-service.test.ts": {
+    "mtime": 1790827074.1700208,
+    "seen": 1790827273.3405936,
+    "ast_hash": "de8b36b84920ddffedd0b2f73ef56461",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/p9-webhook.test.ts": {
+    "mtime": 1790798508.2930415,
+    "seen": 1790827273.3405936,
+    "ast_hash": "5f3f0d9913c20ee4b835151e7fb4206d",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/trigger-test-kit.ts": {
+    "mtime": 1790797919.4632475,
+    "seen": 1790827273.3405936,
+    "ast_hash": "31b952d6905dde6a34c608a32e8e4dc0",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/config.ts": {
+    "mtime": 1790796050.4443474,
+    "seen": 1790827273.3405936,
+    "ast_hash": "01bc6699ae9df5950ecf7d89383bed62",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/errors.ts": {
+    "mtime": 1790796058.0363286,
+    "seen": 1790827273.3405936,
+    "ast_hash": "e1fbaf3bc0cc1e28cd8cb3dff76fb761",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/event-catalog.ts": {
+    "mtime": 1790796082.1849494,
+    "seen": 1790827273.3405936,
+    "ast_hash": "d6a0cc022917fdfdd75a7668a8e3acec",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/event-intake.ts": {
+    "mtime": 1790797335.5988088,
+    "seen": 1790827273.3405936,
+    "ast_hash": "b0a9195cd8289be50d4e3e549625570c",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/index.ts": {
+    "mtime": 1790797428.052575,
+    "seen": 1790827273.3405936,
+    "ast_hash": "dc7270e098f7f41fa6566d0abab9acd7",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/runtime.ts": {
+    "mtime": 1790797297.0974035,
+    "seen": 1790827273.3405936,
+    "ast_hash": "3d317e175af7d2da93a0b384c19faf21",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/schedule.ts": {
+    "mtime": 1790798592.2547693,
+    "seen": 1790827273.3405936,
+    "ast_hash": "e47a56ee586e177e5f18a5fe2453d8f4",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/secrets.ts": {
+    "mtime": 1790796158.8995008,
+    "seen": 1790827273.3405936,
+    "ast_hash": "c03e1ead36164a87b00a386203e40b54",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/service.ts": {
+    "mtime": 1790797161.1051877,
+    "seen": 1790827273.3405936,
+    "ast_hash": "203ab1695d746b85c79c8e6f9cf120a1",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/state-machine.ts": {
+    "mtime": 1790796066.0403454,
+    "seen": 1790827273.3405936,
+    "ast_hash": "93da7996ca296fa8379b95bb5cb6d2ce",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/store.ts": {
+    "mtime": 1790797021.238619,
+    "seen": 1790827273.3405936,
+    "ast_hash": "aca8ce1a4c4889885e100f9d5477c368",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/types.ts": {
+    "mtime": 1790796041.395335,
+    "seen": 1790827273.3405936,
+    "ast_hash": "f1fd8e76e1fd3efa7fbab35dda204414",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/view.ts": {
+    "mtime": 1790796301.1441615,
+    "seen": 1790827273.3405936,
+    "ast_hash": "84bfe27fb388b0a8351456d3661136d6",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/triggers/webhook-handler.ts": {
+    "mtime": 1790797405.0086832,
+    "seen": 1790827273.3405936,
+    "ast_hash": "280d4b81bbe064b9c4a8ac3046af141d",
+    "semantic_hash": ""
+  },
+  "prisma/migrations/20261002000000_agent_gateway_phase8_task_engine/migration.sql": {
+    "mtime": 1790792167.3978088,
+    "seen": 1790827273.3573818,
+    "ast_hash": "06c8418425d3186fef351d30727f4566",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/01-trigger-architecture.md": {
+    "mtime": 1790799788.0530095,
+    "seen": 1790827273.3740234,
+    "ast_hash": "f211a5f2671bf67d09a991aa5e1597b7",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/02-event-triggers.md": {
+    "mtime": 1790799801.6398969,
+    "seen": 1790827273.3740234,
+    "ast_hash": "0c82b77c52124676cf7cfdcdceddc8c1",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/03-webhook-triggers.md": {
+    "mtime": 1790799816.5381494,
+    "seen": 1790827273.3740234,
+    "ast_hash": "fe288fe1d00121ca47ee1cba147919b3",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/04-schedule-triggers.md": {
+    "mtime": 1790799830.0173016,
+    "seen": 1790827273.3740234,
+    "ast_hash": "e69b8e3c8eae81dd7ab77c832e374485",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/05-webhook-security.md": {
+    "mtime": 1790799845.1095798,
+    "seen": 1790827273.3740234,
+    "ast_hash": "43eb97d2c7152073e6b72d533df5ba76",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/06-replay-protection.md": {
+    "mtime": 1790799865.2075179,
+    "seen": 1790827273.3740234,
+    "ast_hash": "280a69d08cd5beb052d4278901dc3777",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/07-idempotency.md": {
+    "mtime": 1790799875.480318,
+    "seen": 1790827273.3740234,
+    "ast_hash": "603959fd8c7d76ea67dada786693b870",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/08-scheduling-semantics.md": {
+    "mtime": 1790799888.844001,
+    "seen": 1790827273.3740234,
+    "ast_hash": "50e88087501c952e8a2a4d2c1e761e7a",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/09-concurrency.md": {
+    "mtime": 1790799899.0713413,
+    "seen": 1790827273.3740234,
+    "ast_hash": "fc24d2fa55a7fb2583e59cddbf86b104",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/10-task-integration.md": {
+    "mtime": 1790799914.0031116,
+    "seen": 1790827273.3740234,
+    "ast_hash": "f21077da58c29ed3493e37d14564fa0b",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/11-test-report.md": {
+    "mtime": 1790827112.7600422,
+    "seen": 1790827273.3740234,
+    "ast_hash": "6fda3c22835098675e5f877d90712de6",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/12-bug-report.md": {
+    "mtime": 1790826794.752589,
+    "seen": 1790827273.3740234,
+    "ast_hash": "b3ea440a1e9ddda0311f4eb77f7ac58f",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/13-database-verification.md": {
+    "mtime": 1790826598.2112226,
+    "seen": 1790827273.3740234,
+    "ast_hash": "def64cc0819edbab410d7387e666860c",
+    "semantic_hash": ""
+  },
+  "docs/agent-gateway/phase-9/14-phase-9-exit-checklist.md": {
+    "mtime": 1790827131.858112,
+    "seen": 1790827273.3740234,
+    "ast_hash": "a2c6781f938c4cf5139540c0f4c8ffdb",
     "semantic_hash": ""
   }
 }

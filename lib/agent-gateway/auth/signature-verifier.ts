@@ -10,18 +10,33 @@
  *   X-Abhibhi-Key-Id      identifies which signing secret was used
  *   X-Abhibhi-Signature   hex HMAC-SHA256 of the canonical message
  *
- * Canonical message (newline-joined, in this exact order):
- *   timestamp
+ * Canonical message, version "abhibhi.request.v2" (newline-joined, in this
+ * exact order):
+ *   abhibhi.request.v2
+ *   timestamp (the header value exactly as sent)
+ *   nonce     (the header value exactly as sent)
  *   HTTP method (upper-cased)
  *   path (pathname only, no query string, no host)
  *   SHA256(body) hex
+ *
+ * The nonce is signed so it cannot be swapped on a captured request: v1
+ * (timestamp, method, path, body hash) left it out, so anyone holding a
+ * captured request could replay it inside the clock-skew window with a
+ * fresh nonce. There is deliberately no v1 fallback — accepting v1 would
+ * let an attacker downgrade to it. The version line also keeps these
+ * messages distinct from the Phase 9 webhook messages ("abhibhi.webhook.v1").
+ * No field can contain a newline (header values cannot, the nonce rejects
+ * whitespace, the path is percent-encoded, the hash is hex), so the joined
+ * message is unambiguous.
  *
  * Verification order (ALL must pass):
  *   1. key exists (resolveSigningKey)
  *   2. timestamp within allowed clock skew
  *   3. nonce is unused (delegated to replay-protection.ts by the caller —
  *      this module only validates the signature itself; nonce state is a
- *      separate concern with its own module and its own tests)
+ *      separate concern with its own module and its own tests. The caller,
+ *      signed-request-authenticator.ts, consumes the nonce only AFTER this
+ *      signature check passes, so a forged request never burns a nonce)
  *   4. signature matches (constant-time compare)
  *   5. connection/key is active (record.status)
  */
@@ -69,8 +84,23 @@ function parseTimestampToEpochSeconds(timestamp: string): number | null {
   return Number.isFinite(ms) ? Math.floor(ms / 1000) : null
 }
 
-export function canonicalMessage(timestamp: string, method: string, path: string, bodyHash: string): string {
-  return [timestamp, method.toUpperCase(), path, bodyHash].join("\n")
+/** First line of every signed-request canonical message. */
+export const REQUEST_SIGNATURE_VERSION = "abhibhi.request.v2"
+
+/** Everything a signed request's HMAC covers. */
+export interface SignedRequestParts {
+  timestamp: string
+  nonce: string
+  method: string
+  /** URL pathname only: no host, no query string. */
+  path: string
+  /** Hex SHA-256 of the raw request body. */
+  bodyHash: string
+}
+
+/** The exact string a client signs (HMAC-SHA256 with its signing secret, hex). */
+export function canonicalMessage(parts: SignedRequestParts): string {
+  return [REQUEST_SIGNATURE_VERSION, parts.timestamp, parts.nonce, parts.method.toUpperCase(), parts.path, parts.bodyHash].join("\n")
 }
 
 export class HmacSignatureVerifier implements GatewaySignatureVerifier {
@@ -96,7 +126,13 @@ export class HmacSignatureVerifier implements GatewaySignatureVerifier {
     const bodyHash = sha256Hex(rawBody)
     const expected = hmacSha256Hex(
       keyRecord.secret,
-      canonicalMessage(headers.timestamp, request.method, url.pathname, bodyHash)
+      canonicalMessage({
+        timestamp: headers.timestamp,
+        nonce: headers.nonce,
+        method: request.method,
+        path: url.pathname,
+        bodyHash,
+      })
     )
 
     if (!constantTimeEqual(expected, headers.signature)) {

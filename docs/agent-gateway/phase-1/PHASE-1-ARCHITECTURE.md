@@ -52,7 +52,7 @@ The future MCP mount point (Phase 5) is reserved conceptually at a path under th
 Two methods, selected by `CompositeAuthenticator` — never both attempted for one request, never a silent fallback from a failed signature check to bearer:
 
 - **Bearer** (`auth/bearer-authenticator.ts`): `Authorization: Bearer <token>` → SHA-256 hash → credential-store lookup. Raw token is never logged, stored, or returned.
-- **Signed request** (`auth/signed-request-authenticator.ts`, only attempted when `AGENT_GATEWAY_SIGNING_ENABLED=1` AND signature headers are present): HMAC-SHA256 over `timestamp\nMETHOD\npath\nSHA256(body)`, verified with `crypto.timingSafeEqual`, plus nonce-based replay protection.
+- **Signed request** (`auth/signed-request-authenticator.ts`, only attempted when `AGENT_GATEWAY_SIGNING_ENABLED=1` AND signature headers are present): HMAC-SHA256 over `abhibhi.request.v2\ntimestamp\nnonce\nMETHOD\npath\nSHA256(body)`, verified with `crypto.timingSafeEqual`, plus nonce-based replay protection. (Changed after Phase 10: the original v1 message `timestamp\nMETHOD\npath\nSHA256(body)` did not sign the nonce — see §6.)
 
 Both resolve into the same `AuthenticationResult` shape, which feeds `identity/request-identity.ts`'s `buildRequestContext()` — the **only** place identity fields are ever set. Client-supplied identity headers (`X-Agent-Id`, `X-Owner-Id`, `X-Admin`, etc.) are never read anywhere in the auth path.
 
@@ -64,7 +64,9 @@ Tokens are only ever handled as SHA-256 hashes past the parsing step; signing se
 
 ## 6. Signature verification & replay protection
 
-- Canonical message and verification order exactly as specified in the Phase 1 prompt (§13): key exists → timestamp within skew → nonce unused → signature matches → connection active.
+- Verification order as specified in the Phase 1 prompt (§13): key exists → timestamp within skew → nonce unused → signature matches → connection active. The nonce is consumed only after the signature passes, so a forged request never burns a real client's nonce.
+- Canonical message, version `abhibhi.request.v2` (newline-joined): `abhibhi.request.v2`, the timestamp header, the nonce header, the upper-cased method, the URL pathname (no host, no query string), hex SHA-256 of the raw body. The client signs it with HMAC-SHA256 and its signing secret and sends the hex digest in `X-Abhibhi-Signature`.
+- **Fixed after Phase 10 (P2):** the original v1 message (`timestamp`, `METHOD`, `path`, `SHA256(body)`) left the nonce out, so anyone holding a captured request could replay it inside the clock-skew window (300 s) with a fresh nonce. v2 signs the nonce, so swapping it invalidates the signature. There is no v1 fallback, because accepting v1 would allow a downgrade: **every SIGNED_REQUEST client must sign v2.** Signing is opt-in (`AGENT_GATEWAY_SIGNING_ENABLED`, default off). The version line also separates these messages from the Phase 9 webhook messages (`abhibhi.webhook.v1`). The query string stays unsigned; neither agent-authenticated route (`/api/agent-gateway`, `/api/agent-gateway/mcp`) reads it. Tests: `signature-verifier.test.ts`, `signed-request-nonce.test.ts`.
 - Replay protection (`auth/replay-protection.ts`) reuses the **existing** Upstash Redis client (`lib/redis.ts`) — no new Redis instance, no new database. Nonce key shape: `agent-gateway:nonce:<keyId>:<nonce>`, atomic `SET NX EX` (single round-trip, no check-then-set race). **Fails closed** if Redis is unavailable — a signed request cannot be authenticated at all if replay protection can't be verified, since this is explicitly a security control per spec §16, not a convenience feature.
 
 ## 7. Rate limiting
