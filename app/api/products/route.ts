@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { sanitizeProductsForPublic } from "@/lib/sanitize-product"
 
 
-// GET /api/products — list published products with filters
+// GET /api/products — list published products with filters (non-public fields stripped)
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
@@ -69,7 +70,7 @@ export async function GET(req: Request) {
     ])
 
     return NextResponse.json({
-      data: products,
+      data: sanitizeProductsForPublic(products),
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     })
   } catch (err) {

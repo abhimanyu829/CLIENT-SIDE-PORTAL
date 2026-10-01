@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { streamChat } from "@/lib/openai"
 import { redis } from "@/lib/redis"
 import { db } from "@/lib/db"
+import { auth } from "@/lib/auth"
 import { TicketPriority, TicketStatus } from "@prisma/client"
 
 export async function POST(req: Request) {
@@ -24,8 +25,12 @@ export async function POST(req: Request) {
     const latestMessage = messages[messages.length - 1]?.content?.toLowerCase() || ""
     if (latestMessage.includes("human") || latestMessage.includes("agent") || latestMessage.includes("help")) {
       console.log(`[AI Chat] Escalating session ${sessionId} to support ticket.`)
-      // Creating a ticket in background — sessionId used as a mock clientId for demo
-      if (sessionId) {
+      // Creating a ticket in background. The ticket owner is never taken from
+      // the request alone: this route is public, so a client-supplied id is
+      // only used when it is the signed-in caller's own account id (a guest's
+      // random session id never creates a ticket, as before).
+      const caller = sessionId ? await auth().catch(() => null) : null
+      if (sessionId && caller?.user?.id && caller.user.id === sessionId) {
         db.ticket.create({
           data: {
             clientId: sessionId,

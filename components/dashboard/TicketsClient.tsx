@@ -40,6 +40,7 @@ export default function TicketsClient({ initialTickets }: { initialTickets: any[
 
   const getPriorityColor = (p: string) => {
     switch (p) {
+      case "CRITICAL":
       case "URGENT": return "text-rose-700 bg-rose-50 border-rose-200"
       case "HIGH": return "text-amber-700 bg-amber-50 border-amber-200"
       case "MEDIUM": return "text-blue-700 bg-blue-50 border-blue-200"
@@ -150,7 +151,7 @@ export default function TicketsClient({ initialTickets }: { initialTickets: any[
                   <option value="LOW" className="bg-white text-slate-900">Low</option>
                   <option value="MEDIUM" className="bg-white text-slate-900">Medium</option>
                   <option value="HIGH" className="bg-white text-slate-900">High</option>
-                  <option value="URGENT" className="bg-white text-slate-900">Urgent</option>
+                  <option value="CRITICAL" className="bg-white text-slate-900">Urgent</option>
                 </select>
               </div>
 

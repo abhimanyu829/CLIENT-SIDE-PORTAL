@@ -42,21 +42,35 @@ const FUNNEL: ReadonlyArray<[keyof Pick<ProductPerformanceOutput, "views" | "car
   ["purchases", "PURCHASE"],
 ]
 
+/** The owner's product (through its vendor profile), or the one RESOURCE_NOT_FOUND for missing and not-owned alike. */
+async function findOwnedProduct(context: AgentExecutionContext, productId: unknown) {
+  const product =
+    typeof productId === "string"
+      ? await db.product.findUnique({
+          where: { id: productId },
+          select: { id: true, vendorId: true, averageRating: true, reviewCount: true },
+        })
+      : null
+  const vendor = product?.vendorId ? await db.vendorProfile.findUnique({ where: { id: product.vendorId }, select: { userId: true } }) : null
+  if (!product || !vendor || vendor.userId !== context.ownerId) {
+    throw new ExecutionError("RESOURCE_NOT_FOUND", "No product exists for the given id.")
+  }
+  return product
+}
+
 export class AnalyticsProductPerformanceAdapter implements AgentCapabilityAdapter<ProductPerformanceInput, ProductPerformanceOutput> {
   readonly capabilityId = "analytics.productPerformance"
   readonly capabilityVersion = 1
 
+  /** Read-only preflight used by the gate before an approval (contracts/adapter.ts). */
+  async checkResource(context: AgentExecutionContext, input: ProductPerformanceInput): Promise<void> {
+    await findOwnedProduct(context, input?.productId)
+  }
+
   async execute(context: AgentExecutionContext, input: ProductPerformanceInput): Promise<ExecutionResult<ProductPerformanceOutput>> {
     const startedAt = Date.now()
     if (context.signal.aborted) throw new ExecutionError("CANCELLED", "Execution was cancelled before the existing service was invoked.")
-    const product = await db.product.findUnique({
-      where: { id: input.productId },
-      select: { id: true, vendorId: true, averageRating: true, reviewCount: true },
-    })
-    const vendor = product?.vendorId ? await db.vendorProfile.findUnique({ where: { id: product.vendorId }, select: { userId: true } }) : null
-    if (!product || !vendor || vendor.userId !== context.ownerId) {
-      throw new ExecutionError("RESOURCE_NOT_FOUND", "No product exists for the given id.")
-    }
+    const product = await findOwnedProduct(context, input.productId)
     const days = input.days ?? 30
     const since = new Date(context.timestamp.getTime() - days * 86_400_000)
     const counts = await Promise.all(FUNNEL.map(([, type]) => db.platformMetricEvent.count({ where: { productId: product.id, type, occurredAt: { gte: since } } })))

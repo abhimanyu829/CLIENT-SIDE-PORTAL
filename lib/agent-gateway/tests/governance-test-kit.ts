@@ -49,7 +49,7 @@ export function isNotFoundError(err: unknown): boolean {
   return typeof digest === "string" && (digest.startsWith("NEXT_HTTP_ERROR_FALLBACK;404") || digest === "NEXT_NOT_FOUND")
 }
 
-export async function buildGovernanceKit() {
+export async function buildGovernanceKit(options: { redis?: unknown } = {}) {
   vi.resetModules()
   const approval = createApprovalFakeDb()
   const authz = createAuthzFakeDb()
@@ -83,7 +83,8 @@ export async function buildGovernanceKit() {
   const everyPermission = subadminPolicy.SUBADMIN_RESOURCES.flatMap((resource) => subadminPolicy.SUBADMIN_ACTIONS.map((action) => ({ resource, action })))
 
   vi.doMock("@/lib/db", () => ({ db: merged }))
-  vi.doMock("@/lib/redis", () => ({ redis: null }))
+  // Absent by default; a test may pass a fake (fake-redis.ts) to exercise the cache paths.
+  vi.doMock("@/lib/redis", () => ({ redis: options.redis ?? null }))
   vi.doMock("@/lib/otp", () => ({ generateOtp: () => "123456" }))
   vi.doMock("@/lib/twilio", () => ({ sendSms: vi.fn(async () => true) }))
   vi.doMock("@/lib/auth", () => ({

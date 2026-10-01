@@ -51,6 +51,15 @@ export class SubscriptionsGetAdapter implements AgentCapabilityAdapter<Subscript
   readonly capabilityId = "subscriptions.get"
   readonly capabilityVersion = 1
 
+  /** Read-only preflight used by the gate before an approval (contracts/adapter.ts): the same owner check as execute(). */
+  async checkResource(context: AgentExecutionContext, input: SubscriptionsGetInput): Promise<void> {
+    const subscriptionId = input?.subscriptionId
+    const subscription = typeof subscriptionId === "string" ? await db.subscription.findUnique({ where: { id: subscriptionId }, select: { id: true, userId: true } }) : null
+    if (!subscription || subscription.userId !== context.ownerId) {
+      throw new ExecutionError("RESOURCE_NOT_FOUND", "No subscription exists for the given id.")
+    }
+  }
+
   async execute(
     context: AgentExecutionContext,
     input: SubscriptionsGetInput

@@ -32,4 +32,4 @@ Phase 13 widens what agents can do in five business domains (products, marketing
 ## Idempotency guarantees, stated precisely
 
 - Task path (`agent_task_submit` + `idempotencyKey`): durable, enforced by the unique `AgentTask.idempotencyScope`. Recommended for writes.
-- Sync path (`_meta` key): the Phase 4 replay cache in Redis (10 minutes, per connection and capability). It is best-effort and fails open when Redis is unavailable, as designed in Phase 4; a duplicate `tickets.create` in that window is a low-risk, compensatable effect (an extra ticket that can be closed).
+- Sync path (`_meta` key): the Phase 4 replay cache in Redis (10 minutes, per connection and capability). As designed in Phase 4 it was best-effort and failed open when Redis was unavailable. Since the post-Phase-15 fix it fails closed instead (`EXECUTION_UNAVAILABLE`, nothing runs) and reserves the key atomically, so a concurrent duplicate gets `IDEMPOTENCY_CONFLICT` (`../known-issues-resolution.md`).

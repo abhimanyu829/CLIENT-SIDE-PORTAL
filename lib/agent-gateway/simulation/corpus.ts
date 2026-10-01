@@ -110,4 +110,14 @@ export const SECURITY_REGRESSION_CORPUS: readonly Scenario[] = [
     category: "REGRESSION",
     steps: [tool(ALPHA, "tickets.get", { ticketId: "sim_tk_alpha" }, { outcome: "ok" })],
   },
+  {
+    id: "REG-P14-F2",
+    reference: "P14-F2: an approval could be requested for a resource the owner does not own",
+    title: "An approval-gated write on another owner's resource is RESOURCE_NOT_FOUND on both paths, before any approval",
+    category: "REGRESSION",
+    steps: [
+      tool(BRAVO, "tickets.close", { ticketId: "sim_tk_alpha" }, { outcome: "error", code: "RESOURCE_NOT_FOUND" }),
+      { kind: "task_submit", actor: BRAVO, capabilityId: "tickets.close", input: { ticketId: "sim_tk_alpha" }, expect: { outcome: "error", code: "RESOURCE_NOT_FOUND" } },
+    ],
+  },
 ]

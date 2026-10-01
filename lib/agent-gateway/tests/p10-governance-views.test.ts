@@ -68,21 +68,33 @@ describe("Phase 10 C — capability governance (the Phase 3 registry is the only
 })
 
 describe("Phase 10 F — approval management (read-only; deciding stays in the Phase 7 flow)", () => {
-  async function seedApprovals(n: number) {
+  /**
+   * Pending requests are bounded per connection (P14-F3,
+   * MAX_PENDING_APPROVALS_PER_CONNECTION = 20), so a 25-row page set is
+   * seeded across two connections.
+   */
+  async function seedApprovals(perConnection: Array<[connectionId: string, ownerId: string, count: number]>) {
     await k.allowRead("products.get")
-    await k.autonomyStore.setAutonomyPolicy({ connectionId: "conn_1", autonomyLevel: "LIMITED_AUTONOMY", maxRiskTier: "READ", approvalRequiredFor: ["products.get"], actorId: SUPER })
-    for (let i = 0; i < n; i += 1) {
-      await k.taskService.submit(k.agentCtx(), "development", { capabilityId: "products.get", input: { id: `prod_${i}` } }).catch(() => undefined)
+    let i = 0
+    for (const [connectionId, ownerId, count] of perConnection) {
+      await k.autonomyStore.setAutonomyPolicy({ connectionId, autonomyLevel: "LIMITED_AUTONOMY", maxRiskTier: "READ", approvalRequiredFor: ["products.get"], actorId: SUPER })
+      for (let n = 0; n < count; n += 1, i += 1) {
+        await k.taskService.submit(k.agentCtx(connectionId, ownerId), "development", { capabilityId: "products.get", input: { id: `prod_${i}` } }).catch(() => undefined)
+      }
     }
   }
 
   it("lists with status / connection filters, display-time expiry, and server-side pages", async () => {
-    await seedApprovals(25)
+    await seedApprovals([
+      ["conn_1", "owner_1", 13],
+      ["conn_2", "owner_2", 12],
+    ])
     const page1 = await k.governance.listApprovals({ status: "PENDING", page: 1 })
     expect(page1.meta).toMatchObject({ total: 25, totalPages: 2, page: 1 })
     expect(page1.rows).toHaveLength(20)
     expect((await k.governance.listApprovals({ status: "PENDING", page: 2 })).rows).toHaveLength(5)
-    expect((await k.governance.listApprovals({ connectionId: "conn_2", page: 1 })).meta.total).toBe(0)
+    expect((await k.governance.listApprovals({ connectionId: "conn_1", page: 1 })).meta.total).toBe(13)
+    expect((await k.governance.listApprovals({ connectionId: "conn_2", page: 1 })).meta.total).toBe(12)
     const later = new Date(Date.now() + 365 * 24 * 60 * MIN)
     const expired = await k.governance.listApprovals({ status: "EXPIRED", page: 1 }, later)
     expect(expired.meta.total).toBe(25)

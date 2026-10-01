@@ -55,8 +55,8 @@ export class ProductsGetAdapter implements AgentCapabilityAdapter<ProductsGetInp
     // only, exactly like products.list. DRAFT / ARCHIVED products are not
     // public; they are reported as not found, indistinguishable from a
     // missing id, so the capability cannot probe unpublished products.
-    // (The human /api/products/[slug] route returns any status; that
-    // pre-existing behaviour is outside the agent gateway and unchanged.)
+    // (The human /api/products/[slug] route applies the same rule since the
+    // PRE-12-1 fix.)
     if (!product || product.status !== "AVAILABLE") {
       // Mirrors the real route's explicit 404 semantics (Phase 0/4 error
       // translation table: "resource missing -> RESOURCE_NOT_FOUND").

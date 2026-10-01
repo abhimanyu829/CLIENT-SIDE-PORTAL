@@ -30,7 +30,7 @@ import type { AgentGatewayRequestContext } from "../shared/types"
 import type { CapabilityRegistry } from "../capabilities/registry"
 import type { CapabilityDefinition } from "../capabilities/types"
 import type { AdapterRegistry } from "../execution/resolver/adapter-registry"
-import { AdapterResolver } from "../execution/resolver/adapter-resolver"
+import { AdapterResolver, type ExecuteOptions } from "../execution/resolver/adapter-resolver"
 import type { ExecutionResult } from "../execution/contracts/execution-result"
 import { toExecutionError } from "../execution/contracts/execution-error"
 import { getGatewayConfig } from "../config"
@@ -50,7 +50,7 @@ import { newTraceId, runWithTraceContext } from "../observability/trace-context"
 import { withAgentSpan } from "../observability/tracing"
 
 export interface TaskExecutor {
-  execute(capabilityRef: string, rawInput: unknown, gatewayContext: AgentGatewayRequestContext, idempotencyKey?: string): Promise<ExecutionResult>
+  execute(capabilityRef: string, rawInput: unknown, gatewayContext: AgentGatewayRequestContext, idempotencyKey?: string, options?: ExecuteOptions): Promise<ExecutionResult>
 }
 
 export interface AgentTaskWorkerDeps {
@@ -279,8 +279,11 @@ export class AgentTaskWorker {
       }, this.deps.cancellationPollMs ?? 1000)
     }
     try {
+      // BEST_EFFORT: the task row's unique idempotency scope and the retry
+      // policy (a non-idempotent write is never re-dispatched) are this
+      // path's durable dedupe, so a Redis outage must not stop admitted work.
       const run = this.executor
-        .execute(`${task.capabilityId}@v${task.capabilityVersion}`, task.input, gatewayContext, task.idempotencyKey ?? undefined)
+        .execute(`${task.capabilityId}@v${task.capabilityVersion}`, task.input, gatewayContext, task.idempotencyKey ?? undefined, { idempotency: "BEST_EFFORT" })
         .then((result): AttemptOutcome => ({ kind: "success", output: result.output }))
         .catch((err: unknown): AttemptOutcome => {
           const e = toExecutionError(err)

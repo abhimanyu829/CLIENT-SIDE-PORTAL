@@ -33,7 +33,7 @@ import { generateRequestId } from "../shared/crypto"
 import type { CapabilityRegistry } from "../capabilities/registry"
 import type { CapabilityDefinition } from "../capabilities/types"
 import type { AdapterRegistry } from "../execution/resolver/adapter-registry"
-import { AdapterResolver } from "../execution/resolver/adapter-resolver"
+import { AdapterResolver, type ExecuteOptions } from "../execution/resolver/adapter-resolver"
 import { buildExecutionContext } from "../execution/resolver/build-execution-context"
 import { toExecutionError } from "../execution/contracts/execution-error"
 import type { AgentExecutionContext } from "../execution/contracts/execution-context"
@@ -64,7 +64,7 @@ export interface RecoveryGate {
 }
 
 export interface RecoveryExecutor {
-  execute(capabilityRef: string, rawInput: unknown, gatewayContext: AgentGatewayRequestContext, idempotencyKey?: string): Promise<ExecutionResult>
+  execute(capabilityRef: string, rawInput: unknown, gatewayContext: AgentGatewayRequestContext, idempotencyKey?: string, options?: ExecuteOptions): Promise<ExecutionResult>
 }
 
 export interface RecoveryConnectionState {
@@ -345,7 +345,10 @@ export class RecoveryService {
         // 5. The Phase 4 resolver: schema, environment, idempotency, breakers, audit intent.
         try {
           const key = recovery.idempotency.requiresIdempotencyKey ? `${RECOVERY_IDEMPOTENCY_PREFIX}${fresh.publicRef}` : undefined
-          await this.executor.execute(`${recovery.id}@v${recovery.version}`, recoveryInput, gatewayContext, key)
+          // BEST_EFFORT: one AgentRecovery row per source event (conditional
+          // transitions) is this path's durable dedupe; an operator's rollback
+          // must not be blocked by a Redis outage.
+          await this.executor.execute(`${recovery.id}@v${recovery.version}`, recoveryInput, gatewayContext, key, { idempotency: "BEST_EFFORT" })
         } catch (err) {
           const code = toExecutionError(err).code
           const failed = await this.finish(fresh, "FAILED", { errorCode: code })

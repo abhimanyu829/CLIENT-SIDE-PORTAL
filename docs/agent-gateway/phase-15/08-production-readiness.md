@@ -8,7 +8,7 @@
 | Database | **pending** | the agent-gateway migrations (`20260929000000_agent_gateway_phase2_identity` … `20261005000000_agent_gateway_phase15_release_controls`) are written and each was checked against `prisma migrate diff`; applying them to a live database is deferred (owner's instruction: after Phase 15) |
 | Human approval with SMS step-up | **pending** | needs Twilio credentials and verified approver phone numbers (owner's instruction: after Phase 15) |
 | Live human approval drill / browser check of the governance UI | **pending** | owner's instruction: after Phase 15 |
-| Redis | required | rate limits, nonces and webhook replay protection fail closed without it; the sync idempotency cache is best effort |
+| Redis | required | rate limits, nonces, webhook replay protection and (since the post-Phase-15 fix) sync-path idempotency fail closed without it |
 | Release controls | ready | default `AGENT_GATEWAY_ROLLOUT_ENFORCED` off = no behaviour change on deploy |
 
 ## Go-live sequence (recommended)
@@ -37,6 +37,4 @@ Counters (closed label sets): `agent_security_denial_total{reason}` (includes `K
 
 ## Open items carried into operation
 
-- P14-F2 (approval requests for resources the agent does not own) and P14-F3 (binding-mismatch also leaves a pending approval): documented, low / info.
-- Pre-existing human-route issues PRE-12-1, PRE-13-1..3 (outside the agent surface).
-- Sync-path idempotency is best effort when Redis is down; the task path is durable.
+Resolved after Phase 15 (`../known-issues-resolution.md`): P14-F2, P14-F3, PRE-12-1, PRE-13-1..3, and the sync-path idempotency gap (the sync path now fails closed when Redis errors and reserves keys atomically; the task path is unchanged). The broken catalog migration that blocked `prisma migrate deploy` is fixed. Remaining steps that need a person (applying the migrations, the SMS approval drill, the browser check) are in `../deployment-runbook.md`.

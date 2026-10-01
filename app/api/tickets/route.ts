@@ -2,8 +2,12 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { TicketPriority, TicketStatus } from "@prisma/client"
+import { createTicketSchema, firstIssue, isSupportStaff, readJsonBody } from "@/lib/support-tickets"
 
-// GET /api/tickets — list tickets for the authenticated user
+const TICKET_STATUSES = new Set<string>(Object.values(TicketStatus))
+const TICKET_PRIORITIES = new Set<string>(Object.values(TicketPriority))
+
+// GET /api/tickets — list tickets for the authenticated user (support staff: all tickets)
 export async function GET(req: Request) {
   try {
     const session = await auth()
@@ -14,13 +18,20 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const statusParam = searchParams.get("status") ?? undefined
     const priorityParam = searchParams.get("priority") ?? undefined
-    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"))
-    const limit = Math.min(50, parseInt(searchParams.get("limit") ?? "20"))
+    if (statusParam && !TICKET_STATUSES.has(statusParam)) {
+      return NextResponse.json({ error: "Invalid status filter" }, { status: 400 })
+    }
+    if (priorityParam && !TICKET_PRIORITIES.has(priorityParam)) {
+      return NextResponse.json({ error: "Invalid priority filter" }, { status: 400 })
+    }
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1") || 1)
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "20") || 20))
     const skip = (page - 1) * limit
 
-    const isAdmin = (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "SUB_ADMIN"
+    // Staff = SUPER_ADMIN, or a SUB_ADMIN with the workforce Support permission.
+    const isStaff = await isSupportStaff(session.user, "VIEW")
     const where = {
-      ...(isAdmin ? {} : { clientId: session.user.id }),
+      ...(isStaff ? {} : { clientId: session.user.id }),
       ...(statusParam ? { status: statusParam as TicketStatus } : {}),
       ...(priorityParam ? { priority: priorityParam as TicketPriority } : {}),
     }
@@ -56,18 +67,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { title, description, priority = "MEDIUM", category = "GENERAL", projectId } = await req.json()
+    const body = await readJsonBody(req)
+    if (body === undefined || body === null || typeof body !== "object") {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
+    }
+    const parsed = createTicketSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: firstIssue(parsed.error) }, { status: 400 })
+    }
+    const { title, description, priority = "MEDIUM", category = "GENERAL", projectId } = parsed.data
 
-    if (!title?.trim() || !description?.trim()) {
-      return NextResponse.json({ error: "Title and description are required" }, { status: 400 })
+    // A ticket may only be attached to one of the caller's own projects. A
+    // project that is missing or someone else's is the same answer.
+    if (projectId) {
+      const project = await db.project.findFirst({ where: { id: projectId, clientId: session.user.id }, select: { id: true } })
+      if (!project) {
+        return NextResponse.json({ error: "Project not found" }, { status: 404 })
+      }
     }
 
     const ticket = await db.ticket.create({
       data: {
         clientId: session.user.id,
-        title: title.trim(),
-        description: description.trim(),
-        priority: priority as TicketPriority,
+        title,
+        description,
+        priority,
         category,
         ...(projectId ? { projectId } : {}),
       },

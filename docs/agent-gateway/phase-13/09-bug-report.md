@@ -9,6 +9,8 @@
 
 ## Pre-existing, not fixed (human routes, outside the agent surface)
 
+> Update: PRE-13-1, PRE-13-2, PRE-13-3, PRE-12-1 and the feedback-route TypeScript error were fixed after Phase 15 (`../known-issues-resolution.md`).
+
 - PRE-13-1: `GET /api/tickets/[id]` returns internal staff notes (`TicketMessage.isInternal`) to the ticket's client, and it and `PATCH` check roles `ADMIN` / `STAFF`, which do not exist in the `Role` enum (`SUPER_ADMIN`, `SUB_ADMIN`, `VENDOR`, `CLIENT`, `GUEST`). Real admins therefore get 403 on other users' tickets, and an admin PATCH of their own ticket takes the client branch. `GET /api/tickets/[id]/messages` also returns internal notes. The agent adapters do not inherit any of this (`tickets.get` filters `isInternal: false`). Recommended fix for the support owner.
 - PRE-13-2: `POST /api/tickets` accepts any `projectId` without checking the project belongs to the caller. Not reachable by agents (`tickets.create` has no `projectId`).
 - PRE-13-3: `POST /api/tickets` and `PATCH /api/tickets/[id]` cast `priority` / `status` from the body without validation (a bad value becomes a 500). Agents use closed enums.

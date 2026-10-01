@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { z } from "zod"
 import type { CapabilityDefinition } from "../capabilities/types"
+import { createFakeRedis } from "./fake-redis"
 
 function makeCapability(overrides: Partial<CapabilityDefinition["idempotency"]> = {}): CapabilityDefinition {
   return {
@@ -45,7 +46,7 @@ describe("checkIdempotency", () => {
     expect(outcome.kind).toBe("REQUIRED_BUT_MISSING")
   })
 
-  it("20. NEW_KEY when required, key supplied, and Redis is unavailable (fails open)", async () => {
+  it("20. NEW_KEY when required, key supplied, and no Redis is configured outside production (local development, tests)", async () => {
     vi.doMock("@/lib/redis", () => ({ redis: null }))
     const { checkIdempotency } = await import("../execution/idempotency/idempotency-guard")
     const outcome = await checkIdempotency(makeCapability({ requiresIdempotencyKey: true }), "conn_1", "key_1")
@@ -53,22 +54,15 @@ describe("checkIdempotency", () => {
   })
 
   it("24. duplicate execution protection — REPLAY when the same key was already recorded", async () => {
-    const store = new Map<string, unknown>()
-    vi.doMock("@/lib/redis", () => ({
-      redis: {
-        get: vi.fn(async (k: string) => store.get(k) ?? null),
-        set: vi.fn(async (k: string, v: unknown) => {
-          store.set(k, v)
-        }),
-      },
-    }))
+    const fake = createFakeRedis()
+    vi.doMock("@/lib/redis", () => ({ redis: fake.redis }))
     const { checkIdempotency, recordIdempotencyResult } = await import("../execution/idempotency/idempotency-guard")
     const def = makeCapability({ requiresIdempotencyKey: true })
     const result = { output: { ok: true }, executionMode: "SYNC" as const, durationMs: 1 }
 
     const first = await checkIdempotency(def, "conn_1", "key_1")
     expect(first.kind).toBe("NEW_KEY")
-    await recordIdempotencyResult(def, "conn_1", "key_1", result)
+    await recordIdempotencyResult(def, "conn_1", "key_1", result, { reserved: first.kind === "NEW_KEY" && first.reserved })
 
     const second = await checkIdempotency(def, "conn_1", "key_1")
     expect(second.kind).toBe("REPLAY")
@@ -76,15 +70,8 @@ describe("checkIdempotency", () => {
   })
 
   it("scope: same key from a DIFFERENT connection is treated as a new, unrelated key (never cross-connection replay)", async () => {
-    const store = new Map<string, unknown>()
-    vi.doMock("@/lib/redis", () => ({
-      redis: {
-        get: vi.fn(async (k: string) => store.get(k) ?? null),
-        set: vi.fn(async (k: string, v: unknown) => {
-          store.set(k, v)
-        }),
-      },
-    }))
+    const fake = createFakeRedis()
+    vi.doMock("@/lib/redis", () => ({ redis: fake.redis }))
     const { checkIdempotency, recordIdempotencyResult } = await import("../execution/idempotency/idempotency-guard")
     const def = makeCapability({ requiresIdempotencyKey: true })
     await recordIdempotencyResult(def, "conn_1", "key_1", { output: {}, executionMode: "SYNC", durationMs: 1 })
@@ -104,12 +91,18 @@ describe("checkIdempotency", () => {
     expect(outcome.kind).toBe("NOT_REQUIRED")
   })
 
-  it("fails open on a Redis error during lookup (never throws, never blocks execution)", async () => {
+  // Known-issue fix after Phase 15: on the synchronous path (STRICT, the
+  // default) this cache is the only duplicate protection, so a Redis error
+  // now refuses the write instead of silently running it. The task worker
+  // and recovery (BEST_EFFORT) keep the original fail-open behaviour: they
+  // have a durable dedupe of their own.
+  it("STRICT never throws but fails CLOSED on a Redis error during lookup; BEST_EFFORT still fails open", async () => {
     vi.doMock("@/lib/redis", () => ({
-      redis: { get: vi.fn(async () => { throw new Error("redis down") }), set: vi.fn() },
+      redis: { get: vi.fn(async () => { throw new Error("redis down") }), set: vi.fn(), del: vi.fn() },
     }))
     const { checkIdempotency } = await import("../execution/idempotency/idempotency-guard")
-    const outcome = await checkIdempotency(makeCapability({ requiresIdempotencyKey: true }), "conn_1", "key_1")
-    expect(outcome.kind).toBe("NEW_KEY")
+    const def = makeCapability({ requiresIdempotencyKey: true })
+    expect((await checkIdempotency(def, "conn_1", "key_1")).kind).toBe("UNAVAILABLE")
+    expect((await checkIdempotency(def, "conn_1", "key_1", "BEST_EFFORT")).kind).toBe("NEW_KEY")
   })
 })

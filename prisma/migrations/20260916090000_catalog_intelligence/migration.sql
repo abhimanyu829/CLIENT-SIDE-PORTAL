@@ -1,13 +1,18 @@
 -- Catalog intelligence (upstream scraping pipeline) — additive only.
--- Five new isolated models; NO changes to existing tables except one new
--- nullable unique column on Product (catalogCanonical back-relation lives on
--- CatalogCanonicalProduct.productId, so this migration only ADDS tables).
-
--- CreateIndex
-CREATE INDEX "CatalogSource_group_idx" ON "CatalogSource"("group");
+-- Six new isolated tables; NO changes to existing tables. The only link to
+-- the rest of the schema is the nullable, unique CatalogCanonicalProduct.productId
+-- (FK to Product, ON DELETE SET NULL).
+--
+-- Idempotent (known-issue fix after Phase 15). The original version created
+-- an index on "CatalogSource" before the table existed, so it could not run
+-- on any database and blocked every later migration in `prisma migrate
+-- deploy`. Databases that already have these tables (created outside the
+-- migration history) get a no-op here; a fresh database gets the tables.
+-- None of the six tables is modelled in schema.prisma yet and no code uses
+-- them; nothing in the agent gateway depends on them.
 
 -- CreateTable
-CREATE TABLE "CatalogSource" (
+CREATE TABLE IF NOT EXISTS "CatalogSource" (
     "id" TEXT NOT NULL,
     "key" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -26,7 +31,7 @@ CREATE TABLE "CatalogSource" (
 );
 
 -- CreateTable
-CREATE TABLE "CatalogCrawlRun" (
+CREATE TABLE IF NOT EXISTS "CatalogCrawlRun" (
     "id" TEXT NOT NULL,
     "triggeredBy" TEXT NOT NULL DEFAULT 'MANUAL',
     "status" TEXT NOT NULL DEFAULT 'QUEUED',
@@ -41,7 +46,7 @@ CREATE TABLE "CatalogCrawlRun" (
 );
 
 -- CreateTable
-CREATE TABLE "CatalogCrawlSource" (
+CREATE TABLE IF NOT EXISTS "CatalogCrawlSource" (
     "id" TEXT NOT NULL,
     "crawlRunId" TEXT NOT NULL,
     "sourceId" TEXT NOT NULL,
@@ -58,7 +63,7 @@ CREATE TABLE "CatalogCrawlSource" (
 );
 
 -- CreateTable
-CREATE TABLE "CatalogSourceRecord" (
+CREATE TABLE IF NOT EXISTS "CatalogSourceRecord" (
     "id" TEXT NOT NULL,
     "sourceId" TEXT NOT NULL,
     "sourceUrl" TEXT NOT NULL,
@@ -85,7 +90,7 @@ CREATE TABLE "CatalogSourceRecord" (
 );
 
 -- CreateTable
-CREATE TABLE "CatalogCanonicalProduct" (
+CREATE TABLE IF NOT EXISTS "CatalogCanonicalProduct" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "normalizedName" TEXT NOT NULL,
@@ -120,7 +125,7 @@ CREATE TABLE "CatalogCanonicalProduct" (
 );
 
 -- CreateTable
-CREATE TABLE "CatalogCrawlError" (
+CREATE TABLE IF NOT EXISTS "CatalogCrawlError" (
     "id" TEXT NOT NULL,
     "crawlRunId" TEXT NOT NULL,
     "sourceId" TEXT,
@@ -134,35 +139,54 @@ CREATE TABLE "CatalogCrawlError" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CatalogSource_key_key" ON "CatalogSource"("key");
-CREATE INDEX "CatalogSource_group_idx" ON "CatalogSource"("group");
-CREATE INDEX "CatalogSource_crawlPolicy_isActive_idx" ON "CatalogSource"("crawlPolicy", "isActive");
+CREATE UNIQUE INDEX IF NOT EXISTS "CatalogSource_key_key" ON "CatalogSource"("key");
+CREATE INDEX IF NOT EXISTS "CatalogSource_group_idx" ON "CatalogSource"("group");
+CREATE INDEX IF NOT EXISTS "CatalogSource_crawlPolicy_isActive_idx" ON "CatalogSource"("crawlPolicy", "isActive");
 
-CREATE INDEX "CatalogCrawlRun_status_createdAt_idx" ON "CatalogCrawlRun"("status", "createdAt");
+CREATE INDEX IF NOT EXISTS "CatalogCrawlRun_status_createdAt_idx" ON "CatalogCrawlRun"("status", "createdAt");
 
-CREATE INDEX "CatalogCrawlSource_crawlRunId_idx" ON "CatalogCrawlSource"("crawlRunId");
-CREATE INDEX "CatalogCrawlSource_sourceId_idx" ON "CatalogCrawlSource"("sourceId");
+CREATE INDEX IF NOT EXISTS "CatalogCrawlSource_crawlRunId_idx" ON "CatalogCrawlSource"("crawlRunId");
+CREATE INDEX IF NOT EXISTS "CatalogCrawlSource_sourceId_idx" ON "CatalogCrawlSource"("sourceId");
 
-CREATE UNIQUE INDEX "CatalogSourceRecord_sourceId_sourceUrl_key" ON "CatalogSourceRecord"("sourceId", "sourceUrl");
-CREATE INDEX "CatalogSourceRecord_sourceId_status_idx" ON "CatalogSourceRecord"("sourceId", "status");
-CREATE INDEX "CatalogSourceRecord_canonicalId_idx" ON "CatalogSourceRecord"("canonicalId");
-CREATE INDEX "CatalogSourceRecord_contentHash_idx" ON "CatalogSourceRecord"("contentHash");
-CREATE INDEX "CatalogSourceRecord_lastSeenAt_idx" ON "CatalogSourceRecord"("lastSeenAt");
+CREATE UNIQUE INDEX IF NOT EXISTS "CatalogSourceRecord_sourceId_sourceUrl_key" ON "CatalogSourceRecord"("sourceId", "sourceUrl");
+CREATE INDEX IF NOT EXISTS "CatalogSourceRecord_sourceId_status_idx" ON "CatalogSourceRecord"("sourceId", "status");
+CREATE INDEX IF NOT EXISTS "CatalogSourceRecord_canonicalId_idx" ON "CatalogSourceRecord"("canonicalId");
+CREATE INDEX IF NOT EXISTS "CatalogSourceRecord_contentHash_idx" ON "CatalogSourceRecord"("contentHash");
+CREATE INDEX IF NOT EXISTS "CatalogSourceRecord_lastSeenAt_idx" ON "CatalogSourceRecord"("lastSeenAt");
 
-CREATE INDEX "CatalogCanonicalProduct_normalizedName_idx" ON "CatalogCanonicalProduct"("normalizedName");
-CREATE INDEX "CatalogCanonicalProduct_category_opportunityScore_idx" ON "CatalogCanonicalProduct"("category", "opportunityScore");
-CREATE INDEX "CatalogCanonicalProduct_reviewState_idx" ON "CatalogCanonicalProduct"("reviewState");
-CREATE UNIQUE INDEX "CatalogCanonicalProduct_productId_key" ON "CatalogCanonicalProduct"("productId");
+CREATE INDEX IF NOT EXISTS "CatalogCanonicalProduct_normalizedName_idx" ON "CatalogCanonicalProduct"("normalizedName");
+CREATE INDEX IF NOT EXISTS "CatalogCanonicalProduct_category_opportunityScore_idx" ON "CatalogCanonicalProduct"("category", "opportunityScore");
+CREATE INDEX IF NOT EXISTS "CatalogCanonicalProduct_reviewState_idx" ON "CatalogCanonicalProduct"("reviewState");
+CREATE UNIQUE INDEX IF NOT EXISTS "CatalogCanonicalProduct_productId_key" ON "CatalogCanonicalProduct"("productId");
 
-CREATE INDEX "CatalogCrawlError_crawlRunId_errorType_idx" ON "CatalogCrawlError"("crawlRunId", "errorType");
-CREATE INDEX "CatalogCrawlError_errorType_idx" ON "CatalogCrawlError"("errorType");
+CREATE INDEX IF NOT EXISTS "CatalogCrawlError_crawlRunId_errorType_idx" ON "CatalogCrawlError"("crawlRunId", "errorType");
+CREATE INDEX IF NOT EXISTS "CatalogCrawlError_errorType_idx" ON "CatalogCrawlError"("errorType");
 
--- AddForeignKey
-ALTER TABLE "CatalogCrawlSource" ADD CONSTRAINT "CatalogCrawlSource_crawlRunId_fkey" FOREIGN KEY ("crawlRunId") REFERENCES "CatalogCrawlRun"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "CatalogCrawlSource" ADD CONSTRAINT "CatalogCrawlSource_sourceId_fkey" FOREIGN KEY ("sourceId") REFERENCES "CatalogSource"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "CatalogSourceRecord" ADD CONSTRAINT "CatalogSourceRecord_sourceId_fkey" FOREIGN KEY ("sourceId") REFERENCES "CatalogSource"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "CatalogSourceRecord" ADD CONSTRAINT "CatalogSourceRecord_crawlRunId_fkey" FOREIGN KEY ("crawlRunId") REFERENCES "CatalogCrawlRun"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "CatalogSourceRecord" ADD CONSTRAINT "CatalogSourceRecord_canonicalId_fkey" FOREIGN KEY ("canonicalId") REFERENCES "CatalogCanonicalProduct"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "CatalogCanonicalProduct" ADD CONSTRAINT "CatalogCanonicalProduct_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "CatalogCrawlError" ADD CONSTRAINT "CatalogCrawlError_crawlRunId_fkey" FOREIGN KEY ("crawlRunId") REFERENCES "CatalogCrawlRun"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "CatalogCrawlError" ADD CONSTRAINT "CatalogCrawlError_sourceId_fkey" FOREIGN KEY ("sourceId") REFERENCES "CatalogSource"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- AddForeignKey (only where the constraint does not exist yet)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'CatalogCrawlSource_crawlRunId_fkey' AND conrelid = '"CatalogCrawlSource"'::regclass) THEN
+        ALTER TABLE "CatalogCrawlSource" ADD CONSTRAINT "CatalogCrawlSource_crawlRunId_fkey" FOREIGN KEY ("crawlRunId") REFERENCES "CatalogCrawlRun"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'CatalogCrawlSource_sourceId_fkey' AND conrelid = '"CatalogCrawlSource"'::regclass) THEN
+        ALTER TABLE "CatalogCrawlSource" ADD CONSTRAINT "CatalogCrawlSource_sourceId_fkey" FOREIGN KEY ("sourceId") REFERENCES "CatalogSource"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'CatalogSourceRecord_sourceId_fkey' AND conrelid = '"CatalogSourceRecord"'::regclass) THEN
+        ALTER TABLE "CatalogSourceRecord" ADD CONSTRAINT "CatalogSourceRecord_sourceId_fkey" FOREIGN KEY ("sourceId") REFERENCES "CatalogSource"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'CatalogSourceRecord_crawlRunId_fkey' AND conrelid = '"CatalogSourceRecord"'::regclass) THEN
+        ALTER TABLE "CatalogSourceRecord" ADD CONSTRAINT "CatalogSourceRecord_crawlRunId_fkey" FOREIGN KEY ("crawlRunId") REFERENCES "CatalogCrawlRun"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'CatalogSourceRecord_canonicalId_fkey' AND conrelid = '"CatalogSourceRecord"'::regclass) THEN
+        ALTER TABLE "CatalogSourceRecord" ADD CONSTRAINT "CatalogSourceRecord_canonicalId_fkey" FOREIGN KEY ("canonicalId") REFERENCES "CatalogCanonicalProduct"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'CatalogCanonicalProduct_productId_fkey' AND conrelid = '"CatalogCanonicalProduct"'::regclass) THEN
+        ALTER TABLE "CatalogCanonicalProduct" ADD CONSTRAINT "CatalogCanonicalProduct_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'CatalogCrawlError_crawlRunId_fkey' AND conrelid = '"CatalogCrawlError"'::regclass) THEN
+        ALTER TABLE "CatalogCrawlError" ADD CONSTRAINT "CatalogCrawlError_crawlRunId_fkey" FOREIGN KEY ("crawlRunId") REFERENCES "CatalogCrawlRun"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'CatalogCrawlError_sourceId_fkey' AND conrelid = '"CatalogCrawlError"'::regclass) THEN
+        ALTER TABLE "CatalogCrawlError" ADD CONSTRAINT "CatalogCrawlError_sourceId_fkey" FOREIGN KEY ("sourceId") REFERENCES "CatalogSource"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;

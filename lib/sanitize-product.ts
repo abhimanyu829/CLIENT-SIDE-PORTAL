@@ -4,6 +4,22 @@
  */
 
 const SENSITIVE_PRODUCT_FIELDS = [
+  // Product model fields that are never public: delivery secrets (encrypted,
+  // still never sent to a browser), owner-only access links and notes, the
+  // reserving customer, and internal editor bookkeeping.
+  "deliveryConfig",
+  "productAccessUrl",
+  "productLoginUrl",
+  "productDashboardUrl",
+  "productAccessNotes",
+  "assignedUserId",
+  "assignedEmail",
+  "reservedUntil",
+  "lockedBy",
+  "lockedAt",
+  "createdBy",
+  "lastEditedBy",
+  // Generic credential-like names (defense in depth).
   "vendorNotes",
   "internalNotes",
   "apiKey",
@@ -19,7 +35,6 @@ const SENSITIVE_PRODUCT_FIELDS = [
   "envVars",
 ] as const
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function sanitizeProductForPublic(product: Record<string, any>): Record<string, any> {
   const sanitized = { ...product }
   for (const field of SENSITIVE_PRODUCT_FIELDS) {
@@ -41,7 +56,6 @@ export function sanitizeProductForPublic(product: Record<string, any>): Record<s
   return sanitized
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function sanitizeProductsForPublic(products: Record<string, any>[]): Record<string, any>[] {
   return products.map(sanitizeProductForPublic)
 }

@@ -227,6 +227,15 @@ export async function findRecentRejection(connectionId: string, bindingDigest: s
   return (row as ApprovalRequestRow | null) ?? null
 }
 
+/**
+ * Live PENDING requests of one connection: the backlog a human still has to
+ * decide. Requests past their expiry are not counted (they can no longer be
+ * approved, whether or not the sweeper has retired them yet).
+ */
+export async function countPendingApprovals(connectionId: string, now: Date): Promise<number> {
+  return db.agentApprovalRequest.count({ where: { connectionId, status: "PENDING", expiresAt: { gt: now } } })
+}
+
 /** Atomically cancels one live request. Returns true if THIS call cancelled it. */
 export async function cancelApproval(id: string, reason: string, now: Date): Promise<boolean> {
   const result = await db.agentApprovalRequest.updateMany({

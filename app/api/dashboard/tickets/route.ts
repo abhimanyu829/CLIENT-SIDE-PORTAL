@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { createTicketSchema, firstIssue, readJsonBody } from "@/lib/support-tickets"
 
 export async function GET() {
   try {
@@ -24,15 +25,22 @@ export async function POST(req: Request) {
     const session = await auth()
     if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const { title, description, priority } = await req.json()
-    if (!title || !description) return NextResponse.json({ error: "Missing fields" }, { status: 400 })
+    const body = await readJsonBody(req)
+    if (body === undefined || body === null || typeof body !== "object") {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
+    }
+    // Only title, description and priority are taken from the form; the
+    // priority is validated (the form's "URGENT" is the enum's CRITICAL).
+    const parsed = createTicketSchema.pick({ title: true, description: true, priority: true }).safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: firstIssue(parsed.error) }, { status: 400 })
+    const { title, description, priority = "MEDIUM" } = parsed.data
 
     const ticket = await db.ticket.create({
       data: {
         clientId: session.user.id,
         title,
         description,
-        priority: priority ?? "MEDIUM",
+        priority,
         status: "OPEN",
         category: "GENERAL",
       },

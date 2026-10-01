@@ -10,8 +10,8 @@
 
 ## Pre-existing (carried, outside the agent surface)
 
-PRE-12-1 (human product route serves any status), PRE-13-1 (ticket routes leak internal notes; nonexistent admin roles), PRE-13-2 (unchecked `projectId`), PRE-13-3 (unvalidated enums), the feedback-route TypeScript error, the ESLint baseline (122).
+PRE-12-1 (human product route serves any status), PRE-13-1 (ticket routes leak internal notes; nonexistent admin roles), PRE-13-2 (unchecked `projectId`), PRE-13-3 (unvalidated enums), the feedback-route TypeScript error, the ESLint baseline (122). All but the ESLint baseline (now 120) were fixed after Phase 15: `../known-issues-resolution.md`.
 
 ## Open findings (carried from Phase 14)
 
-P14-F2, P14-F3 (`../phase-14/07-findings.md`).
+P14-F2, P14-F3 (`../phase-14/07-findings.md`); both resolved after Phase 15 (`../known-issues-resolution.md`).

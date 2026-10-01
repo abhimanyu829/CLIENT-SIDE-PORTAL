@@ -81,3 +81,13 @@ export function getGatewayConfig(): AgentGatewayConfig {
 export function __resetGatewayConfigForTests(): void {
   cached = null
 }
+
+/**
+ * Whether this process is a production deployment: the gateway is
+ * configured for production, or Node runs in production mode (any
+ * `next start` deployment). Used where a missing safety dependency must
+ * never be silently tolerated (execution/idempotency/idempotency-guard.ts).
+ */
+export function isProductionDeployment(): boolean {
+  return getGatewayConfig().AGENT_GATEWAY_ENVIRONMENT === "production" || process.env.NODE_ENV === "production"
+}

@@ -43,7 +43,8 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       take: 50,
       include: {
-        user: { select: { id: true, name: true, email: true, avatarUrl: true, role: true } },
+        // Public endpoint: never the reviewers' e-mail addresses (the page does not show them).
+        user: { select: { id: true, name: true, avatarUrl: true, role: true } },
         product: { select: { id: true, name: true, slug: true } },
       },
     })
@@ -125,7 +126,9 @@ export async function POST(req: NextRequest) {
         create: {
           email: "guest-feedback@nexusai.app",
           name: authorName || "Verified User",
-          role: "USER",
+          // "USER" is not a Role (SUPER_ADMIN, SUB_ADMIN, VENDOR, CLIENT, GUEST):
+          // creating the shared guest author failed on first use.
+          role: "GUEST",
         },
         select: { id: true },
       })

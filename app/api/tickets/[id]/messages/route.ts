@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { TICKET_MESSAGE_MAX, readJsonBody } from "@/lib/support-tickets"
 
 async function triggerPusher(channel: string, event: string, data: unknown) {
   if (!process.env.PUSHER_APP_ID) return
@@ -30,8 +31,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     })
     if (!ticket) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
+    // The ticket owner's thread: staff-internal notes are never part of it.
     const messages = await db.ticketMessage.findMany({
-      where: { ticketId: id },
+      where: { ticketId: id, isInternal: false },
       orderBy: { createdAt: "asc" },
     })
 
@@ -56,13 +58,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     })
     if (!ticket) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-    const { content } = await req.json()
-    if (!content?.trim()) {
+    const body = (await readJsonBody(req)) as { content?: unknown } | undefined
+    const content = typeof body?.content === "string" ? body.content.trim() : ""
+    if (!content) {
       return NextResponse.json({ error: "Content is required" }, { status: 400 })
+    }
+    if (content.length > TICKET_MESSAGE_MAX) {
+      return NextResponse.json({ error: `Content must be at most ${TICKET_MESSAGE_MAX} characters` }, { status: 400 })
     }
 
     const message = await db.ticketMessage.create({
-      data: { ticketId: id, senderId: userId, content: content.trim() },
+      data: { ticketId: id, senderId: userId, content },
     })
 
     // Update ticket updatedAt

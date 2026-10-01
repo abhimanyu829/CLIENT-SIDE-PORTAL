@@ -97,7 +97,10 @@ export const ADVERSARIAL_SCENARIOS: readonly Scenario[] = [
     id: "ADV-3",
     title: "Cross-tenant writes are refused and change nothing",
     category: "ADVERSARIAL",
-    steps: [tool(ALPHA, "tickets.close", { ticketId: "sim_tk_bravo" }, err("RESOURCE_NOT_FOUND")), tool(BRAVO, "tickets.close", { ticketId: "sim_tk_alpha" }, { outcome: "approval_required" })],
+    // BRAVO needs approval for writes: since the P14-F2 fix the gate checks the
+    // resource first, so the cross-tenant close is refused exactly like ALPHA's
+    // autonomous one and no human is asked to approve it.
+    steps: [tool(ALPHA, "tickets.close", { ticketId: "sim_tk_bravo" }, err("RESOURCE_NOT_FOUND")), tool(BRAVO, "tickets.close", { ticketId: "sim_tk_alpha" }, err("RESOURCE_NOT_FOUND"))],
   },
   {
     id: "ADV-4",

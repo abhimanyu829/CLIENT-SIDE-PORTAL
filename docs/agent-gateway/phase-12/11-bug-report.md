@@ -22,5 +22,7 @@
 
 ## Pre-existing, not fixed (out of the agent surface)
 
+> Update: PRE-12-1 and the feedback-route TypeScript error were fixed after Phase 15 (`../known-issues-resolution.md`).
+
 - PRE-12-1: the human route `/api/products/[slug]` returns products of any status. Not reachable by agents; changing it would alter the human storefront contract (protected system). Recommended follow-up for the product owner.
 - `app/api/feedback/route.ts(128,11)` TS2322 and the ESLint baseline (122 problems) — unchanged.

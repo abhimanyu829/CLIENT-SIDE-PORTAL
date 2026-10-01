@@ -9,8 +9,8 @@
  *   - never the staff branch: always `clientId === context.ownerId`;
  *     not-found and not-owned are the same RESOURCE_NOT_FOUND (no oracle);
  *   - INTERNAL staff notes (`TicketMessage.isInternal`) are never returned
- *     (the human route returns them to the client: see the Phase 13 bug
- *     report, PRE-13-1);
+ *     (the human route used to return them to the client, PRE-13-1; it
+ *     filters them too since that fix);
  *   - no staff identities: `assignedTo`, assignee / client e-mail and
  *     sender ids are excluded; a message only says whether it came from
  *     the customer;
@@ -44,6 +44,15 @@ export const TICKET_MESSAGE_LIMIT = 50
 export class TicketsGetAdapter implements AgentCapabilityAdapter<TicketsGetInput, TicketDetail> {
   readonly capabilityId = "tickets.get"
   readonly capabilityVersion = 1
+
+  /** Read-only preflight used by the gate before an approval (contracts/adapter.ts): the same owner check as execute(). */
+  async checkResource(context: AgentExecutionContext, input: TicketsGetInput): Promise<void> {
+    const ticketId = input?.ticketId
+    const ticket = typeof ticketId === "string" ? await db.ticket.findUnique({ where: { id: ticketId }, select: { id: true, clientId: true } }) : null
+    if (!ticket || ticket.clientId !== context.ownerId) {
+      throw new ExecutionError("RESOURCE_NOT_FOUND", "No ticket exists for the given id.")
+    }
+  }
 
   async execute(context: AgentExecutionContext, input: TicketsGetInput): Promise<ExecutionResult<TicketDetail>> {
     const startedAt = Date.now()

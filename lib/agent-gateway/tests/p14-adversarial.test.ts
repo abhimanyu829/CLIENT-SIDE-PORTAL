@@ -31,11 +31,15 @@ describe("Phase 14 B — adversarial probes", () => {
     expect([...result.expectationFailures, ...result.violations]).toEqual([])
   })
 
-  it("ADV-3: the cross-tenant close changed nothing; ADV-5: hostile inputs created no approval and reached no adapter", async () => {
+  it("ADV-3: the cross-tenant close changed nothing and asked no human (P14-F2); ADV-5: hostile inputs created no approval and reached no adapter", async () => {
     const adv3 = await run(byId(ADVERSARIAL_SCENARIOS, "ADV-3"))
     expect(adv3.h.k.exec._tickets.get("sim_tk_bravo")!.status).toBe("OPEN")
     expect(adv3.h.k.exec._tickets.get("sim_tk_alpha")!.status).toBe("OPEN")
     expect(adv3.world.writes).toEqual([])
+    expect(adv3.h.k.approval._requests.size).toBe(0)
+    // The approval-gated refusal is byte-identical to the autonomous one: no new oracle.
+    const [autonomous, gated] = adv3.result.observations
+    expect(gated.text).toBe(autonomous.text)
 
     const adv5 = await run(byId(ADVERSARIAL_SCENARIOS, "ADV-5"))
     expect(adv5.h.k.approval._requests.size).toBe(0)
@@ -102,7 +106,7 @@ describe("Phase 14 F — security regression corpus", () => {
       expect(s.category).toBe("REGRESSION")
       expect((s.reference ?? "").length, s.id).toBeGreaterThan(10)
     }
-    for (const known of ["REG-P4-1", "REG-P4-2", "REG-P5-1", "REG-P8-1", "REG-P12-B1", "REG-P12-B2", "REG-P12-B3", "REG-P12-E", "REG-P12-B4", "REG-P13-B1", "REG-P13-B2", "REG-P13-E"]) {
+    for (const known of ["REG-P4-1", "REG-P4-2", "REG-P5-1", "REG-P8-1", "REG-P12-B1", "REG-P12-B2", "REG-P12-B3", "REG-P12-E", "REG-P12-B4", "REG-P13-B1", "REG-P13-B2", "REG-P13-E", "REG-P14-F2"]) {
       expect(ids).toContain(known)
     }
   })
@@ -110,5 +114,13 @@ describe("Phase 14 F — security regression corpus", () => {
   it.each(SECURITY_REGRESSION_CORPUS.map((s) => [s.id, s.reference ?? "", s] as const))("%s (%s)", async (_id, _ref, scenario) => {
     const { result } = await run(scenario)
     expect([...result.expectationFailures, ...result.violations]).toEqual([])
+  })
+
+  it("REG-P14-F2: neither path created an approval request or a task, and the victim's ticket is untouched", async () => {
+    const { h, world } = await run(SECURITY_REGRESSION_CORPUS.find((s) => s.id === "REG-P14-F2")!)
+    expect(h.k.approval._requests.size).toBe(0)
+    expect(h.k.approval._tasks.size).toBe(0)
+    expect(h.k.exec._tickets.get("sim_tk_alpha")!.status).toBe("OPEN")
+    expect(world.writes).toEqual([])
   })
 })

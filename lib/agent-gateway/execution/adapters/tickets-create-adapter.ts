@@ -10,8 +10,8 @@
  *   - `clientId` is ALWAYS `context.ownerId` (Phase 2 identity), never input;
  *   - priority is limited to LOW / MEDIUM / HIGH: CRITICAL is a staff
  *     triage decision, not something an agent asserts;
- *   - no `projectId` (the human route does not check project ownership;
- *     an agent must not attach a ticket to someone else's project);
+ *   - no `projectId` (an agent does not attach tickets to projects; the
+ *     human route checks project ownership since the PRE-13-2 fix);
  *   - the category is a closed vocabulary.
  *
  * Recovery (Phase 11): COMPENSATABLE through tickets.close (the ticket

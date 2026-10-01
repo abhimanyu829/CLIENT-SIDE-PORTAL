@@ -28,17 +28,28 @@ export interface TicketsCloseOutput {
   changed: boolean
 }
 
+/** The owner's ticket, or the one RESOURCE_NOT_FOUND for missing and not-owned alike. */
+async function findOwnedTicket(context: AgentExecutionContext, ticketId: unknown) {
+  const ticket = typeof ticketId === "string" ? await db.ticket.findUnique({ where: { id: ticketId }, select: { id: true, clientId: true, status: true } }) : null
+  if (!ticket || ticket.clientId !== context.ownerId) {
+    throw new ExecutionError("RESOURCE_NOT_FOUND", "No ticket exists for the given id.")
+  }
+  return ticket
+}
+
 export class TicketsCloseAdapter implements AgentCapabilityAdapter<TicketsCloseInput, TicketsCloseOutput> {
   readonly capabilityId = "tickets.close"
   readonly capabilityVersion = 1
 
+  /** Read-only preflight used by the gate before an approval (contracts/adapter.ts). */
+  async checkResource(context: AgentExecutionContext, input: TicketsCloseInput): Promise<void> {
+    await findOwnedTicket(context, input?.ticketId)
+  }
+
   async execute(context: AgentExecutionContext, input: TicketsCloseInput): Promise<ExecutionResult<TicketsCloseOutput>> {
     const startedAt = Date.now()
     if (context.signal.aborted) throw new ExecutionError("CANCELLED", "Execution was cancelled before the existing service was invoked.")
-    const ticket = await db.ticket.findUnique({ where: { id: input.ticketId }, select: { id: true, clientId: true, status: true } })
-    if (!ticket || ticket.clientId !== context.ownerId) {
-      throw new ExecutionError("RESOURCE_NOT_FOUND", "No ticket exists for the given id.")
-    }
+    const ticket = await findOwnedTicket(context, input.ticketId)
     if (ticket.status === "CLOSED") {
       return { output: { id: ticket.id, status: "CLOSED", changed: false }, executionMode: "SYNC", durationMs: Date.now() - startedAt }
     }

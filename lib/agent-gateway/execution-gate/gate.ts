@@ -38,21 +38,37 @@ import { buildDisplaySummary } from "../approvals/redaction"
 import {
   cancelApproval,
   consumeApproval,
+  countPendingApprovals,
   expireApproval,
   findLiveApprovalByBinding,
   findOrCreateApprovalRequest,
   findRecentRejection,
   findSiblingApproval,
 } from "../approvals/request-service"
-import { APPROVAL_METHOD_STEP_UP, APPROVER_SCOPE_SUPER_ADMIN } from "../approvals/constants"
+import { APPROVAL_METHOD_STEP_UP, APPROVER_SCOPE_SUPER_ADMIN, MAX_PENDING_APPROVALS_PER_CONNECTION } from "../approvals/constants"
 import { describeApprovalSurface } from "../human-in-the-loop/cua-contract"
 import { recordGateEvent, type GateEventFields } from "./observability"
 import { withAgentSpan } from "../observability/tracing"
 import { checkRuntimeControls, recordRuntimeControlRefusal, type RuntimeControlDeps } from "../rollout/controls"
+import { getAdapterRegistry } from "../execution"
+import { ExecutionError } from "../execution/contracts/execution-error"
 
 /** Phase 6 as a value source (implemented by PolicyEngineAuthorizer.decide). */
 export interface AuthorizationDecider {
   decide(context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown): Promise<AuthorizationDecision>
+}
+
+/**
+ * P14-F2 — read-only check that the operation's resource is reachable by the
+ * connection's owner. Resolves when it is; throws the adapter's own
+ * RESOURCE_NOT_FOUND `ExecutionError` when it is missing or not owned.
+ */
+export type ResourcePreflight = (context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown) => Promise<void>
+
+/** Default preflight: the registered adapter's own `checkResource` (execution/contracts/adapter.ts). Capabilities without one have nothing to check. */
+export const adapterResourcePreflight: ResourcePreflight = async (context, capability, input) => {
+  const adapter = getAdapterRegistry().get(capability.id, capability.version)
+  if (adapter?.checkResource) await adapter.checkResource(context, input)
 }
 
 export interface ExecutionGateDeps {
@@ -60,6 +76,8 @@ export interface ExecutionGateDeps {
   loadAutonomyPolicy?: (connectionId: string) => Promise<EffectiveAutonomyPolicy | null>
   /** Phase 15 — release controls (kill switches, rollout stages); defaults to the database stores. */
   runtimeControls?: RuntimeControlDeps
+  /** P14-F2 — resource preflight before an approval is requested or consumed; defaults to the adapter's own `checkResource`. */
+  resourcePreflight?: ResourcePreflight
   clock?: () => Date
 }
 
@@ -82,6 +100,11 @@ export type GateCode =
   | "ROLLOUT_BLOCKED"
   | "POLICY_UNAVAILABLE"
   | "EXECUTION_GATE_DENIED"
+  // Known-issue fixes after Phase 15
+  /** P14-F2: the resource is missing or not the owner's (same answer as the adapter's). */
+  | "RESOURCE_NOT_FOUND"
+  /** P14-F3: the connection already has the maximum number of pending approval requests. */
+  | "APPROVAL_LIMIT_REACHED"
 
 /** Fields common to every gate observability event. */
 interface GateEventBase {
@@ -159,10 +182,12 @@ function autonomyDenialCode(decision: AutonomyDecision): GateCode {
 
 export class ExecutionGate implements CapabilityAuthorizer {
   private readonly loadPolicy: (connectionId: string) => Promise<EffectiveAutonomyPolicy | null>
+  private readonly resourcePreflight: ResourcePreflight
   private readonly clock: () => Date
 
   constructor(private readonly deps: ExecutionGateDeps) {
     this.loadPolicy = deps.loadAutonomyPolicy ?? loadEffectiveAutonomyPolicy
+    this.resourcePreflight = deps.resourcePreflight ?? adapterResourcePreflight
     this.clock = deps.clock ?? (() => new Date())
   }
 
@@ -350,7 +375,21 @@ export class ExecutionGate implements CapabilityAuthorizer {
       return { ...evaluation, approval: null }
     }
 
-    // 4. Human approval required. Any storage error fails closed.
+    // 4a. Human approval required, so first the resource itself (P14-F2): no
+    //     approval is requested, or consumed, for a resource this owner
+    //     cannot reach. The refusal is the adapter's own RESOURCE_NOT_FOUND
+    //     (same code, same message), so it tells the agent nothing an
+    //     autonomous call would not. A failure to check is a denial.
+    try {
+      await this.resourcePreflight(context, capability, input)
+    } catch (err) {
+      if (err instanceof ExecutionError && err.code === "RESOURCE_NOT_FOUND") {
+        deny("RESOURCE_NOT_FOUND", err.message, autonomy.effectiveLevel)
+      }
+      deny("POLICY_UNAVAILABLE", `Capability "${capability.id}" could not be evaluated because its resource could not be verified. Failing closed.`, autonomy.effectiveLevel)
+    }
+
+    // 4b. The approval itself. Any storage error fails closed.
     try {
       const approval = await this.requireApproval(context, capability, input, evaluation, now, startedAt, { ...base, ...decided })
       return { ...evaluation, approval }
@@ -431,6 +470,23 @@ export class ExecutionGate implements CapabilityAuthorizer {
       if (sibling.status === "APPROVED") mismatchCode = "APPROVAL_POLICY_CHANGED"
     } else if (sibling && sibling.status === "APPROVED") {
       mismatchCode = "APPROVAL_BINDING_MISMATCH"
+    }
+
+    // P14-F3: every distinct input is a distinct operation with its own
+    // request, so the number of requests a connection may leave waiting for
+    // a human is bounded. Only a call that would CREATE a request is
+    // refused; repeating an already pending operation still answers with
+    // that request's reference.
+    const createsRequest = !live || isExpired(live.expiresAt, now)
+    if (createsRequest) {
+      const pending = await countPendingApprovals(context.connectionId, now)
+      if (pending >= MAX_PENDING_APPROVALS_PER_CONNECTION) {
+        fail(
+          "APPROVAL_LIMIT_REACHED",
+          `This connection already has ${MAX_PENDING_APPROVALS_PER_CONNECTION} approval requests waiting for a human decision. ` +
+            "No new request was created. Wait until the pending ones are decided or expire, then retry."
+        )
+      }
     }
 
     let connectionName: string | null = null

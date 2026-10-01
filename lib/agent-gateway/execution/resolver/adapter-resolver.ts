@@ -35,7 +35,7 @@ import { ExecutionError, toExecutionError } from "../contracts/execution-error"
 import type { ExecutionResult } from "../contracts/execution-result"
 import { getAgentConnectionService } from "../../identity/connection-service"
 import { getGatewayConfig } from "../../config"
-import { checkIdempotency, recordIdempotencyResult } from "../idempotency/idempotency-guard"
+import { checkIdempotency, recordIdempotencyResult, releaseIdempotencyReservation, type IdempotencyMode } from "../idempotency/idempotency-guard"
 import { recordExecutionEvent } from "../observability/execution-log"
 import { computeInputDigest } from "../../approvals/binding"
 import { computeOutputDigest } from "../../audit-ledger/digest"
@@ -51,6 +51,24 @@ import { recordContentFindings, recordInputRejected, recordOutputWithheld } from
 import { isInputHygieneDetails } from "../../security/input-hygiene"
 
 type AuditBase = Omit<AuditEventInput, "action" | "outcome">
+
+export interface ExecuteOptions {
+  /**
+   * How the idempotency cache protects a keyed write (idempotency-guard.ts).
+   * Default STRICT: the synchronous tool path, where the cache is the only
+   * duplicate protection. The task worker and recovery pass BEST_EFFORT:
+   * they have a durable dedupe of their own.
+   */
+  idempotency?: IdempotencyMode
+}
+
+/**
+ * Errors after which the adapter provably made no change (it refused
+ * before writing), so a held idempotency reservation may be released and
+ * the same key retried. Anything else after dispatch is ambiguous and keeps
+ * the reservation until it expires.
+ */
+const NO_EFFECT_AFTER_DISPATCH: ReadonlySet<string> = new Set(["INVALID_INPUT", "RESOURCE_NOT_FOUND", "FORBIDDEN", "CONFLICT"])
 
 function safeInputDigest(input: unknown): string | null {
   try {
@@ -86,7 +104,8 @@ export class AdapterResolver {
     capabilityRef: string,
     rawInput: unknown,
     gatewayContext: AgentGatewayRequestContext,
-    idempotencyKey?: string
+    idempotencyKey?: string,
+    options: ExecuteOptions = {}
   ): Promise<ExecutionResult> {
     return withAgentSpan(
       "agent.execution",
@@ -95,7 +114,7 @@ export class AdapterResolver {
         "agent.connection.id": gatewayContext.machine?.connectionId,
         "agent.capability.id": capabilityRef.split("@")[0],
       },
-      () => this.run(capabilityRef, rawInput, gatewayContext, idempotencyKey)
+      () => this.run(capabilityRef, rawInput, gatewayContext, idempotencyKey, options.idempotency ?? "STRICT")
     )
   }
 
@@ -153,7 +172,8 @@ export class AdapterResolver {
     capabilityRef: string,
     rawInput: unknown,
     gatewayContext: AgentGatewayRequestContext,
-    idempotencyKey?: string
+    idempotencyKey: string | undefined,
+    idempotencyMode: IdempotencyMode
   ): Promise<ExecutionResult> {
     const startedAt = Date.now()
     let capabilityIdForLog = capabilityRef
@@ -162,6 +182,8 @@ export class AdapterResolver {
     let audit: AuditBase | null = null
     let breakerScopes: Array<[BreakerScope, string]> = []
     let dispatched = false
+    // The idempotency reservation this call holds (STRICT mode), if any.
+    let reservation: { definition: CapabilityDefinition; connectionId: string; key: string } | null = null
 
     try {
       // Checks 1-5, 8: existence/forbidden/disabled/adapter-bound/identity-present.
@@ -238,9 +260,24 @@ export class AdapterResolver {
       }
 
       // Idempotency (Phase 4 requirement, reusing Phase 3's declared metadata).
-      const idempotencyOutcome = await checkIdempotency(definition, gatewayContext.machine!.connectionId, idempotencyKey)
+      const idempotencyOutcome = await checkIdempotency(definition, gatewayContext.machine!.connectionId, idempotencyKey, idempotencyMode)
       if (idempotencyOutcome.kind === "REQUIRED_BUT_MISSING") {
         throw new ExecutionError("IDEMPOTENCY_KEY_REQUIRED", `Capability "${definition.id}" requires an idempotency key.`)
+      }
+      if (idempotencyOutcome.kind === "UNAVAILABLE") {
+        throw new ExecutionError(
+          "EXECUTION_UNAVAILABLE",
+          `Duplicate protection for "${definition.id}" is unavailable, so this operation was not executed. Retry later, or submit it with agent_task_submit.`
+        )
+      }
+      if (idempotencyOutcome.kind === "IN_FLIGHT") {
+        throw new ExecutionError(
+          "IDEMPOTENCY_CONFLICT",
+          "A request with this idempotency key is already in progress, or ended without a confirmed result. Retry the same key shortly; if this persists, check whether the operation took effect before using a new key."
+        )
+      }
+      if (idempotencyOutcome.kind === "NEW_KEY" && idempotencyOutcome.reserved) {
+        reservation = { definition, connectionId: gatewayContext.machine!.connectionId, key: idempotencyKey! }
       }
       if (idempotencyOutcome.kind === "REPLAY") {
         recordExecutionEvent({
@@ -308,7 +345,12 @@ export class AdapterResolver {
       this.guardResult(definition, result, audit)
 
       if (idempotencyOutcome.kind === "NEW_KEY") {
-        await recordIdempotencyResult(definition, gatewayContext.machine!.connectionId, idempotencyKey!, result)
+        // Records the result, then releases the reservation (kept on purpose
+        // if the result could not be recorded). Either way it is handed off:
+        // a later failure in this call must not release it.
+        const reserved = reservation !== null
+        reservation = null
+        await recordIdempotencyResult(definition, gatewayContext.machine!.connectionId, idempotencyKey!, result, { reserved })
       }
 
       const breakers = getCircuitBreakers()
@@ -361,6 +403,12 @@ export class AdapterResolver {
           else if (isBreakerFailure(err.code)) breakers.recordFailure(scope, key)
           else breakers.recordSuccess(scope, key)
         }
+      }
+      // A held idempotency reservation is released only when the operation
+      // provably took no effect; an ambiguous failure keeps the key blocked
+      // until the reservation expires, so a retry cannot run it twice.
+      if (reservation && (!dispatched || NO_EFFECT_AFTER_DISPATCH.has(err.code))) {
+        await releaseIdempotencyReservation(reservation.definition, reservation.connectionId, reservation.key)
       }
       const durationMs = Date.now() - startedAt
       recordExecutionEvent({
