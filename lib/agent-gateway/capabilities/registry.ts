@@ -16,6 +16,7 @@ import { CapabilityError } from "./errors"
 import { assertValidCapabilityId, parseCapabilityRef, storageKey } from "./id"
 import { assertNoDangerousPrimitives } from "./dangerous-primitive-guard"
 import { validateAgainstSchema } from "./schema-validation"
+import { assertValidRecoverySpec } from "../recovery/spec"
 
 /**
  * Structural validation applied to every definition before it is ever
@@ -140,6 +141,13 @@ function assertWellFormed(def: CapabilityDefinition): void {
   }
 
   assertNoDangerousPrimitives(def)
+
+  // Phase 11: a declared recovery mapping must be explicit and well formed.
+  try {
+    assertValidRecoverySpec(def)
+  } catch (err) {
+    throw new CapabilityError("INVALID_INPUT", err instanceof Error ? err.message : `Capability "${def.id}" has an invalid recovery specification.`)
+  }
 }
 
 export class CapabilityRegistry {

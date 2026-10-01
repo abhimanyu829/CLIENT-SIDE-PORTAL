@@ -69,6 +69,28 @@ export default async function GovernanceRuntimePage() {
         <StatCard label="Failing triggers" value={snap.triggers.failing} href="/admin/agent-governance/triggers" />
         <StatCard label="Failed runs (24 h)" value={snap.triggers.failedRunsLast24h} />
       </div>
+      <div className="space-y-2">
+        <h3 className="font-medium">Circuit breakers</h3>
+        <p className="text-sm text-muted-foreground">
+          Per capability, adapter and connection; process-local, so this shows the server process that rendered this page. Only infrastructure failures count.
+        </p>
+        {snap.breakers.length === 0 ? (
+          <p className="text-sm">All breakers are closed.</p>
+        ) : (
+          <ul className="space-y-1 text-sm">
+            {snap.breakers.map((b) => (
+              <li key={`${b.scope}:${b.key}`} className="flex flex-wrap items-center gap-2">
+                <StatusPill status={b.state === "CLOSED" ? "ACTIVE" : b.state === "OPEN" ? "FAILED" : "PENDING"} />
+                <span>{b.scope.toLowerCase()}</span>
+                <Mono>{b.key}</Mono>
+                <span className="text-muted-foreground">
+                  {b.state.replace("_", " ").toLowerCase()} · {b.recentFailures} recent failures
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       {snap.tasks.stuckRefs.length ? (
         <div className="space-y-1">
           <h3 className="font-medium">Tasks needing attention</h3>

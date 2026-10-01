@@ -224,6 +224,9 @@ describe("Phase 10 J — closed route inventory (no generic endpoint)", () => {
     const files = routeFiles(root).map((f) => path.relative(root, f).split(path.sep).join("/")).sort()
     expect(files).toEqual(
       [
+        // Phase 11: chain verification and capability-aware recovery requests.
+        "ledger/verify/route.ts",
+        "recoveries/route.ts",
         "policies/[id]/disable/route.ts",
         "policies/[id]/enable/route.ts",
         "policies/[id]/rollback/route.ts",

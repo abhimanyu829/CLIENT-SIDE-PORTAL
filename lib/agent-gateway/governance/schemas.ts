@@ -49,3 +49,15 @@ export const policyToggleSchema = z.object({ reason }).strict()
 
 /** Trigger creation bodies are validated by TriggerService.create (createTriggerSchema). */
 export const triggerCreateSchema = z.record(z.unknown())
+
+// ── Phase 11 — evidence and recovery ─────────────────────────────────────
+
+/** Recover one recorded execution. The reason is mandatory: recovery is a privileged, audited operation. */
+export const recoveryRequestSchema = z
+  .object({ eventId: z.string().regex(/^aud_[0-9a-f]{32}$/), reason: z.string().trim().min(3).max(500) })
+  .strict()
+
+/** Verify the ledger's hash chain (read-only; POST so it is never prefetched). */
+export const ledgerVerifySchema = z
+  .object({ fromSequence: z.number().int().min(1).optional(), maxEvents: z.number().int().min(1).max(100_000).optional() })
+  .strict()

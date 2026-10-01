@@ -27,6 +27,7 @@ import { constantTimeEqual, sha256Hex } from "../shared/crypto"
 import { ApprovalError } from "./errors"
 import { STEP_UP_TTL_MS, isExpired } from "./expiration"
 import { expireApproval } from "./request-service"
+import { recordAudit } from "../audit-ledger/recorder"
 
 import { APPROVAL_METHOD_STEP_UP, APPROVER_SCOPE_SUPER_ADMIN } from "./constants"
 
@@ -62,6 +63,41 @@ async function loadForDecision(publicRef: string) {
   const row = await db.agentApprovalRequest.findUnique({ where: { publicRef } })
   if (!row) throw new ApprovalError("APPROVAL_NOT_FOUND", "Approval request not found.")
   return row
+}
+
+/** Phase 11 — a human decision is evidence (best effort; never blocks the decision). */
+function recordDecisionEvidence(
+  action: "approval.approved" | "approval.rejected" | "approval.cancelled",
+  request: Awaited<ReturnType<typeof loadForDecision>>,
+  approver: HumanApprover,
+  reasonCode?: string | null
+): void {
+  try {
+    recordAudit({
+      action,
+      outcome: action === "approval.approved" ? "SUCCESS" : "INFO",
+      actor: { type: "HUMAN", id: approver.userId },
+      requestId: request.requestId,
+      connectionId: request.connectionId,
+      agentId: request.agentId,
+      ownerId: request.ownerId,
+      teamId: request.teamId,
+      capabilityId: request.capabilityId,
+      capabilityVersion: request.capabilityVersion,
+      riskTier: request.riskTier,
+      resourceType: request.resourceType,
+      resourceRef: request.resourceId,
+      environment: request.environment,
+      authorizationPolicyRef: request.authorizationPolicyRef,
+      autonomyLevel: request.autonomyLevel,
+      autonomyPolicyVersion: request.autonomyPolicyVersion,
+      approvalRef: request.publicRef,
+      inputDigest: request.inputDigest,
+      metadata: { reasonCode: reasonCode ?? undefined, decision: action.replace("approval.", "").toUpperCase() },
+    })
+  } catch {
+    // never blocks a decision
+  }
 }
 
 function assertPending(status: string): void {
@@ -210,6 +246,7 @@ export async function decideApproval(input: DecideApprovalInput, now: Date = new
     assertPending(fresh?.status ?? "CANCELLED")
     throw new ApprovalError("APPROVAL_ALREADY_DECIDED", "This approval request changed while you were deciding. Reload and try again.")
   }
+  recordDecisionEvidence(outcome === "APPROVED" ? "approval.approved" : "approval.rejected", request, input.approver, input.reasonCode)
   return { status: outcome }
 }
 
@@ -221,7 +258,10 @@ export async function cancelApprovalByHuman(publicRef: string, approver: HumanAp
     where: { id: request.id, status: { in: ["PENDING", "APPROVED"] } },
     data: { status: "CANCELLED", cancelledAt: now, cancelReason: "HUMAN_CANCELLED", activeBindingKey: null, stepUpCodeHash: null },
   })
-  if (result.count === 1) return
+  if (result.count === 1) {
+    recordDecisionEvidence("approval.cancelled", request, approver, "HUMAN_CANCELLED")
+    return
+  }
   // Nothing was cancelled — report the real terminal state, never silent success.
   const fresh = await db.agentApprovalRequest.findUnique({ where: { id: request.id }, select: { status: true } })
   const status = fresh?.status ?? "CANCELLED"

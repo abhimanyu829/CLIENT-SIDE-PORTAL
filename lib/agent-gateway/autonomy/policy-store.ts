@@ -21,6 +21,7 @@
 import { db } from "@/lib/db"
 import type { RiskTier } from "../capabilities/types"
 import { AUTONOMY_LEVELS, RISK_ORDER, type AutonomyLevel, type EffectiveAutonomyPolicy } from "./types"
+import { recordAudit } from "../audit-ledger/recorder"
 
 export async function loadEffectiveAutonomyPolicy(connectionId: string): Promise<EffectiveAutonomyPolicy | null> {
   const row = await db.agentAutonomyPolicy.findFirst({
@@ -81,6 +82,21 @@ export async function setAutonomyPolicy(input: SetAutonomyPolicyInput): Promise<
   if (!(AUTONOMY_LEVELS as readonly string[]).includes(input.autonomyLevel)) throw new Error("Invalid autonomy level.")
   if (!Object.prototype.hasOwnProperty.call(RISK_ORDER, input.maxRiskTier)) throw new Error("Invalid risk tier.")
 
+  const result = await writeAutonomyPolicy(input)
+  // Phase 11 — evidence of who changed an agent's autonomy, and to what.
+  recordAudit({
+    action: "autonomy.policy_set",
+    outcome: "SUCCESS",
+    actor: { type: "HUMAN", id: input.actorId },
+    connectionId: input.connectionId,
+    autonomyLevel: input.autonomyLevel,
+    autonomyPolicyVersion: result.version,
+    metadata: { levelTo: input.autonomyLevel, maxRiskTier: input.maxRiskTier, environments: input.environmentScope ?? [] },
+  })
+  return result
+}
+
+function writeAutonomyPolicy(input: SetAutonomyPolicyInput): Promise<{ id: string; version: number }> {
   return db.$transaction(async (tx) => {
     const connection = await tx.agentConnection.findUnique({ where: { id: input.connectionId }, select: { id: true } })
     if (!connection) throw new Error("Connection not found.")
@@ -131,19 +147,34 @@ export async function setAutonomyPolicy(input: SetAutonomyPolicyInput): Promise<
  * With `expectedVersion` (Phase 10), only that ACTIVE version is disabled;
  * a different ACTIVE version is a conflict; no ACTIVE version is a no-op.
  */
-export async function disableAutonomyPolicy(connectionId: string, expectedVersion?: number): Promise<void> {
+export async function disableAutonomyPolicy(connectionId: string, expectedVersion?: number, actorId?: string): Promise<void> {
+  const evidence = (count: number) => {
+    if (count === 0) return
+    recordAudit({
+      action: "autonomy.policy_disabled",
+      outcome: "SUCCESS",
+      actor: actorId ? { type: "HUMAN", id: actorId } : { type: "SYSTEM" },
+      connectionId,
+      autonomyLevel: "OBSERVE_ONLY",
+      metadata: { levelTo: "OBSERVE_ONLY", policyVersion: expectedVersion },
+    })
+  }
   if (expectedVersion === undefined) {
-    await db.agentAutonomyPolicy.updateMany({
+    const all = await db.agentAutonomyPolicy.updateMany({
       where: { connectionId, status: "ACTIVE" },
       data: { status: "DISABLED" },
     })
+    evidence(all.count)
     return
   }
   const result = await db.agentAutonomyPolicy.updateMany({
     where: { connectionId, status: "ACTIVE", version: expectedVersion },
     data: { status: "DISABLED" },
   })
-  if (result.count > 0) return
+  if (result.count > 0) {
+    evidence(result.count)
+    return
+  }
   const active = await db.agentAutonomyPolicy.findFirst({ where: { connectionId, status: "ACTIVE" }, select: { version: true } })
   if (active) throw new AutonomyConflictError()
 }

@@ -1,45 +1,45 @@
 # Graph Report - start-client  (2026-10-01)
 
 ## Corpus Check
-- 1133 files · ~1,745,774 words
+- 1135 files · ~1,750,346 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 15 file(s) not represented in the graph (top: (none) 6, .conf 2, .example 1)
 
 ## Summary
-- 5888 nodes · 16728 edges · 293 communities (249 shown, 44 thin omitted)
-- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 714 edges (avg confidence: 0.94)
+- 5906 nodes · 16782 edges · 289 communities (258 shown, 31 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 718 edges (avg confidence: 0.94)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `70bc2850`
+- Built from commit: `41d25c2a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- auth
+- next
 - email/service.ts
 - requireAdmin
 - Button
-- lib/queue.ts
-- dependencies
 - logger.ts
+- dependencies
+- auditLog
 - CallToAction
 - zustand
 - tasks/engine.ts
-- lucide-react
-- cn
+- Badge
+- AdminLayoutClient.tsx
 - @prisma/client
 - package.json
 - AdminProductsClient.tsx
-- react
+- EmailShell
 - otp.ts
-- next
+- requireServiceCenterAccess
 - service-lifecycle-service.ts
 - CheckoutClient.tsx
 - auditLog
-- Textarea
+- MyProductsClient.tsx
 - emitEvent
-- WebhooksClient.tsx
+- cn
 - agent-gateway/config.ts
 - ProductCard.tsx
 - ServiceCampaignCenterClient.tsx
@@ -48,9 +48,9 @@
 - CouponsClient.tsx
 - capabilities/types.ts
 - workers.ts
-- triggers/store.ts
-- Phase 2 — Machine Identity & AgentConnection Lifecycle
-- createNotification
+- runtime.ts
+- requireGovernanceViewer
+- notifications.ts
 - route-handler.ts
 - shared/index.tsx
 - SubadminPermission
@@ -66,7 +66,7 @@
 - compilerOptions
 - serializePrisma
 - AgentExecutionContext
-- (public)/layout.tsx
+- Navbar.tsx
 - PaymentsInspectionClient.tsx
 - AdminServiceEditClient.tsx
 - clerk-user-sync.ts
@@ -74,7 +74,7 @@
 - @clerk/nextjs
 - compilerOptions
 - devDependencies
-- getRazorpay
+- governance/index.ts
 - guard.ts
 - p9-trigger-primitives.test.ts
 - PremiumServicesClient.tsx
@@ -82,13 +82,13 @@
 - gate.ts
 - product-service-profile.ts
 - TriggerService
-- [sessionId]/page.tsx
-- accounts/[id]/route.ts
+- views.ts
+- subadmin-workforce.ts
 - service-discovery.ts
 - scripts
 - sendEmail
 - Phase 6 — Architecture
-- routes.ts
+- governance/http.ts
 - ServiceDiscoveryShelf.tsx
 - governance/actions.ts
 - openai.ts
@@ -97,27 +97,27 @@
 - createPolicyVersion
 - CartProvider.tsx
 - revenue/page.tsx
-- request-service.ts
+- Phase 7 — Approval Engine
 - webhook-handler.ts
 - dashboard/SubscriptionsClient.tsx
-- ProductSearch.tsx
-- blog/[slug]/page.tsx
+- ai-quota-service.ts
+- CRMPipeline.tsx
 - dialogs.tsx
-- db-credential-store.ts
+- Phase 2 — Machine Identity & AgentConnection Lifecycle
 - authorization/policy-store.ts
 - PricingClient.tsx
 - marketplace/index.tsx
 - payment.ts
 - admin/service-requests/page.tsx
-- authz-security.test.ts
+- Phase 6 — Bug Report
 - FeedbackClient.tsx
 - admin/index.tsx
 - api.ts
-- Phase 8 — Task Architecture
+- trigger-test-kit.ts
 - connection-service.ts
 - payments/index.tsx
-- authz-rbac-integration.test.ts
-- Phase 4 — Existing Service Mapping (Step 0 Audit Results)
+- permissions.ts
+- canUseSubadminPermission
 - createFakeDb
 - getPortalSetting
 - marketplace/[slug]/page.tsx
@@ -127,41 +127,41 @@
 - crm.ts
 - AdminServiceCategoriesClient.tsx
 - queries.ts
-- tasks/observability.ts
-- custom-service-portal/settings/route.ts
+- gatewayLogger
+- ui.tsx
 - What You Must Do When Invoked
 - Phase 5 — Security Boundary
 - [id]/TicketDetailClient.tsx
-- blog/page.tsx
+- (public)/ai-agents/page.tsx
 - event-catalog.ts
 - approval-fake-db.ts
-- about/page.tsx
+- routes.ts
 - marketing/index.tsx
-- subadmin-workforce.ts
+- validateSubadminCredentialSession
 - subadmin-permission-policy.ts
 - next-auth.d.ts
 - product.ts
-- registry.ts
+- vitest
 - Input
 - triggers/service.ts
 - 🛠️ Getting Started
-- vitest
-- decision-service.ts
+- p7-execution-gate.test.ts
+- requireApiAuth
 - requireSuperAdmin
 - RichTextEditor.tsx
-- PremiumServiceDetailClient.tsx
+- Phase 8 — Queue Integration
 - types/auth.ts
 - Phase 0 — Security Baseline
 - Abhibhi Agent Gateway — Phases 8–10 Final Report
 - Phase 0 — Side-Effect Map
 - NeuralBackground.tsx
-- AgentApprovalDecisionClient.tsx
+- query-service.ts
 - p10-governance-routes.test.ts
 - p7-approval-services.test.ts
-- custom-service-requests/[id]/route.ts
+- (public)/layout.tsx
 - dashboard/StatsRow.tsx
 - RazorpayButton.tsx
-- context-builder.ts
+- Phase 6 — Test Report
 - sync-enterprise-schema.ts
 - Phase 0 — Dangerous Primitive Audit
 - p10-governance-ui.test.ts
@@ -169,8 +169,8 @@
 - CapabilityDefinition
 - graphify reference: extra exports and benchmark
 - agent-gateway/health.ts
-- AdminUsersClient.tsx
-- DashboardLayoutClient.tsx
+- triggerTransitionRoute
+- useDashboardStore
 - featureFlags.ts
 - firebase-client.ts
 - sanitize-product.ts
@@ -187,7 +187,7 @@
 - PricingCards.tsx
 - rate-limiter.ts
 - CheckoutButton.tsx
-- admin/subscriptions/SubscriptionsClient.tsx
+- lucide-react
 - extends
 - next-env.d.ts
 - seed-subscription-center.ts
@@ -199,15 +199,15 @@
 - Phase 0 — Phase 1 Readiness Report
 - Phase 0 — Risk Matrix
 - vendor/page.tsx
-- request-service/page.tsx
+- AgentConnectionService
 - Phase 0 — Service Dependency Map
 - graphify reference: query, path, explain
-- services/[slug]/page.tsx
+- react
 - Phase 4 — Test Report
-- StockManagementPanel.tsx
+- Phase 0 — Bug / Defect Baseline
 - Phase 4 — Exit Checklist
 - Phase 5 — Tools Architecture (projection, naming, schemas)
-- Phase 5 — Observability
+- startWorkers
 - Phase 3 — Schema Validation
 - graphify reference: add a URL and watch a folder
 - graphify reference: commit hook and native CLAUDE.md integration
@@ -225,15 +225,15 @@
 - developers/page.tsx
 - products/page.tsx
 - Phase 4 — Input/Output Contracts
-- Phase 4 — Idempotency
+- getTaskEngineConfig
 - Phase 5 — Transport & Protocol
 - Phase 5 — Async Operations & Streaming (not built, and why)
 - Phase 5 — Test Report
 - Phase 4 — Async Execution, Timeout, and Cancellation
 - test-phone-otp-entry.cjs
 - mcp-route-handler.test.ts
-- governance-test-kit.ts
-- dashboard/InvoicesClient.tsx
+- task-test-kit.ts
+- useRealtimeChannel
 - Phase 4 — Execution Flow (Representative Trace)
 - ref_path
 - Phase 7 — Security
@@ -250,58 +250,54 @@
 - Phase 6 — Security Boundary
 - next_dev_types_routes_d
 - Phase 7 — Cua Validation Report
-- Phase 7 — Operation Binding
+- canonical-json.ts
 - Phase 7 — Cua Trust Boundary
 - Phase 7 — Test Report
-- ServiceCheckoutClient.tsx
+- PremiumServiceDetailClient.tsx
 - Phase 7 — Exit Checklist
 - ref_crypto
 - 14-precedence.md
 - 15-test-plan.md
 - Phase 3 — Bug Report
 - ecosystem/page.tsx
-- chat/ChatClient.tsx
+- app/layout.tsx
 - Phase 9 — Idempotency
 - Phase 9 — Concurrency
 - Phase 9 — Database Verification
-- careers/page.tsx
-- admin-access/page.tsx
+- triggers/page.tsx
+- DashboardLayoutClient.tsx
 - Phase 5 — Remote MCP Server / External AI Connector
 - Phase 9 — Replay Protection
-- ContactSalesClient
-- UserTable.tsx
-- Phase 0 — Capability Matrix
-- Phase 0 — Authorization Matrix
+- [category]/page.tsx
+- subscription-guard.ts
+- bcryptjs
+- agent-governance/layout.tsx
 - Phase 10 — Approval Management
 - Phase 10 — Task Management
 - Phase 10 — Schedule Management
 - Phase 10 — Webhook Management
 - Phase 10 — Database Verification
 - Phase 5 — Bug Report
-- useFileUpload.ts
-- AdminServiceRequestsClient.tsx
+- dashboard/service-requests/page.tsx
+- blog/[slug]/page.tsx
 - POST
-- projects/ProjectsClient.tsx
-- tickets/TicketsClient.tsx
-- compare-products/page.tsx
-- privacy/page.tsx
-- terms/page.tsx
-- CRMTemplate.tsx
+- ProductCompare.tsx
+- sentry-example-page/page.tsx
+- BackgroundVideo
+- Phase 10 — Policy Management
+- Phase 10 — Autonomy Management
+- Phase 3 — Dependency Map
 - Phase 10 — Admin Information Architecture
-- Phase 10 — Trigger Management
-- Phase 10 — Bug Report
+- pusher-client.ts
+- WelcomeEmail.tsx
 - Phase 5 — Error Model
-- Phase 7 — Decision Model
+- Phase 7 — Bug Report
 - Phase 7 — Cua Integration
-- useSubscription.ts
-- AdminServiceOrdersClient.tsx
-- invoices/InvoicesClient.tsx
-- dashboard/subscriptions/SubscriptionsClient.tsx
-- press/page.tsx
-- cookies/page.tsx
-- PreviewConfigForm.tsx
-- PreviewModal.tsx
-- CouponField.tsx
+- Phase 7 — Database Verification
+- Phase 8 — Task State Machine
+- VerificationEmail.tsx
+- LoginAlertEmail.tsx
+- getStripe
 
 ## God Nodes (most connected - your core abstractions)
 1. `next` - 430 edges
@@ -313,100 +309,100 @@
 7. `zod` - 105 edges
 8. `cn()` - 99 edges
 9. `lucide-react` - 98 edges
-10. `vitest` - 91 edges
+10. `vitest` - 93 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Conventions (reused from the existing admin panel)` --references--> `useToast()`  [INFERRED]
-  docs/agent-gateway/phase-10/02-admin-information-architecture.md → hooks/use-toast.ts
-- `States` --references--> `notFound()`  [INFERRED]
-  docs/agent-gateway/phase-10/02-admin-information-architecture.md → lib/agent-gateway/governance/errors.ts
-- `Server-side validation` --references--> `assertWellFormedCondition()`  [INFERRED]
-  docs/agent-gateway/phase-10/05-policy-management.md → lib/agent-gateway/authorization/policy-language.ts
 - `Known limits (by design)` --references--> `useToast()`  [INFERRED]
   docs/agent-gateway/phase-10/14-bug-report.md → hooks/use-toast.ts
-- `PHASE 9 RESULT — Event / Webhook / Schedule Triggers: COMPLETE (commit `ed57835`)` --references--> `emitEvent()`  [INFERRED]
-  docs/agent-gateway/phases-8-10-final-report.md → lib/services/event-bus.ts
+- `3. Connection lifecycle (state machine)` --references--> `assertLegalTransition()`  [INFERRED]
+  docs/agent-gateway/phase-2/PHASE-2-ARCHITECTURE.md → lib/agent-gateway/identity/state-machine.ts
+- `9. Identity resolution and the HTTP boundary` --references--> `buildRequestContext()`  [INFERRED]
+  docs/agent-gateway/phase-2/PHASE-2-ARCHITECTURE.md → lib/agent-gateway/identity/request-identity.ts
+- `13. Security events / audit` --references--> `recordLifecycleEvent()`  [INFERRED]
+  docs/agent-gateway/phase-2/PHASE-2-ARCHITECTURE.md → lib/agent-gateway/observability/lifecycle-events.ts
+- `Known limits (by design, documented)` --references--> `emitEvent()`  [INFERRED]
+  docs/agent-gateway/phase-9/12-bug-report.md → lib/services/event-bus.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (293 total, 44 thin omitted)
+## Communities (289 total, 31 thin omitted)
 
-### Community 0 - "auth"
+### Community 0 - "next"
 Cohesion: 0.02
-Nodes (113): CredentialRequestsPage(), metadata, metadata, ProductAccessConfigPage(), OwnershipsClient(), metadata, ProductOwnershipsPage(), GET() (+105 more)
+Nodes (144): CredentialRequestsPage(), metadata, dynamic, AdminPreviewsPage(), metadata, metadata, ProductAccessConfigPage(), metadata (+136 more)
 
 ### Community 1 - "email/service.ts"
-Cohesion: 0.06
-Nodes (51): AdminServiceAnalyticsPage(), formatMoney(), Metric(), AdminServiceEmailsPage(), AdminServiceLeadsClient(), AdminServiceLeadsPage(), toIso(), POST() (+43 more)
+Cohesion: 0.09
+Nodes (33): POST(), POST(), schema, createSchema, POST(), POST(), schema, POST() (+25 more)
 
 ### Community 2 - "requireAdmin"
-Cohesion: 0.03
-Nodes (61): AnalyticsPage(), AdminEmailsPage(), OrdersPage(), UserProfilePage(), WebhooksPage(), GET(), GET(), POST() (+53 more)
+Cohesion: 0.04
+Nodes (60): AnalyticsPage(), AdminEmailsPage(), OrdersPage(), dynamic, Metric(), ServiceCampaignAnalyticsPage(), UserProfilePage(), GET() (+52 more)
 
 ### Community 3 - "Button"
-Cohesion: 0.04
-Nodes (61): AdminKPIs, AdminOverviewClient(), EmailSeq, Lead, UserManagementClient(), Cart, CartClient(), money() (+53 more)
+Cohesion: 0.03
+Nodes (68): AdminKPIs, AdminOverviewClient(), AdminCRMClient(), EmailSeq, Lead, AuditEntry, Entitlement, OwnershipsClient() (+60 more)
 
-### Community 4 - "lib/queue.ts"
-Cohesion: 0.05
-Nodes (52): POST(), PATCH(), POST(), POST(), POST(), POST(), POST(), POST() (+44 more)
+### Community 4 - "logger.ts"
+Cohesion: 0.04
+Nodes (77): POST(), actionSchema, PATCH(), POST(), POST(), POST(), POST(), abandonSchema (+69 more)
 
 ### Community 5 - "dependencies"
 Cohesion: 0.03
 Nodes (70): dependencies, @aws-sdk/client-s3, @aws-sdk/s3-request-presigner, bcryptjs, bullmq, class-variance-authority, @clerk/clerk-react, @clerk/nextjs (+62 more)
 
-### Community 6 - "logger.ts"
+### Community 6 - "auditLog"
 Cohesion: 0.04
-Nodes (73): createCampaignSchema, GET(), paginationSchema, POST(), bulkGenerateSchema, createCouponSchema, GET(), isAdmin() (+65 more)
+Nodes (66): createCampaignSchema, GET(), paginationSchema, POST(), bulkGenerateSchema, createCouponSchema, GET(), isAdmin() (+58 more)
 
 ### Community 7 - "CallToAction"
 Cohesion: 0.08
-Nodes (49): AffiliatePage(), metadata, AIAgentsPage(), getAgentData, metadata, revalidate, serialize(), ApiProductsPage() (+41 more)
+Nodes (43): ApiProductsPage(), metadata, ApiReferencePage(), metadata, AutomationPage(), metadata, ComparePage(), metadata (+35 more)
 
 ### Community 8 - "zustand"
 Cohesion: 0.15
 Nodes (10): zustand, AuthState, AuthUser, useAuthStore, CartItem, CartState, useCartStore, Notification (+2 more)
 
 ### Community 9 - "tasks/engine.ts"
-Cohesion: 0.04
-Nodes (115): Modules (`lib/agent-gateway/tasks/`), Maintenance pass, Phase 8 — Task Recovery, tasks(), gatewayLogger, DEFAULT_TASK_ENGINE_CONFIG, __resetTaskEngineConfigForTests(), taskConfigSchema (+107 more)
+Cohesion: 0.05
+Nodes (86): Maintenance pass, Phase 8 — Task Recovery, GateGrant, GovernanceActionDeps, registerTaskTools(), DEFAULT_TASK_ENGINE_CONFIG, TaskEngineConfig, AgentTaskService (+78 more)
 
-### Community 10 - "lucide-react"
+### Community 10 - "Badge"
 Cohesion: 0.08
-Nodes (45): DeploymentCenterClient(), applyUpgrade(), createAddon(), deleteService(), lifecycle(), load(), markUpgradePaid(), resolveRequest() (+37 more)
+Nodes (46): DeploymentCenterClient(), applyUpgrade(), createAddon(), deleteService(), lifecycle(), load(), markUpgradePaid(), resolveRequest() (+38 more)
 
-### Community 11 - "cn"
-Cohesion: 0.06
-Nodes (50): AdminLayout(), AuditEntry, Entitlement, Props, STATUS_COLORS, AdminLayoutClient(), AdminSidebar(), isNavigationAllowed() (+42 more)
+### Community 11 - "AdminLayoutClient.tsx"
+Cohesion: 0.08
+Nodes (32): AdminLayout(), AdminLayoutClient(), AdminSidebar(), isNavigationAllowed(), NAV_ITEMS, NavigationItem, ALERT_EVENTS, Props (+24 more)
 
 ### Community 12 - "@prisma/client"
 Cohesion: 0.08
-Nodes (54): abandonSchema, POST(), DELETE(), GET(), PATCH(), POST(), POST(), GET() (+46 more)
+Nodes (44): GET(), GET(), POST(), POST(), GET(), PATCH(), POST(), amountInMinorUnits() (+36 more)
 
 ### Community 13 - "package.json"
 Cohesion: 0.04
-Nodes (54): getStripe(), name, private, version, autoprefixer, @clerk/clerk-react, clsx, cron-parser (+46 more)
+Nodes (53): name, private, version, autoprefixer, @aws-sdk/s3-request-presigner, @clerk/clerk-react, clsx, eslint (+45 more)
 
 ### Community 14 - "AdminProductsClient.tsx"
-Cohesion: 0.14
-Nodes (34): addProductVersion(), createProduct(), createTier(), deleteProduct(), deleteTier(), duplicateProduct(), republishProduct(), restoreProductVersion() (+26 more)
+Cohesion: 0.10
+Nodes (46): addProductVersion(), createProduct(), createTier(), deleteProduct(), deleteTier(), duplicateProduct(), getProductStock(), initProductStock() (+38 more)
 
-### Community 15 - "react"
-Cohesion: 0.08
-Nodes (34): POST(), submitLeadSchema, BillingOtpEmailProps, CommunicationEmailDetail, CommunicationEmailProps, InvoiceEmailProps, InvoiceReadyEmailProps, LoginAlertEmailProps (+26 more)
+### Community 15 - "EmailShell"
+Cohesion: 0.11
+Nodes (28): POST(), submitLeadSchema, BillingOtpEmail(), BillingOtpEmailProps, CommunicationEmailDetail, CommunicationEmailProps, PaymentFailedEmail(), PaymentFailedEmailProps (+20 more)
 
 ### Community 16 - "otp.ts"
-Cohesion: 0.23
-Nodes (21): POST(), POST(), checkSendCooldown(), generateOtp(), getRemainingAttempts(), normalizePhone(), otpAttemptsKey(), otpCooldownKey() (+13 more)
+Cohesion: 0.19
+Nodes (23): POST(), POST(), checkSendCooldown(), generateOtp(), getRemainingAttempts(), normalizePhone(), otpAttemptsKey(), otpCooldownKey() (+15 more)
 
-### Community 17 - "next"
-Cohesion: 0.04
-Nodes (63): AdminCRMClient(), AdminCRMPage(), dynamic, dynamic, Metric(), ServiceCampaignAnalyticsPage(), AIAgentsPage(), AIModelsPage() (+55 more)
+### Community 17 - "requireServiceCenterAccess"
+Cohesion: 0.14
+Nodes (27): AIAgentsPage(), AIModelsPage(), ApisPage(), AutomationPage(), SERVICE_CENTER_CONFIG, SERVICE_CENTER_ORDER, ServiceCenterConfig, ServiceCentersPage() (+19 more)
 
 ### Community 18 - "service-lifecycle-service.ts"
-Cohesion: 0.09
-Nodes (39): actionSchema, POST(), PUT(), PATCH(), statusSchema, POST(), GET(), POST() (+31 more)
+Cohesion: 0.07
+Nodes (43): actionSchema, POST(), PUT(), PATCH(), statusSchema, POST(), GET(), POST() (+35 more)
 
 ### Community 19 - "CheckoutClient.tsx"
 Cohesion: 0.11
@@ -416,25 +412,25 @@ Nodes (19): Cart, CheckoutClient(), CheckoutState, EmailOtpVerifier, formatMoney
 Cohesion: 0.16
 Nodes (20): createApiKey(), revokeApiKey(), revokeSession(), updateAdminRole(), AdminAuditClient(), AdminUser, ApiKey, AuditLog (+12 more)
 
-### Community 21 - "Textarea"
-Cohesion: 0.11
-Nodes (35): CredentialRequestsClient(), CredRequest, STATUS_COLORS, TABS, Product, ProductAccessConfigClient(), CompactList(), CountdownBadge() (+27 more)
+### Community 21 - "MyProductsClient.tsx"
+Cohesion: 0.13
+Nodes (27): CredentialRequestsClient(), CredRequest, STATUS_COLORS, TABS, ServiceOrder, statusStyle, AdminServiceRequestsClient(), ServiceRequest (+19 more)
 
 ### Community 22 - "emitEvent"
 Cohesion: 0.04
-Nodes (92): AiMonitoringPage(), dynamic, GET(), POST(), POST(), PATCH(), POST(), POST() (+84 more)
+Nodes (101): POST(), PATCH(), REVALIDATE_PROFILE, StockAction, POST(), POST(), PATCH(), POST() (+93 more)
 
-### Community 23 - "WebhooksClient.tsx"
-Cohesion: 0.06
-Nodes (57): Dispute, Metrics, OrdersClient(), Payment, Props, STATUS_COLORS, AdminOverviewPage(), dynamic (+49 more)
+### Community 23 - "cn"
+Cohesion: 0.07
+Nodes (60): Dispute, Metrics, OrdersClient(), Payment, Props, STATUS_COLORS, AdminPreviewsClient(), DemoSessionRow (+52 more)
 
 ### Community 24 - "agent-gateway/config.ts"
-Cohesion: 0.08
-Nodes (31): Not an authentication bypass, Phase 9 — Webhook Security, Signature, Threats and controls, BearerTokenAuthenticator, getCredentialStore(), __resetCredentialStoreForTests(), checkAndConsumeNonce() (+23 more)
+Cohesion: 0.07
+Nodes (41): 4. Authentication architecture, Not an authentication bypass, Phase 9 — Webhook Security, Signature, Threats and controls, BearerTokenAuthenticator, CompositeAuthenticator, getCredentialStore() (+33 more)
 
 ### Community 25 - "ProductCard.tsx"
-Cohesion: 0.10
-Nodes (31): AgentCardData, AIAgentsClient(), CATEGORIES, CATEGORY_META, CategoryPage(), categoryToDbFilter(), Props, Props (+23 more)
+Cohesion: 0.13
+Nodes (26): AgentCardData, CATEGORIES, Props, SerializedProduct, SORT_OPTIONS, TYPES, INTERVAL_LABELS, Product (+18 more)
 
 ### Community 26 - "ServiceCampaignCenterClient.tsx"
 Cohesion: 0.11
@@ -449,28 +445,28 @@ Cohesion: 0.15
 Nodes (18): ALLOWED_TYPES, BUDGET_OPTIONS, CustomServiceRequestForm(), onFiles(), formatBytes(), Input(), Label(), ReviewRow() (+10 more)
 
 ### Community 29 - "CouponsClient.tsx"
-Cohesion: 0.17
-Nodes (25): bulkGenerateCoupons(), createCampaign(), createCoupon(), deactivateCouponAction(), deleteCampaign(), deleteCoupon(), duplicateCampaign(), getCouponAnalytics() (+17 more)
+Cohesion: 0.14
+Nodes (28): bulkGenerateCoupons(), createCampaign(), createCoupon(), deactivateCouponAction(), deleteCampaign(), deleteCoupon(), duplicateCampaign(), getCouponAnalytics() (+20 more)
 
 ### Community 30 - "capabilities/types.ts"
 Cohesion: 0.04
-Nodes (69): 3. Module location, Lifecycle / discovery fields, ID format, No silent breaking changes, Phase 3 — Capability ID & Versioning Rules, Removed capabilities fail closed, Resolution rules, Storage key (+61 more)
+Nodes (62): Lifecycle / discovery fields, ID format, No silent breaking changes, Phase 3 — Capability ID & Versioning Rules, Removed capabilities fail closed, Resolution rules, Storage key, Version format (+54 more)
 
 ### Community 31 - "workers.ts"
 Cohesion: 0.15
-Nodes (20): InvoiceEmail(), DeploymentCompletedEmail, DeploymentStartedEmail, make(), RenewalReminderEmail, ServiceActivatedEmail, ServiceLifecycleEmail(), ServiceLifecycleEmailProps (+12 more)
+Nodes (20): InvoiceEmail(), InvoiceEmailProps, DeploymentCompletedEmail, DeploymentStartedEmail, make(), RenewalReminderEmail, ServiceActivatedEmail, ServiceLifecycleEmail() (+12 more)
 
-### Community 32 - "triggers/store.ts"
+### Community 32 - "runtime.ts"
 Cohesion: 0.11
-Nodes (30): isExpired(), TriggerRuntime, advanceSchedule(), claimActiveSlot(), claimPendingSlot(), createRun(), CreateRunData, createTriggerRow() (+22 more)
+Nodes (34): triggerIdempotencyKey(), isExpired(), LIVE_STATUSES, TriggerRuntime, advanceSchedule(), claimActiveSlot(), claimPendingSlot(), createRun() (+26 more)
 
-### Community 33 - "Phase 2 — Machine Identity & AgentConnection Lifecycle"
-Cohesion: 0.12
-Nodes (17): 11. Race conditions and idempotency, 12. Connection-status cache, 13. Security events / audit, 15. Database changes, 17. Migration application note, 18. Phase 3 prerequisites, 2. Storage decision, 3. Connection lifecycle (state machine) (+9 more)
+### Community 33 - "requireGovernanceViewer"
+Cohesion: 0.32
+Nodes (32): dynamic, GovernanceApprovalsPage(), dynamic, GovernanceAutonomyPage(), GovernanceCapabilitiesPage(), dynamic, GovernanceConnectionDetailPage(), GovernanceConnectionsPage() (+24 more)
 
-### Community 34 - "createNotification"
-Cohesion: 0.06
-Nodes (66): POST(), POST(), reviewSchema, POST(), GET(), POST(), IMPORTANT: Both buffers must use "hex" encoding so we compare the 32 raw bytes,, resolvePostPaymentRedirect() (+58 more)
+### Community 34 - "notifications.ts"
+Cohesion: 0.13
+Nodes (23): POST(), reviewSchema, POST(), POST(), submitProofSchema, CreateNotificationParams, NotificationType, isPusherConfigured() (+15 more)
 
 ### Community 35 - "route-handler.ts"
 Cohesion: 0.07
@@ -485,36 +481,36 @@ Cohesion: 0.29
 Nodes (6): AdminLayoutClientProps, AdminSidebarProps, Phase 0 — Future Agent Threat Model, Threats explicitly out of scope for this system today (confirmed absent, not overlooked), AdminSession, SubadminPermission
 
 ### Community 38 - "(public)/page.tsx"
-Cohesion: 0.10
-Nodes (24): getActiveCampaign, getFeaturedProducts, getNewLaunches, getPlatformStats, getTestimonials, getTopAgents, getTopSellers, getTrendingProducts (+16 more)
+Cohesion: 0.13
+Nodes (20): getActiveCampaign, getFeaturedProducts, getNewLaunches, getPlatformStats, getTestimonials, getTopAgents, getTopSellers, getTrendingProducts (+12 more)
 
 ### Community 39 - "requireHumanApprover"
-Cohesion: 0.12
-Nodes (29): AgentApprovalsPage(), dynamic, AgentApprovalPage(), dynamic, POST(), decisionSchema, POST(), GET() (+21 more)
+Cohesion: 0.18
+Nodes (20): POST(), decisionSchema, POST(), GET(), POST(), GET(), conflictResponse(), DELETE() (+12 more)
 
 ### Community 40 - "@sentry/nextjs"
-Cohesion: 0.11
-Nodes (12): dynamic, GET(), SentryExampleAPIError, Page(), SentryExampleFrontendError, onRouterTransitionStart, onRequestError, register() (+4 more)
+Cohesion: 0.13
+Nodes (10): dynamic, GET(), SentryExampleAPIError, onRouterTransitionStart, onRequestError, register(), nextConfig, securityHeaders (+2 more)
 
 ### Community 41 - "approvals/index.ts"
-Cohesion: 0.15
-Nodes (24): RFC-8785, computeBindingDigest(), computeInputDigest(), OperationBinding, CanonicalizationError, canonicalize(), canonicalJson(), approvalTtlMs() (+16 more)
+Cohesion: 0.09
+Nodes (53): Idempotent creation, Phase 7 — Approval State Machine, Invariants and where they are enforced, Phase 7 — Concurrency, Found and fixed during Phase 7, activeBindingKey(), computeBindingDigest(), computeInputDigest() (+45 more)
 
 ### Community 42 - "CustomServiceDiscussionClient.tsx"
-Cohesion: 0.13
-Nodes (21): ALLOWED, Attachment, Avatar(), CustomServiceDiscussionClient(), onFiles(), Detail, DetailRow(), formatBytes() (+13 more)
+Cohesion: 0.15
+Nodes (18): ALLOWED, Attachment, Avatar(), CustomServiceDiscussionClient(), onFiles(), Detail, DetailRow(), formatBytes() (+10 more)
 
 ### Community 43 - "autonomy/policy-store.ts"
-Cohesion: 0.12
-Nodes (29): GET(), policySchema, Phase 10 — Capability Governance, Tests, The page, DEPLOYMENT_DOMAINS, FINANCIAL_DOMAINS, mandatoryApprovalReason (+21 more)
+Cohesion: 0.11
+Nodes (30): Changes to existing code (all additive), Optimistic concurrency, Found and fixed, Safe fields only, Mandatory approval gates, Outcomes, Phase 7 — Decision Model, PolicyConflictError (+22 more)
 
 ### Community 44 - "SubadminManagementClient"
 Cohesion: 0.16
 Nodes (20): prisma(), SubadminManagementPage(), ACTIONS, Badge(), DATE_TIME_FORMATTER, formatDateTime(), Input(), Metric() (+12 more)
 
 ### Community 45 - "invoice-pdf.ts"
-Cohesion: 0.16
-Nodes (24): GET(), GET(), A4, buildInvoicePdf(), buildReceiptPdf(), dateStr(), drawBenefitsAndAddons(), drawCustomerAndMeta() (+16 more)
+Cohesion: 0.29
+Nodes (16): A4, buildInvoicePdf(), buildReceiptPdf(), dateStr(), drawBenefitsAndAddons(), drawCustomerAndMeta(), drawFooter(), drawHeader() (+8 more)
 
 ### Community 46 - "p7-cua-boundary.test.ts"
 Cohesion: 0.20
@@ -525,16 +521,16 @@ Cohesion: 0.09
 Nodes (20): compilerOptions, baseUrl, incremental, isolatedModules, module, moduleResolution, noEmit, extends (+12 more)
 
 ### Community 48 - "serializePrisma"
-Cohesion: 0.06
-Nodes (39): BillingCenterPage(), dynamic, AdminServicesClient(), EditServicePage(), Category, NewServiceClient(), NewServicePage(), AdminServiceOrdersClient() (+31 more)
+Cohesion: 0.05
+Nodes (46): BillingCenterPage(), dynamic, AdminCRMPage(), AdminServicesClient(), EditServicePage(), Category, NewServiceClient(), NewServicePage() (+38 more)
 
 ### Community 49 - "AgentExecutionContext"
 Cohesion: 0.05
-Nodes (70): 1. What this phase is, 2. Module location, 3. Explicitly forbidden abstractions — none exist in this codebase, 4. Execution flow (one request, start to finish), 5. Relationship to Phase 1/2/3, 6. No HTTP surface added, Phase 4 — Execution Architecture, `AgentCapabilityAdapter<TInput, TOutput>` (`contracts/adapter.ts`) (+62 more)
+Nodes (76): 1. What this phase is, 2. Module location, 3. Explicitly forbidden abstractions — none exist in this codebase, 4. Execution flow (one request, start to finish), 5. Relationship to Phase 1/2/3, 6. No HTTP surface added, Phase 4 — Execution Architecture, `AgentCapabilityAdapter<TInput, TOutput>` (`contracts/adapter.ts`) (+68 more)
 
-### Community 50 - "(public)/layout.tsx"
-Cohesion: 0.07
-Nodes (29): getActiveCampaign(), metadata, PublicLayout(), websiteJsonLd, DashboardSidebar(), NAV, Footer(), FOOTER_LINKS (+21 more)
+### Community 50 - "Navbar.tsx"
+Cohesion: 0.13
+Nodes (14): DashboardSidebar(), NAV, AnnouncementData, MEGA_MENU, Navbar(), SearchModal, QUICK_LINKS, SearchResponse (+6 more)
 
 ### Community 51 - "PaymentsInspectionClient.tsx"
 Cohesion: 0.17
@@ -549,12 +545,12 @@ Cohesion: 0.19
 Nodes (16): POST(), POST(), DashboardLayout(), AUTH_EVENTS, AuthState, toAppSession(), anonymizeDeletedClerkUser(), ClerkUserProfile (+8 more)
 
 ### Community 54 - "custom-service-portal.ts"
-Cohesion: 0.20
-Nodes (15): attachmentSchema, messageSchema, POST(), attachmentSchema, GET(), POST(), requestSchema, adminRecipients() (+7 more)
+Cohesion: 0.08
+Nodes (41): AdminServiceRequestDetailPage(), dynamic, admin(), GET(), PATCH(), schema, attachmentSchema, GET() (+33 more)
 
 ### Community 55 - "@clerk/nextjs"
-Cohesion: 0.11
-Nodes (10): VerifyRequiredPage(), app_globals, metadata, RootLayout(), ClerkAuthFrame(), ClerkAuthFrameProps, LoadingState(), clerkAppearance (+2 more)
+Cohesion: 0.13
+Nodes (7): VerifyRequiredPage(), ClerkAuthFrame(), ClerkAuthFrameProps, LoadingState(), clerkAppearance, clerkAuralisAppearance, @clerk/nextjs
 
 ### Community 56 - "compilerOptions"
 Cohesion: 0.10
@@ -564,13 +560,13 @@ Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModu
 Cohesion: 0.10
 Nodes (20): devDependencies, autoprefixer, eslint, eslint-config-next, pino-pretty, postcss, prisma, react-email (+12 more)
 
-### Community 58 - "getRazorpay"
-Cohesion: 0.21
-Nodes (10): GET(), GET(), POST(), POST(), schema, toPaise(), GET(), getRazorpay() (+2 more)
+### Community 58 - "governance/index.ts"
+Cohesion: 0.12
+Nodes (24): AgentGovernanceOverviewPage(), dynamic, dynamic, GovernanceRuntimePage(), minutes(), onOff(), FeatureNotice(), StatCard() (+16 more)
 
 ### Community 59 - "guard.ts"
-Cohesion: 0.18
-Nodes (11): GateEvaluation, GateGrant, McpTrustedIdentityExtra, AgentConnectionStatusValue, GuardResult, TaskApprovalState, taskBindingDigest(), TaskConnectionState (+3 more)
+Cohesion: 0.20
+Nodes (10): GateEvaluation, McpTrustedIdentityExtra, AgentConnectionStatusValue, GuardResult, TaskApprovalState, taskBindingDigest(), TaskConnectionState, taskExecutionContext() (+2 more)
 
 ### Community 60 - "p9-trigger-primitives.test.ts"
 Cohesion: 0.11
@@ -585,7 +581,7 @@ Cohesion: 0.19
 Nodes (13): MarketplaceClient(), getMarketplaceData, MarketplacePage(), revalidate, serialize(), toIso(), FadeUp(), FadeUpProps (+5 more)
 
 ### Community 63 - "gate.ts"
-Cohesion: 0.10
+Cohesion: 0.11
 Nodes (20): Connection lifecycle, Denial transport, Fail closed, Observability, Phase 7 — Execution Gate, Steps, After creation, Phase 8 changes (+12 more)
 
 ### Community 64 - "product-service-profile.ts"
@@ -593,16 +589,16 @@ Cohesion: 0.30
 Nodes (10): saveProductServiceProfile(), CapacityGroup, DEFAULT_PRODUCT_SERVICE_PROFILE, IncludedService, isRecord(), normalizeCapacityForStorage(), PaidAddon, parseJsonField() (+2 more)
 
 ### Community 65 - "TriggerService"
-Cohesion: 0.25
-Nodes (9): GovernanceActionDeps, createActive(), TriggerError, describeZod(), invalid(), TriggerService, findTriggerById(), updateTriggerVersioned() (+1 more)
+Cohesion: 0.15
+Nodes (15): Phase 10 — Trigger Management, Tests, Trigger page, Fixed after Phase 10 (the two pre-existing P2 issues), Known limits (by design), Phase 10 — Bug Report, Pre-existing (not changed by Phase 10), createActive() (+7 more)
 
-### Community 66 - "[sessionId]/page.tsx"
-Cohesion: 0.47
-Nodes (4): DemoPage(), DemoPageProps, PreviewSandbox(), PreviewSandboxProps
+### Community 66 - "views.ts"
+Cohesion: 0.13
+Nodes (24): dynamic, dynamic, GovernanceTaskDetailPage(), KeyValues(), allCapabilityIds(), getConnectionDetail(), getPolicyDetail(), getTaskDetail() (+16 more)
 
-### Community 67 - "accounts/[id]/route.ts"
-Cohesion: 0.23
-Nodes (15): DELETE(), PATCH(), patchSchema, prisma(), PATCH(), reviewSchema, PATCH(), prisma() (+7 more)
+### Community 67 - "subadmin-workforce.ts"
+Cohesion: 0.15
+Nodes (24): loginSchema, POST(), DELETE(), PATCH(), patchSchema, prisma(), PATCH(), reviewSchema (+16 more)
 
 ### Community 68 - "service-discovery.ts"
 Cohesion: 0.11
@@ -613,80 +609,80 @@ Cohesion: 0.11
 Nodes (18): scripts, build, db:generate, db:migrate, db:migrate:prod, db:push, db:seed, db:studio (+10 more)
 
 ### Community 70 - "sendEmail"
-Cohesion: 0.11
-Nodes (27): POST(), generateOtp(), hashOtp(), POST(), POST(), requestSchema, BillingOtpEmail(), CommunicationEmail() (+19 more)
+Cohesion: 0.26
+Nodes (10): POST(), CommunicationEmail(), ManualPaymentReviewAdminEmail(), ManualPaymentReviewAdminEmailProps, buildSmtpTransport(), ManualPaymentReviewEmailParams, sendManualPaymentReviewEmail(), sendEmail() (+2 more)
 
 ### Community 71 - "Phase 6 — Architecture"
 Cohesion: 0.33
 Nodes (5): Module layout, Phase 6 — Architecture, The three questions, kept separate, What Phase 6 explicitly does not touch, Where Phase 6 sits
 
-### Community 72 - "routes.ts"
-Cohesion: 0.04
-Nodes (63): dynamic, POST, dynamic, POST, dynamic, POST, dynamic, POST (+55 more)
+### Community 72 - "governance/http.ts"
+Cohesion: 0.08
+Nodes (28): dynamic, POST, dynamic, POST, dynamic, POST, dynamic, POST (+20 more)
 
 ### Community 73 - "ServiceDiscoveryShelf.tsx"
 Cohesion: 0.20
 Nodes (13): metadata, Props, ServicesDirectoryPage(), AutoPlayingVideo(), BADGE_STYLES, BUTTON_CLASS_MAP, Discovery, POSITION_CLASS_MAP (+5 more)
 
 ### Community 74 - "governance/actions.ts"
-Cohesion: 0.12
-Nodes (33): Human Admin Override (per the spec's explicit section), Cache — explicit key, TTL, invalidation, and fail-open/fail-closed split, "Never allow stale ALLOW decisions beyond defined security bounds", Phase 6 — Policy Versioning and Cache, Versioning — immutable, traceable, rollback-safe, disablePolicy(), enablePolicy(), invalidatePolicyCache() (+25 more)
+Cohesion: 0.15
+Nodes (25): cancelTaskAction(), createPolicyAction(), createTriggerAction(), ENVIRONMENTS, publishPolicyVersionAction(), requirePolicy(), rollbackPolicyAction(), rotateTriggerSecretAction() (+17 more)
 
 ### Community 75 - "openai.ts"
 Cohesion: 0.25
 Nodes (9): POST(), POST(), POST(), embeddingWorkerOptions, worker, generateEmbedding(), openai, streamChat() (+1 more)
 
 ### Community 76 - "AgentMachineIdentity"
-Cohesion: 0.04
-Nodes (32): 1. What this phase is, 2. What this phase is NOT, 4. Why no HTTP surface in Phase 3, 5. Relationship to Phase 0/1/2, 6. Core design decisions, Phase 3 — Capability Architecture, Behavioral metadata (descriptive only — not enforced by this registry), Contract fields (+24 more)
+Cohesion: 0.07
+Nodes (24): 1. What this phase is, 2. What this phase is NOT, 3. Module location, 4. Why no HTTP surface in Phase 3, 5. Relationship to Phase 0/1/2, 6. Core design decisions, Phase 3 — Capability Architecture, Behavioral metadata (descriptive only — not enforced by this registry) (+16 more)
 
 ### Community 77 - "dashboard/index.tsx"
 Cohesion: 0.15
 Nodes (9): ActivityFeedProps, ActivityItem, AIUsageMeterProps, AnimatedValue(), BillingWidgetProps, QuickAction, StatItem, StatsWidget() (+1 more)
 
 ### Community 78 - "createPolicyVersion"
-Cohesion: 0.08
-Nodes (28): Changes to existing code (all additive), Confirmation, Effect, Optimistic concurrency, Phase 10 — Policy Management, Server-side validation, Effect and safety, Optimistic concurrency (additive) (+20 more)
+Cohesion: 0.11
+Nodes (25): Attribute vocabulary (the full, closed list), Phase 6 — Policy Language (Declarative ABAC, No Code Execution), Read-time evaluation is fail-safe, not fail-throw, The closed operator set, The one real bug this phase found (see `13-bug-report.md` for full detail), Write-time validation (`assertWellFormedCondition`), Human Admin Override (per the spec's explicit section), Cache — explicit key, TTL, invalidation, and fail-open/fail-closed split (+17 more)
 
 ### Community 79 - "CartProvider.tsx"
 Cohesion: 0.22
-Nodes (11): ClerkSessionSync(), Providers(), ThemeProvider(), ThemeProviderProps, CartData, CartItem, CartSyncState, useCartSync() (+3 more)
+Nodes (10): PreviewSession, Product, AuthUser, useAuth(), CartData, CartItem, CartSyncState, useCartSync() (+2 more)
 
 ### Community 80 - "revenue/page.tsx"
-Cohesion: 0.24
-Nodes (10): CustomTooltip(), DaySale, RevenueChartClient(), TopUser, TopUsersTable(), getRevenueData(), KPICard(), metadata (+2 more)
+Cohesion: 0.27
+Nodes (9): CustomTooltip(), DaySale, RevenueChartClient(), TopUser, TopUsersTable(), getRevenueData(), KPICard(), metadata (+1 more)
 
-### Community 81 - "request-service.ts"
-Cohesion: 0.09
-Nodes (24): Agent flow, Decision record (`AgentApprovalDecision`), Idempotent creation, Other outcomes the agent can see, Phase 7 — Approval Engine, Stored request (`AgentApprovalRequest`), Phase 7 — Concurrency, Behavior change to note (+16 more)
+### Community 81 - "Phase 7 — Approval Engine"
+Cohesion: 0.33
+Nodes (5): Agent flow, Decision record (`AgentApprovalDecision`), Other outcomes the agent can see, Phase 7 — Approval Engine, Stored request (`AgentApprovalRequest`)
 
 ### Community 82 - "webhook-handler.ts"
-Cohesion: 0.15
-Nodes (17): dynamic, POST(), runtime, NonceCheckResult, createTriggerRuntime(), FireResult, WEBHOOK_HEADERS, findTriggerByRef() (+9 more)
+Cohesion: 0.18
+Nodes (15): dynamic, POST(), runtime, NonceCheckResult, createTriggerRuntime(), FireResult, parseWebhookTimestamp(), TriggerDelivery (+7 more)
 
 ### Community 83 - "dashboard/SubscriptionsClient.tsx"
+Cohesion: 0.17
+Nodes (14): fmtDate(), fmtMoney(), Product, Props, STATUS_CONFIG, Subscription, SubscriptionsClient(), UpgradeButton() (+6 more)
+
+### Community 84 - "ai-quota-service.ts"
+Cohesion: 0.15
+Nodes (22): AiMonitoringPage(), dynamic, AdminOverviewPage(), dynamic, linearRegression(), DashboardData, GET(), POST() (+14 more)
+
+### Community 85 - "CRMPipeline.tsx"
 Cohesion: 0.13
-Nodes (18): PreviewSession, Product, fmtDate(), fmtMoney(), Product, Props, STATUS_CONFIG, Subscription (+10 more)
-
-### Community 84 - "ProductSearch.tsx"
-Cohesion: 0.47
-Nodes (3): ProductSearch(), ProductSearchProps, useDebounce()
-
-### Community 85 - "blog/[slug]/page.tsx"
-Cohesion: 0.10
-Nodes (14): AdminReviewsPage(), BlogPostPage(), BlogPostProps, getRelatedPosts(), CRMPipelineProps, Lead, LeadActivity, stageColors (+6 more)
+Nodes (11): AdminReviewsPage(), CRMPipelineProps, Lead, LeadActivity, stageColors, STAGES, ReviewModerationTable(), ReviewWithRelations (+3 more)
 
 ### Community 86 - "dialogs.tsx"
 Cohesion: 0.17
 Nodes (7): ALERT_STYLES, ConfirmDialogProps, InlineAlertProps, NOTIF_ICON, NOTIF_TYPE_STYLE, Notification, NotificationBellProps
 
-### Community 87 - "db-credential-store.ts"
-Cohesion: 0.09
-Nodes (27): 11. Health / readiness, 13. Environment variables (all new, all gateway-scoped, none touching the main app's `lib/env.ts` schema), 14. Known limitations (explicit, not silently accepted), 15. Phase 2 prerequisites, 1. Deployment topology decision, 2. Trust boundary, 3. Entry point, 5. Credential storage (Phase 1 — explicitly temporary) (+19 more)
+### Community 87 - "Phase 2 — Machine Identity & AgentConnection Lifecycle"
+Cohesion: 0.06
+Nodes (40): 11. Health / readiness, 13. Environment variables (all new, all gateway-scoped, none touching the main app's `lib/env.ts` schema), 14. Known limitations (explicit, not silently accepted), 15. Phase 2 prerequisites, 1. Deployment topology decision, 2. Trust boundary, 3. Entry point, 5. Credential storage (Phase 1 — explicitly temporary) (+32 more)
 
 ### Community 88 - "authorization/policy-store.ts"
-Cohesion: 0.09
-Nodes (38): Data flow for one `tools/call`, Policy model, Reuses Phase 1/5's logger, not a new stack, evaluate(), hardSecurityDeny(), PolicySet, RISK_ORDER, riskExceeds() (+30 more)
+Cohesion: 0.05
+Nodes (66): Data flow for one `tools/call`, Policy model, `authenticationStrength` — a related, smaller documented gap, Phase 6 — Resource-Scope Boundary (Phase 6 vs. Phase 4, disclosed explicitly), The boundary, stated plainly, What this means in practice, Why this boundary exists (not an oversight), Why arbitrary code execution is structurally impossible, not just discouraged (+58 more)
 
 ### Community 89 - "PricingClient.tsx"
 Cohesion: 0.24
@@ -704,9 +700,9 @@ Nodes (10): BILLING_PERIODS, BillingPeriod, INVOICE_STATUSES, InvoiceRow, Invoic
 Cohesion: 0.29
 Nodes (7): AdminCustomServiceRequestControls(), AdminServiceRequestsPage(), ALL_STATUSES, dynamic, STATUS_META, StatusBadge(), timeAgo()
 
-### Community 93 - "authz-security.test.ts"
-Cohesion: 0.09
-Nodes (22): Attribute vocabulary (the full, closed list), Phase 6 — Policy Language (Declarative ABAC, No Code Execution), Read-time evaluation is fail-safe, not fail-throw, The closed operator set, The one real bug this phase found (see `13-bug-report.md` for full detail), Why arbitrary code execution is structurally impossible, not just discouraged, Write-time validation (`assertWellFormedCondition`), Bug #1 — P1, SECURITY, PHASE-6 INTRODUCED — prototype-chain attribute lookup in the policy-condition evaluator (+14 more)
+### Community 93 - "Phase 6 — Bug Report"
+Cohesion: 0.29
+Nodes (6): Bugs found and fixed this phase, Contract observations (documented, not "fixed" — nothing to fix), Methodology, Phase 6 — Bug Report, Test-code-only defects found and fixed (never shipped in the module itself, documented for completeness per the spec's "document unresolved issues" requirement — these were resolved, not left unresolved), Verification of "zero unresolved Phase-6-introduced issues" claim
 
 ### Community 94 - "FeedbackClient.tsx"
 Cohesion: 0.29
@@ -720,29 +716,29 @@ Nodes (7): ACTION_COLOR, AuditEntry, AuditLogTableProps, COLUMNS, Lead, LeadKanb
 Cohesion: 0.22
 Nodes (9): API_ERROR_CODES, ApiErrorCode, ApiResponse, ListParams, PaginatedResponse, PartialBy, RequiredBy, Serialized (+1 more)
 
-### Community 97 - "Phase 8 — Task Architecture"
-Cohesion: 0.40
-Nodes (4): Changes to earlier phases (all additive), Phase 8 — Task Architecture, Rollout switch, Scope
+### Community 97 - "trigger-test-kit.ts"
+Cohesion: 0.14
+Nodes (15): connection, opened, kitWithProducts(), owner, Kit, normalized(), Kit, buildTriggerKit() (+7 more)
 
 ### Community 98 - "connection-service.ts"
-Cohesion: 0.09
-Nodes (24): Phase 0 — Data Sensitivity Matrix, Redaction principle for Phase 1+, 16. Known limitations (explicit, not silently accepted), invalidateConnectionStatus(), AgentConnectionSummary, CreateAgentConnectionInput, CreatedAgentConnectionResult, CredentialRotationResult (+16 more)
+Cohesion: 0.11
+Nodes (22): 11. Race conditions and idempotency, 16. Known limitations (explicit, not silently accepted), invalidateConnectionStatus(), AgentConnectionSummary, CreateAgentConnectionInput, CreatedAgentConnectionResult, CredentialRotationResult, PrismaAgentConnectionService (+14 more)
 
 ### Community 99 - "payments/index.tsx"
 Cohesion: 0.22
 Nodes (4): CheckoutFormProps, OrderSummaryProps, PaymentMethodCardProps, UpgradePromptProps
 
-### Community 100 - "authz-rbac-integration.test.ts"
-Cohesion: 0.13
-Nodes (14): Governance UI — explicitly deferred, Phase 6 — RBAC Separation (Human Authority ≠ Agent Authority), The core separation, proven by test, The two systems this phase found (Step 0 audit), What Phase 6 never touches, What Phase 6 reuses, and how, isKnownHumanPermission(), KNOWN_HUMAN_PERMISSIONS (+6 more)
+### Community 100 - "permissions.ts"
+Cohesion: 0.43
+Nodes (5): hasAllPermissions(), hasAnyPermission(), hasPermission(), requirePermission(), ROLE_PERMISSIONS
 
-### Community 101 - "Phase 4 — Existing Service Mapping (Step 0 Audit Results)"
-Cohesion: 0.25
-Nodes (7): coupons.create -> `createCoupon` (`app/(admin)/admin/coupons/actions.ts`) — NOT_EXECUTABLE_YET, Phase 4 — Existing Service Mapping (Step 0 Audit Results), products.get -> `app/api/products/[slug]/route.ts` GET (lines 6-38), products.list -> `app/api/products/route.ts` GET (lines 7-73), products.updatePricing / refunds.process, subscriptions.get -> no dedicated route exists, tickets.list -> `app/api/tickets/route.ts` GET (lines 8-47)
+### Community 101 - "canUseSubadminPermission"
+Cohesion: 0.12
+Nodes (17): 2. Request Pipeline (current, human-facing), 3. Authorization Architecture (current), 5. Known Architectural Inconsistencies (documented, not fixed — see BUG-BASELINE.md), Phase 0 — Architecture Audit, Identity layers (current, human-facing), coupons.create -> `createCoupon` (`app/(admin)/admin/coupons/actions.ts`) — NOT_EXECUTABLE_YET, Phase 4 — Existing Service Mapping (Step 0 Audit Results), products.createDraft -> `createProduct` (`app/(admin)/admin/products/actions.ts`) — NOT_EXECUTABLE_YET (+9 more)
 
 ### Community 102 - "createFakeDb"
-Cohesion: 0.12
-Nodes (15): ENCRYPTION_KEY, setupService(), ENCRYPTION_KEY, setupService(), ENCRYPTION_KEY, setupService(), createFakeDb(), FakeAgentConnectionRow (+7 more)
+Cohesion: 0.08
+Nodes (17): ENCRYPTION_KEY, setupService(), ENCRYPTION_KEY, setupService(), ENCRYPTION_KEY, FakeDb, setupService(), ENCRYPTION_KEY (+9 more)
 
 ### Community 103 - "getPortalSetting"
 Cohesion: 0.20
@@ -758,7 +754,7 @@ Nodes (4): DemoNavProps, DemoTimerProps, RuntimeStatusProps, TEMPLATES
 
 ### Community 106 - "template-registry.tsx"
 Cohesion: 0.13
-Nodes (28): GET(), Environment, Execution, Per job, Phase 8 — Worker Integration, InvoiceReadyEmail(), LoginAlertEmail(), PasswordResetEmail() (+20 more)
+Nodes (19): POST(), InvoiceReadyEmail(), InvoiceReadyEmailProps, PasswordResetEmail(), PasswordResetEmailProps, PreviewExpiredEmail(), PreviewExpiredEmailProps, PreviewStartedEmail() (+11 more)
 
 ### Community 108 - "crm.ts"
 Cohesion: 0.25
@@ -769,16 +765,16 @@ Cohesion: 0.48
 Nodes (5): AdminServiceCategoriesClient(), Category, emptyForm(), AdminServiceCategoriesPage(), toIso()
 
 ### Community 110 - "queries.ts"
-Cohesion: 0.05
-Nodes (145): dynamic, GovernanceApprovalsPage(), dynamic, GovernanceAutonomyPage(), dynamic, GovernanceCapabilitiesPage(), dynamic, GovernanceConnectionDetailPage() (+137 more)
+Cohesion: 0.07
+Nodes (43): dynamic, Concurrency, Phase 10 — Connection Management, Tests, What the pages show, skipFor(), APPROVAL_LIST_SELECT, APPROVAL_STATUSES (+35 more)
 
-### Community 111 - "tasks/observability.ts"
+### Community 111 - "gatewayLogger"
+Cohesion: 0.08
+Nodes (21): 12. Logging / observability, Audit hook, Event kinds (`McpEventKind`), Phase 5 — Observability, Reused metrics counters, Reuses Phase 1's logger, not a new logging stack, Severity routing, What tracing/correlation exists (+13 more)
+
+### Community 112 - "ui.tsx"
 Cohesion: 0.13
-Nodes (11): 12. Logging / observability, auditHookSingleton, LoggingAuditHook, counters, GatewayMetricsSnapshot, GatewayAuditEvent, GatewayAuditHook, METRIC_BY_EVENT (+3 more)
-
-### Community 112 - "custom-service-portal/settings/route.ts"
-Cohesion: 0.43
-Nodes (6): admin(), GET(), PATCH(), schema, CUSTOM_SERVICE_PORTAL_ID, isCustomServiceAdmin()
+Nodes (18): dynamic, dynamic, dynamic, Column, EmptyState(), FilterField, hrefWith(), TONES (+10 more)
 
 ### Community 113 - "What You Must Do When Invoked"
 Cohesion: 0.08
@@ -786,31 +782,31 @@ Nodes (24): For /graphify add and --watch, For /graphify query, For the commit h
 
 ### Community 114 - "Phase 5 — Security Boundary"
 Cohesion: 0.09
-Nodes (22): 4. Authentication architecture, 10. Anti-enumeration error contract, Auth failure normalization, Bearer auth, Flow, Never trusted, No separate identity system, Phase 5 — Authentication Integration (+14 more)
+Nodes (19): 10. Anti-enumeration error contract, Auth failure normalization, Bearer auth, Flow, Never trusted, No separate identity system, Phase 5 — Authentication Integration, Authentication (+11 more)
 
 ### Community 115 - "[id]/TicketDetailClient.tsx"
 Cohesion: 0.29
 Nodes (5): AI_SUGGESTIONS, Msg, STATUS_OPTIONS, STATUS_STYLE, Ticket
 
-### Community 116 - "blog/page.tsx"
-Cohesion: 0.38
-Nodes (6): BlogListPage(), CATEGORIES, getPosts(), GRADIENT_VARIANTS, metadata, readingTime()
+### Community 116 - "(public)/ai-agents/page.tsx"
+Cohesion: 0.13
+Nodes (19): AffiliatePage(), metadata, AIAgentsClient(), AIAgentsPage(), getAgentData, metadata, revalidate, serialize() (+11 more)
 
 ### Community 117 - "event-catalog.ts"
-Cohesion: 0.13
-Nodes (14): kitWithProducts(), buildTriggerKit(), getTriggerConfig(), toConfig(), NormalizedTriggerEvent, normalizeTriggerEvent(), plainId(), NOTE: string keys only (no runtime import of event-bus) — event-bus imports (+6 more)
+Cohesion: 0.17
+Nodes (13): Modules (`lib/agent-gateway/triggers/`), NormalizedTriggerEvent, normalizeTriggerEvent(), plainId(), NOTE: string keys only (no runtime import of event-bus) — event-bus imports, RESOURCE_ID_PATTERN, TRIGGER_EVENT_CATALOG, TriggerEventDefinition (+5 more)
 
 ### Community 118 - "approval-fake-db.ts"
 Cohesion: 0.18
 Nodes (17): applyData(), createdAtNow(), createTable(), assertUnique(), FakeUser, isCompoundSelector(), matchesCondition(), matchesWhere() (+9 more)
 
-### Community 119 - "about/page.tsx"
-Cohesion: 0.33
-Nodes (4): metadata, STATS, TIMELINE, VALUES
+### Community 119 - "routes.ts"
+Cohesion: 0.13
+Nodes (19): dynamic, POST, dynamic, POST, IdContext, policyToggleRoute(), RefContext, PolicyCreateBody (+11 more)
 
-### Community 121 - "subadmin-workforce.ts"
-Cohesion: 0.17
-Nodes (17): loginSchema, POST(), createSchema, POST(), prisma(), GET(), firstAdminPathForPermissions(), ADMIN_ACTIONS (+9 more)
+### Community 121 - "validateSubadminCredentialSession"
+Cohesion: 0.23
+Nodes (9): createSchema, POST(), prisma(), AdminAccessClient(), AdminAccessPage(), firstAdminPathForPermissions(), notifySuperAdmins(), resolveSuperAdmins() (+1 more)
 
 ### Community 122 - "subadmin-permission-policy.ts"
 Cohesion: 0.12
@@ -824,41 +820,41 @@ Nodes (6): ref_next_auth, JWT, next-auth, next-auth/jwt, Session, User
 Cohesion: 0.29
 Nodes (6): ProductAdminRow, ProductCard, ProductDetail, ProductWithTiersAndReviews, ReviewWithUser, TierDisplay
 
-### Community 125 - "registry.ts"
+### Community 125 - "vitest"
 Cohesion: 0.05
-Nodes (66): The `AuthInfo.extra` carrier, Fields logged — safe by construction, couponsCreate, productsCreateDraft, productsGet, productsList, productSummarySchema, productsUpdatePricing (+58 more)
+Nodes (72): The `AuthInfo.extra` carrier, CORE_CAPABILITY_MANIFEST, couponsCreate, productsCreateDraft, productsGet, productsList, productSummarySchema, productsUpdatePricing (+64 more)
 
 ### Community 126 - "Input"
-Cohesion: 0.07
-Nodes (58): AiMonitoringClient(), ModelStat, Props, TopUser, AnalyticsClient(), CohortRow, FunnelStep, MrrSummary (+50 more)
+Cohesion: 0.06
+Nodes (70): AiMonitoringClient(), ModelStat, Props, TopUser, AnalyticsClient(), CohortRow, FunnelStep, MrrSummary (+62 more)
 
 ### Community 127 - "triggers/service.ts"
 Cohesion: 0.08
-Nodes (35): TriggerRunAdminView, DEFAULT_TRIGGER_CONFIG, __resetTriggerConfigForTests(), schema, TriggerConfig, STATUS_BY_CODE, createTriggerService(), FireOutcome (+27 more)
+Nodes (34): TriggerRunAdminView, TriggerConfig, STATUS_BY_CODE, createTriggerService(), FireOutcome, TickReport, TRIGGER_EVENT_JOB_SCHEMA, TriggerConnectionState (+26 more)
 
 ### Community 128 - "🛠️ Getting Started"
 Cohesion: 0.11
 Nodes (17): 1. Installation, 2. Environment Variables, 3. Database Migration & Setup, 4. Running the Development Server, 5. Running Background Workers, 📜 Available Scripts, Backend & Database, Frontend & UI (+9 more)
 
-### Community 129 - "vitest"
-Cohesion: 0.07
-Nodes (41): createApprovalFakeDb(), COUPON, setup(), approveFromMessage(), call(), rejectFromMessage(), SUPER, T0 (+33 more)
+### Community 129 - "p7-execution-gate.test.ts"
+Cohesion: 0.16
+Nodes (23): now, run(), setupStore(), TIERS, COUPON, setup(), approveFromMessage(), call() (+15 more)
 
-### Community 130 - "decision-service.ts"
-Cohesion: 0.24
-Nodes (15): Phase 7 — Approval State Machine, APPROVAL_METHOD_STEP_UP, APPROVER_SCOPE_SUPER_ADMIN, assertApproverScope(), assertPending(), cancelApprovalByHuman(), decideApproval(), DecideApprovalInput (+7 more)
+### Community 130 - "requireApiAuth"
+Cohesion: 0.19
+Nodes (17): POST(), DELETE(), GET(), PATCH(), POST(), POST(), GET(), PATCH() (+9 more)
 
 ### Community 131 - "requireSuperAdmin"
-Cohesion: 0.10
-Nodes (26): AdminPaymentVerificationsPage(), POST(), POST(), POST(), GET(), POST(), createSchema, GET() (+18 more)
+Cohesion: 0.08
+Nodes (32): AdminPaymentVerificationsPage(), POST(), POST(), POST(), GET(), POST(), createSchema, GET() (+24 more)
 
 ### Community 132 - "RichTextEditor.tsx"
 Cohesion: 0.33
 Nodes (4): FORMATS, HEADINGS, LISTS, RichTextEditorProps
 
-### Community 133 - "PremiumServiceDetailClient.tsx"
-Cohesion: 0.05
-Nodes (31): AddonService, CYCLE_LABELS, fmt(), PremiumService, PremiumServiceDetailClient(), Product, ProductTier, QueryModal() (+23 more)
+### Community 133 - "Phase 8 — Queue Integration"
+Cohesion: 0.10
+Nodes (16): 1. System Overview, Fail closed, One job per attempt, Payload, Phase 8 — Queue Integration, Reused infrastructure, Verified against real BullMQ, Why a dedicated queue (+8 more)
 
 ### Community 134 - "types/auth.ts"
 Cohesion: 0.33
@@ -869,8 +865,8 @@ Cohesion: 0.15
 Nodes (12): Content Security Policy — gaps found, CORS, CSRF, Error handling / information leakage, HTTP / Transport, Phase 0 — Security Baseline, Rate limiting, Replay protection (+4 more)
 
 ### Community 136 - "Abhibhi Agent Gateway — Phases 8–10 Final Report"
-Cohesion: 0.12
-Nodes (16): Abhibhi Agent Gateway — Phases 8–10 Final Report, BUGS, BUILD, CROSS-PHASE, DATABASE, DOCS, FINAL EXIT STATUS, GIT DIFF (+8 more)
+Cohesion: 0.11
+Nodes (17): Abhibhi Agent Gateway — Phases 8–10 Final Report, BUGS, BUILD, CROSS-PHASE, DATABASE, DOCS, FINAL EXIT STATUS, FOLLOW-UP FIXES (after Phase 10) (+9 more)
 
 ### Community 137 - "Phase 0 — Side-Effect Map"
 Cohesion: 0.20
@@ -880,9 +876,9 @@ Nodes (9): admin.banUser, Cross-cutting observation, deployment-center.advanceSt
 Cohesion: 0.60
 Nodes (3): AuthLayout(), NeuralBackground(), Point
 
-### Community 139 - "AgentApprovalDecisionClient.tsx"
-Cohesion: 0.40
-Nodes (4): AgentApprovalDecisionClient(), post(), Props, Result
+### Community 139 - "query-service.ts"
+Cohesion: 0.17
+Nodes (12): AgentApprovalsPage(), dynamic, AgentApprovalDecisionClient(), post(), Props, Result, AgentApprovalPage(), dynamic (+4 more)
 
 ### Community 140 - "p10-governance-routes.test.ts"
 Cohesion: 0.23
@@ -890,11 +886,11 @@ Nodes (11): cancelTask(), connectionAction(), createPolicy(), createTrigger(), d
 
 ### Community 141 - "p7-approval-services.test.ts"
 Cohesion: 0.11
-Nodes (17): Forged-input resistance, Approval binding, Data handling, No new primitives, Ownership, Phase 8 — Task Security, Same chain as a synchronous call, Server-derived security context (+9 more)
+Nodes (16): Forged-input resistance, Approval binding, Data handling, No new primitives, Ownership, Phase 8 — Task Security, Same chain as a synchronous call, Server-derived security context (+8 more)
 
-### Community 142 - "custom-service-requests/[id]/route.ts"
-Cohesion: 0.20
-Nodes (11): AdminServiceRequestDetailPage(), dynamic, GET(), GET(), PATCH(), statusSchema, dynamic, ServiceRequestDiscussionPage() (+3 more)
+### Community 142 - "(public)/layout.tsx"
+Cohesion: 0.16
+Nodes (15): getActiveCampaign(), metadata, PublicLayout(), websiteJsonLd, Footer(), FOOTER_LINKS, SOCIALS, TRUST_BADGES (+7 more)
 
 ### Community 143 - "dashboard/StatsRow.tsx"
 Cohesion: 0.50
@@ -904,17 +900,17 @@ Nodes (4): Stat, StatsRow(), StatsRowProps, trendClass()
 Cohesion: 0.50
 Nodes (4): loadRazorpayScript(), RazorpayButton(), RazorpayButtonProps, Window
 
-### Community 145 - "context-builder.ts"
-Cohesion: 0.16
-Nodes (9): `authenticationStrength` — a related, smaller documented gap, Phase 6 — Resource-Scope Boundary (Phase 6 vs. Phase 4, disclosed explicitly), The boundary, stated plainly, What this means in practice, Why this boundary exists (not an oversight), Spec test-plan coverage (Sections A-M), buildAuthorizationContext(), extractResourceId() (+1 more)
+### Community 145 - "Phase 6 — Test Report"
+Cohesion: 0.40
+Nodes (4): Phase 6 — Test Report, Regression verification, Spec test-plan coverage (Sections A-M), Summary
 
 ### Community 146 - "sync-enterprise-schema.ts"
 Cohesion: 0.50
 Nodes (4): main(), prisma, splitSqlStatements(), sql
 
 ### Community 147 - "Phase 0 — Dangerous Primitive Audit"
-Cohesion: 0.17
-Nodes (11): Implication for Phase 1 identity design, Arbitrary URL fetch / SSRF-shaped endpoints, eval / dynamic code execution, Generic object-mutation / CRUD endpoints — the one real finding, Minor code-quality flag (not a security vulnerability), Phase 0 — Dangerous Primitive Audit, Raw SQL (`$executeRaw` / `$queryRaw` / `*Unsafe` variants), Service-role keys / admin DB credentials in code (+3 more)
+Cohesion: 0.12
+Nodes (15): Admin vs. Team Member vs. Future Agent (illustrative, using existing enforcement only), Implication for Phase 1 identity design, Phase 0 — Authorization Matrix, Resource ownership patterns (confirmed via code, not inferred), Role enum (source of truth), Arbitrary URL fetch / SSRF-shaped endpoints, eval / dynamic code execution, Generic object-mutation / CRUD endpoints — the one real finding (+7 more)
 
 ### Community 148 - "p10-governance-ui.test.ts"
 Cohesion: 0.16
@@ -925,8 +921,8 @@ Cohesion: 0.36
 Nodes (4): Field(), JoinOurTeamClient(), Status, JoinOurTeamPage()
 
 ### Community 150 - "CapabilityDefinition"
-Cohesion: 0.05
-Nodes (59): 2. Module location, Version collapsing (the one real bug this phase found — see `12-bug-report.md`), Phase 5 — Phase 6 Authorization Boundary, Production default: `FailClosedAuthorizer`, Test-only counterpart: `AllowAllForTestingAuthorizer`, The interface (`authorization-hook.ts`), What Phase 5 builds here, and what it deliberately does not, What Phase 6 will need to do (forward-looking, not built here) (+51 more)
+Cohesion: 0.04
+Nodes (65): Behavior, Current applicability, Design, Fail-open, deliberately, Phase 4 — Idempotency, Scope, 2. Module location, Version collapsing (the one real bug this phase found — see `12-bug-report.md`) (+57 more)
 
 ### Community 151 - "graphify reference: extra exports and benchmark"
 Cohesion: 0.22
@@ -936,13 +932,13 @@ Nodes (8): graphify reference: extra exports and benchmark, Step 6b - Wiki (only
 Cohesion: 0.48
 Nodes (5): GET(), runtime, checkBackend(), checkRedis(), getGatewayHealth()
 
-### Community 153 - "AdminUsersClient.tsx"
-Cohesion: 0.23
-Nodes (10): AdminUsersClient(), FraudBadge(), fraudScore(), Props, ROLE_COLORS, STATUS_COLORS, User, Checkbox (+2 more)
+### Community 153 - "triggerTransitionRoute"
+Cohesion: 0.12
+Nodes (11): dynamic, POST, dynamic, POST, dynamic, POST, dynamic, POST (+3 more)
 
-### Community 154 - "DashboardLayoutClient.tsx"
-Cohesion: 0.10
-Nodes (28): ChatPage(), DashboardOverview(), ActivityFeed(), ChatClient(), CommandPalette(), DashboardLayout(), NAV, NotificationDropdown() (+20 more)
+### Community 154 - "useDashboardStore"
+Cohesion: 0.26
+Nodes (10): ChatPage(), DashboardOverview(), ActivityFeed(), ChatClient(), LiveMetricCard(), StatCardProps, DashboardStore, DashNotification (+2 more)
 
 ### Community 155 - "featureFlags.ts"
 Cohesion: 0.83
@@ -981,12 +977,12 @@ Cohesion: 0.29
 Nodes (6): Default suite (`npx vitest run`, in-memory fakes), Limitations, Opt-in integration suite (`npx vitest run -c vitest.integration.config.ts`), Phase 8 — Test Report, Quality gates, Regression
 
 ### Community 169 - "rate-limiter.ts"
-Cohesion: 0.20
-Nodes (8): Final verdict, Git diff scope verification, Phase 5 — Exit Checklist, buildLimiters(), GatewayRedisRateLimiter, getLimiters(), GatewayRateLimiter, RateLimitResult
+Cohesion: 0.17
+Nodes (10): Rate limiting, Final verdict, Git diff scope verification, Phase 5 — Exit Checklist, Protected-system verification, buildLimiters(), GatewayRedisRateLimiter, getLimiters() (+2 more)
 
-### Community 171 - "admin/subscriptions/SubscriptionsClient.tsx"
-Cohesion: 0.29
-Nodes (7): CHURN_DATA, daysUntil(), Props, STATUS_COLORS, STATUSES, Subscription, SubscriptionsClient()
+### Community 171 - "lucide-react"
+Cohesion: 0.05
+Nodes (34): ADMIN_SECTIONS, exportCSV(), fmt(), RevenueDashboardClient(), CHURN_DATA, daysUntil(), Props, STATUS_COLORS (+26 more)
 
 ### Community 177 - "Phase 7 — Data Model"
 Cohesion: 0.33
@@ -1012,9 +1008,9 @@ Nodes (6): CRITICAL — trust-boundary, financial-settlement, or privilege opera
 Cohesion: 0.53
 Nodes (3): currency(), VendorStudioPage(), VendorOnboardingClient()
 
-### Community 188 - "request-service/page.tsx"
-Cohesion: 0.32
-Nodes (6): CustomServicePage(), dynamic, dynamic, FEATURES, RequestServicePage(), getCustomServicePortalSetting()
+### Community 188 - "AgentConnectionService"
+Cohesion: 0.12
+Nodes (5): Final verdict, Git diff scope verification, Phase 6 — Exit Checklist, Protected-system verification, AgentConnectionService
 
 ### Community 189 - "Phase 0 — Service Dependency Map"
 Cohesion: 0.33
@@ -1024,17 +1020,17 @@ Nodes (5): Event/cache dependency graph, Layered dependency graph (human path, c
 Cohesion: 0.33
 Nodes (5): For /graphify explain, For /graphify path, graphify reference: query, path, explain, Step 0 — Constrained query expansion (REQUIRED before traversal), Step 1 — Traversal
 
-### Community 191 - "services/[slug]/page.tsx"
-Cohesion: 0.29
-Nodes (7): ServiceDetailsPage(), getErrorMessage(), ServiceLeadForm(), getErrorMessage(), RequestType, ServiceRequestForm(), ServiceDiscoveryTracker()
+### Community 191 - "react"
+Cohesion: 0.03
+Nodes (35): AGENTS, Msg, STARTER_PROMPTS, STATUS_STYLE, KANBAN_COLS, STATUS_STYLE, TIERS, PRIORITY_STYLE (+27 more)
 
 ### Community 192 - "Phase 4 — Test Report"
 Cohesion: 0.20
 Nodes (9): Data integrity tests, End-to-end execution tests, Environment limitation (disclosed upfront, not glossed over), Failure tests, Phase 4 — Test Report, Regression tests, Security tests, Summary (+1 more)
 
-### Community 193 - "StockManagementPanel.tsx"
-Cohesion: 0.14
-Nodes (16): getProductStock(), initProductStock(), StockMutationAction, updateStock(), StockManagementPanel, ACTION_LABELS, Props, StockBadge() (+8 more)
+### Community 193 - "Phase 0 — Bug / Defect Baseline"
+Cohesion: 0.40
+Nodes (4): Explicit non-bugs (confirmed correct, listed to avoid false suspicion in later phases), Lint/config hygiene findings (BUG-15 through BUG-18) — none security-relevant, all DOCUMENT_ONLY, Live test/build baseline (run during this audit), Phase 0 — Bug / Defect Baseline
 
 ### Community 194 - "Phase 4 — Exit Checklist"
 Cohesion: 0.40
@@ -1044,9 +1040,9 @@ Nodes (4): Final verdict, Git diff scope verification, Phase 4 — Exit Checklis
 Cohesion: 0.25
 Nodes (7): Descriptions are not attacker-controllable, Exposure filter (`tool-projection.ts`), Input/output schemas, One tool per capability, never a generic dispatcher, Phase 5 — Tools Architecture (projection, naming, schemas), Tool naming, Tools/list pagination
 
-### Community 196 - "Phase 5 — Observability"
-Cohesion: 0.25
-Nodes (7): Audit hook, Event kinds (`McpEventKind`), Phase 5 — Observability, Reused metrics counters, Reuses Phase 1's logger, not a new logging stack, Severity routing, What tracing/correlation exists
+### Community 196 - "startWorkers"
+Cohesion: 0.15
+Nodes (11): Environment, Execution, Per job, Phase 8 — Worker Integration, Phase 8 — Exit Checklist, Phase 8 exit report, RefundConfirmationEmail(), RefundConfirmationEmailProps (+3 more)
 
 ### Community 197 - "Phase 3 — Schema Validation"
 Cohesion: 0.25
@@ -1104,9 +1100,9 @@ Nodes (3): AdminProductsPage(), getProducts, toIso()
 Cohesion: 0.29
 Nodes (6): General rule applied everywhere, Phase 4 — Input/Output Contracts, products.get, products.list, subscriptions.get, tickets.list
 
-### Community 215 - "Phase 4 — Idempotency"
-Cohesion: 0.29
-Nodes (6): Behavior, Current applicability, Design, Fail-open, deliberately, Phase 4 — Idempotency, Scope
+### Community 215 - "getTaskEngineConfig"
+Cohesion: 0.21
+Nodes (9): getTaskEngineConfig(), __resetTaskEngineConfigForTests(), taskConfigSchema, toConfig(), Kit, DEFAULT_TRIGGER_CONFIG, __resetTriggerConfigForTests(), schema (+1 more)
 
 ### Community 216 - "Phase 5 — Transport & Protocol"
 Cohesion: 0.29
@@ -1132,13 +1128,13 @@ Nodes (7): ref_module, envPath, EXTS, fs, Module, path, ROOT
 Cohesion: 0.25
 Nodes (6): McpConfig, mcpConfigSchema, __resetMcpConfigForTests(), INIT_BODY, setup(), VALID_AUTH_RESULT
 
-### Community 222 - "governance-test-kit.ts"
-Cohesion: 0.10
-Nodes (11): TaskJobPayload, buildGovernanceKit(), call(), drain(), mcp(), render(), isNotFoundError(), redirectTarget() (+3 more)
+### Community 222 - "task-test-kit.ts"
+Cohesion: 0.05
+Nodes (33): Changes to earlier phases (all additive), Modules (`lib/agent-gateway/tasks/`), Phase 8 — Task Architecture, Rollout switch, Scope, ATTEMPT_JOB_OPTIONS, BullQueueLike, BullTaskQueue (+25 more)
 
-### Community 223 - "dashboard/InvoicesClient.tsx"
-Cohesion: 0.48
-Nodes (5): InvoicesPage(), InvoicesClient(), StatusBadge(), statusConfig, SummaryCard()
+### Community 223 - "useRealtimeChannel"
+Cohesion: 0.23
+Nodes (10): TicketDetailClient(), getPusher(), PusherLike, useRealtimeChannel(), PreviewEvent, SubscriptionEvent, usePreviewSync(), UsePreviewSyncOptions (+2 more)
 
 ### Community 224 - "Phase 4 — Execution Flow (Representative Trace)"
 Cohesion: 0.40
@@ -1166,7 +1162,7 @@ Nodes (6): No "last policy wins" behavior, Phase 6 — Precedence Resolution (De
 
 ### Community 230 - "Phase 6 — Observability"
 Cohesion: 0.29
-Nodes (6): Phase 6 — Observability, Safe fields only, Severity routing, Stable reason codes, not free-text, What this is not, Where it's called
+Nodes (6): Phase 6 — Observability, Reuses Phase 1/5's logger, not a new stack, Severity routing, Stable reason codes, not free-text, What this is not, Where it's called
 
 ### Community 231 - "Phase 9 — Bug Report"
 Cohesion: 0.29
@@ -1196,9 +1192,9 @@ Nodes (5): Concurrency / race safety, Cross-tenant and cross-environment isolati
 Cohesion: 0.33
 Nodes (5): BACKEND facts, BUSINESS facts, CUA facts (from the driver), Not verified (requires a real human), Phase 7 — Cua Validation Report
 
-### Community 240 - "Phase 7 — Operation Binding"
-Cohesion: 0.50
-Nodes (3): Canonical JSON, Human confirmation of the binding, Phase 7 — Operation Binding
+### Community 240 - "canonical-json.ts"
+Cohesion: 0.25
+Nodes (6): RFC-8785, Canonical JSON, Human confirmation of the binding, Phase 7 — Operation Binding, CanonicalizationError, canonicalize()
 
 ### Community 241 - "Phase 7 — Cua Trust Boundary"
 Cohesion: 0.50
@@ -1208,13 +1204,13 @@ Nodes (3): Anti-bypass, Phase 7 — Cua Trust Boundary, Residual risk
 Cohesion: 0.50
 Nodes (3): Limitations, Other checks, Phase 7 — Test Report
 
-### Community 243 - "ServiceCheckoutClient.tsx"
-Cohesion: 0.40
-Nodes (5): Row(), Service, ServiceAddon, ServiceCheckoutClient(), ServicePlan
+### Community 243 - "PremiumServiceDetailClient.tsx"
+Cohesion: 0.20
+Nodes (9): AddonService, CYCLE_LABELS, fmt(), PremiumService, PremiumServiceDetailClient(), Product, ProductTier, QueryModal() (+1 more)
 
 ### Community 245 - "ref_crypto"
-Cohesion: 0.25
-Nodes (5): hashOtp(), POST(), DEMOS, metadata, ref_crypto
+Cohesion: 0.09
+Nodes (23): generateOtp(), hashOtp(), POST(), hashOtp(), POST(), GET(), POST(), IMPORTANT: Both buffers must use "hex" encoding so we compare the 32 raw bytes, (+15 more)
 
 ### Community 248 - "Phase 3 — Bug Report"
 Cohesion: 0.29
@@ -1224,9 +1220,9 @@ Nodes (6): Bugs found and fixed (both PHASE-3-INTRODUCED, both fixed and reteste
 Cohesion: 0.70
 Nodes (4): Card(), EcosystemControlPage(), money(), getEnterpriseCommandCenter()
 
-### Community 250 - "chat/ChatClient.tsx"
-Cohesion: 0.40
-Nodes (3): AGENTS, Msg, STARTER_PROMPTS
+### Community 250 - "app/layout.tsx"
+Cohesion: 0.27
+Nodes (8): app_globals, metadata, RootLayout(), ClerkSessionSync(), Providers(), ThemeProvider(), ThemeProviderProps, CartProvider()
 
 ### Community 251 - "Phase 9 — Idempotency"
 Cohesion: 0.33
@@ -1240,9 +1236,13 @@ Nodes (5): How the database decides, Modes, Phase 9 — Concurrency, Releasing a
 Cohesion: 0.33
 Nodes (5): Phase 9 — Database Verification, Representative operations (verified against the fake, which reproduces these constraints), Rollback safety, SQL review, Tenant isolation
 
-### Community 254 - "careers/page.tsx"
-Cohesion: 0.40
-Nodes (3): JOBS, metadata, PERKS
+### Community 254 - "triggers/page.tsx"
+Cohesion: 0.20
+Nodes (8): dynamic, Phase 10 — Capability Governance, Tests, The page, getTriggerFormOptions(), TRIGGER_TYPES, triggerableCapabilities(), TriggerFormOptions
+
+### Community 255 - "DashboardLayoutClient.tsx"
+Cohesion: 0.36
+Nodes (7): CommandPalette(), DashboardLayout(), NAV, NotificationDropdown(), SearchResult, useNotifications(), usePaymentSync()
 
 ### Community 256 - "Phase 5 — Remote MCP Server / External AI Connector"
 Cohesion: 0.40
@@ -1252,17 +1252,21 @@ Nodes (4): 1. What this phase is, 3. Route, 4. What this phase does NOT contain,
 Cohesion: 0.40
 Nodes (4): Delivery keys, Phase 9 — Replay Protection, Replay cases, Reserved key prefix
 
-### Community 258 - "ContactSalesClient"
-Cohesion: 0.50
-Nodes (3): ContactSalesClient(), ContactSalesPage(), metadata
+### Community 258 - "[category]/page.tsx"
+Cohesion: 0.29
+Nodes (4): CATEGORY_META, CategoryPage(), categoryToDbFilter(), Props
 
-### Community 259 - "UserTable.tsx"
-Cohesion: 0.40
-Nodes (3): ROLE_STYLE, User, UserTableProps
+### Community 259 - "subscription-guard.ts"
+Cohesion: 0.33
+Nodes (5): requireAnySubscription(), requireSubscriptionTier(), SubscriptionCheckResult, Tier, TIER_RANK
 
-### Community 261 - "Phase 0 — Authorization Matrix"
-Cohesion: 0.40
-Nodes (4): Admin vs. Team Member vs. Future Agent (illustrative, using existing enforcement only), Phase 0 — Authorization Matrix, Resource ownership patterns (confirmed via code, not inferred), Role enum (source of truth)
+### Community 260 - "bcryptjs"
+Cohesion: 0.29
+Nodes (3): prisma, bcryptjs, prisma
+
+### Community 261 - "agent-governance/layout.tsx"
+Cohesion: 0.47
+Nodes (4): AgentGovernanceLayout(), dynamic, GOVERNANCE_SECTIONS, GovernanceNav()
 
 ### Community 262 - "Phase 10 — Approval Management"
 Cohesion: 0.40
@@ -1288,65 +1292,93 @@ Nodes (4): Phase 10 — Database Verification, Queries and the indexes that serv
 Cohesion: 0.40
 Nodes (4): Methodology, Non-bugs discovered during the Step 0 audit (informational, documented, not fixed), Phase 5 — Bug Report, Verification of "zero unresolved Phase-5-introduced issues" claim
 
-### Community 268 - "useFileUpload.ts"
-Cohesion: 0.40
-Nodes (3): UploadedFile, UploadStatus, UseFileUploadOptions
+### Community 268 - "dashboard/service-requests/page.tsx"
+Cohesion: 0.47
+Nodes (5): dynamic, MyServiceRequestsPage(), STATUS_META, StatusBadge(), timeAgo()
 
-### Community 269 - "AdminServiceRequestsClient.tsx"
-Cohesion: 0.67
-Nodes (3): AdminServiceRequestsClient(), ServiceRequest, StatusBadge()
+### Community 269 - "blog/[slug]/page.tsx"
+Cohesion: 0.40
+Nodes (3): BlogPostPage(), BlogPostProps, getRelatedPosts()
 
 ### Community 270 - "POST"
 Cohesion: 0.67
 Nodes (3): POST(), adminAuth, firebase-admin
 
-### Community 273 - "compare-products/page.tsx"
+### Community 271 - "ProductCompare.tsx"
+Cohesion: 0.47
+Nodes (4): ProductCompare(), CompareStore, ProductPreview, useCompareStore
+
+### Community 273 - "BackgroundVideo"
 Cohesion: 0.50
-Nodes (3): ComparePage(), metadata, Props
+Nodes (4): BackgroundVideo(), fadeIn(), startFade(), hls.js
+
+### Community 274 - "Phase 10 — Policy Management"
+Cohesion: 0.40
+Nodes (4): Confirmation, Effect, Phase 10 — Policy Management, Server-side validation
+
+### Community 275 - "Phase 10 — Autonomy Management"
+Cohesion: 0.40
+Nodes (4): Effect and safety, Optimistic concurrency (additive), Phase 10 — Autonomy Management, The autonomy page
+
+### Community 276 - "Phase 3 — Dependency Map"
+Cohesion: 0.40
+Nodes (4): Phase 3 — Dependency Map, Test dependency map, What depends on the capability registry, What the capability registry depends on
 
 ### Community 277 - "Phase 10 — Admin Information Architecture"
 Cohesion: 0.50
 Nodes (3): Conventions (reused from the existing admin panel), Phase 10 — Admin Information Architecture, States
 
-### Community 278 - "Phase 10 — Trigger Management"
+### Community 278 - "pusher-client.ts"
 Cohesion: 0.50
-Nodes (3): Phase 10 — Trigger Management, Tests, Trigger page
+Nodes (4): getPusherClient(), isPusherConfigured(), noopClient, pusher-js
 
-### Community 279 - "Phase 10 — Bug Report"
+### Community 279 - "WelcomeEmail.tsx"
 Cohesion: 0.50
-Nodes (3): Known limits (by design), Phase 10 — Bug Report, Pre-existing (not changed by Phase 10)
+Nodes (3): GET(), WelcomeEmail(), WelcomeEmailProps
 
 ### Community 280 - "Phase 5 — Error Model"
 Cohesion: 0.50
 Nodes (3): Delivery shape, Phase 5 — Error Model, Verification
 
-### Community 281 - "Phase 7 — Decision Model"
+### Community 281 - "Phase 7 — Bug Report"
 Cohesion: 0.50
-Nodes (3): Mandatory approval gates, Outcomes, Phase 7 — Decision Model
+Nodes (3): Behavior change to note, Phase 7 — Bug Report, Pre-existing (not changed by Phase 7)
 
 ### Community 282 - "Phase 7 — Cua Integration"
 Cohesion: 0.50
 Nodes (3): Phase 7 — Cua Integration, What an agent runtime may do with Cua, What it must never do
 
+### Community 283 - "Phase 7 — Database Verification"
+Cohesion: 0.50
+Nodes (3): Integrity guarantees relied on (and reproduced by the test fake), Phase 7 — Database Verification, Why not applied
+
+### Community 284 - "Phase 8 — Task State Machine"
+Cohesion: 0.50
+Nodes (3): Atomicity, Phase 8 — Task State Machine, Timestamps
+
+### Community 285 - "VerificationEmail.tsx"
+Cohesion: 0.50
+Nodes (3): BASE_URL, VerificationEmail(), VerificationEmailProps
+
 ## Knowledge Gaps
-- **1669 isolated node(s):** `dynamic`, `dynamic`, `dynamic`, `dynamic`, `dynamic` (+1664 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2168 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **44 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **1674 isolated node(s):** `1. Deployment topology decision`, `2. Trust boundary`, `3. Entry point`, `6. Signature verification & replay protection`, `7. Rate limiting` (+1669 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2174 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **31 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `next` connect `next` to `auth`, `email/service.ts`, `requireAdmin`, `Button`, `lib/queue.ts`, `logger.ts`, `CallToAction`, `lucide-react`, `cn`, `@prisma/client`, `package.json`, `AdminProductsClient.tsx`, `react`, `otp.ts`, `service-lifecycle-service.ts`, `CheckoutClient.tsx`, `auditLog`, `Textarea`, `emitEvent`, `WebhooksClient.tsx`, `ProductCard.tsx`, `ServiceCampaignCenterClient.tsx`, `CouponsClient.tsx`, `createNotification`, `(public)/page.tsx`, `requireHumanApprover`, `@sentry/nextjs`, `CustomServiceDiscussionClient.tsx`, `autonomy/policy-store.ts`, `invoice-pdf.ts`, `serializePrisma`, `(public)/layout.tsx`, `PaymentsInspectionClient.tsx`, `AdminServiceEditClient.tsx`, `clerk-user-sync.ts`, `custom-service-portal.ts`, `@clerk/nextjs`, `getRazorpay`, `marketplace/page.tsx`, `product-service-profile.ts`, `[sessionId]/page.tsx`, `accounts/[id]/route.ts`, `service-discovery.ts`, `sendEmail`, `routes.ts`, `ServiceDiscoveryShelf.tsx`, `governance/actions.ts`, `openai.ts`, `revenue/page.tsx`, `webhook-handler.ts`, `dashboard/SubscriptionsClient.tsx`, `blog/[slug]/page.tsx`, `PricingClient.tsx`, `marketplace/index.tsx`, `admin/service-requests/page.tsx`, `FeedbackClient.tsx`, `payments/index.tsx`, `getPortalSetting`, `marketplace/[slug]/page.tsx`, `template-registry.tsx`, `revalidate.ts`, `AdminServiceCategoriesClient.tsx`, `queries.ts`, `custom-service-portal/settings/route.ts`, `[id]/TicketDetailClient.tsx`, `blog/page.tsx`, `about/page.tsx`, `marketing/index.tsx`, `subadmin-workforce.ts`, `subadmin-permission-policy.ts`, `Input`, `requireSuperAdmin`, `PremiumServiceDetailClient.tsx`, `AgentApprovalDecisionClient.tsx`, `custom-service-requests/[id]/route.ts`, `RazorpayButton.tsx`, `agent-gateway/health.ts`, `AdminUsersClient.tsx`, `DashboardLayoutClient.tsx`, `ai-agents/[slug]/page.tsx`, `unauthorized/page.tsx`, `HeroSection.tsx`, `PricingCards.tsx`, `CheckoutButton.tsx`, `admin/subscriptions/SubscriptionsClient.tsx`, `vendor/page.tsx`, `request-service/page.tsx`, `services/[slug]/page.tsx`, `developers/page.tsx`, `products/page.tsx`, `governance-test-kit.ts`, `dashboard/InvoicesClient.tsx`, `ServiceCheckoutClient.tsx`, `ref_crypto`, `ecosystem/page.tsx`, `careers/page.tsx`, `admin-access/page.tsx`, `ContactSalesClient`, `projects/ProjectsClient.tsx`, `tickets/TicketsClient.tsx`, `compare-products/page.tsx`, `privacy/page.tsx`, `terms/page.tsx`, `dashboard/subscriptions/SubscriptionsClient.tsx`, `press/page.tsx`, `cookies/page.tsx`?**
-  _High betweenness centrality (0.179) - this node is a cross-community bridge._
-- **Why does `react` connect `react` to `auth`, `email/service.ts`, `Button`, `CallToAction`, `lucide-react`, `cn`, `package.json`, `AdminProductsClient.tsx`, `next`, `CheckoutClient.tsx`, `auditLog`, `Textarea`, `WebhooksClient.tsx`, `ProductCard.tsx`, `ServiceCampaignCenterClient.tsx`, `BillingCenterClient.tsx`, `CustomServiceRequestForm.tsx`, `CouponsClient.tsx`, `workers.ts`, `shared/index.tsx`, `(public)/page.tsx`, `@sentry/nextjs`, `CustomServiceDiscussionClient.tsx`, `SubadminManagementClient`, `serializePrisma`, `(public)/layout.tsx`, `PaymentsInspectionClient.tsx`, `AdminServiceEditClient.tsx`, `clerk-user-sync.ts`, `@clerk/nextjs`, `PremiumServicesClient.tsx`, `marketplace/page.tsx`, `[sessionId]/page.tsx`, `sendEmail`, `ServiceDiscoveryShelf.tsx`, `dashboard/index.tsx`, `CartProvider.tsx`, `dashboard/SubscriptionsClient.tsx`, `ProductSearch.tsx`, `blog/[slug]/page.tsx`, `dialogs.tsx`, `PricingClient.tsx`, `marketplace/index.tsx`, `admin/service-requests/page.tsx`, `FeedbackClient.tsx`, `admin/index.tsx`, `payments/index.tsx`, `DemoTimer.tsx`, `template-registry.tsx`, `AdminServiceCategoriesClient.tsx`, `queries.ts`, `[id]/TicketDetailClient.tsx`, `about/page.tsx`, `subadmin-workforce.ts`, `Input`, `RichTextEditor.tsx`, `PremiumServiceDetailClient.tsx`, `NeuralBackground.tsx`, `AgentApprovalDecisionClient.tsx`, `RazorpayButton.tsx`, `join-our-team/page.tsx`, `AdminUsersClient.tsx`, `DashboardLayoutClient.tsx`, `admin/subscriptions/SubscriptionsClient.tsx`, `vendor/page.tsx`, `services/[slug]/page.tsx`, `StockManagementPanel.tsx`, `governance-test-kit.ts`, `dashboard/InvoicesClient.tsx`, `ServiceCheckoutClient.tsx`, `chat/ChatClient.tsx`, `careers/page.tsx`, `admin-access/page.tsx`, `UserTable.tsx`, `useFileUpload.ts`, `AdminServiceRequestsClient.tsx`, `projects/ProjectsClient.tsx`, `tickets/TicketsClient.tsx`, `privacy/page.tsx`, `terms/page.tsx`, `CRMTemplate.tsx`, `useSubscription.ts`, `AdminServiceOrdersClient.tsx`, `invoices/InvoicesClient.tsx`, `dashboard/subscriptions/SubscriptionsClient.tsx`, `press/page.tsx`, `cookies/page.tsx`, `PreviewConfigForm.tsx`, `PreviewModal.tsx`, `CouponField.tsx`?**
-  _High betweenness centrality (0.150) - this node is a cross-community bridge._
-- **Why does `db` connect `next` to `auth`, `email/service.ts`, `requireAdmin`, `requireSuperAdmin`, `lib/queue.ts`, `decision-service.ts`, `logger.ts`, `CallToAction`, `tasks/engine.ts`, `lucide-react`, `@prisma/client`, `AdminProductsClient.tsx`, `custom-service-requests/[id]/route.ts`, `otp.ts`, `react`, `service-lifecycle-service.ts`, `CheckoutClient.tsx`, `auditLog`, `compare-products/page.tsx`, `emitEvent`, `WebhooksClient.tsx`, `agent-gateway/health.ts`, `ProductCard.tsx`, `featureFlags.ts`, `CouponsClient.tsx`, `workers.ts`, `triggers/store.ts`, `ai-agents/[slug]/page.tsx`, `createNotification`, `(public)/page.tsx`, `requireHumanApprover`, `autonomy/policy-store.ts`, `SubadminManagementClient`, `invoice-pdf.ts`, `serializePrisma`, `AgentExecutionContext`, `(public)/layout.tsx`, `PaymentsInspectionClient.tsx`, `clerk-user-sync.ts`, `custom-service-portal.ts`, `getRazorpay`, `vendor/page.tsx`, `guard.ts`, `marketplace/page.tsx`, `services/[slug]/page.tsx`, `product-service-profile.ts`, `gate.ts`, `[sessionId]/page.tsx`, `accounts/[id]/route.ts`, `service-discovery.ts`, `sendEmail`, `ServiceDiscoveryShelf.tsx`, `governance/actions.ts`, `openai.ts`, `request-service.ts`, `products/page.tsx`, `blog/[slug]/page.tsx`, `authorization/policy-store.ts`, `PricingClient.tsx`, `admin/service-requests/page.tsx`, `connection-service.ts`, `marketplace/[slug]/page.tsx`, `AdminServiceCategoriesClient.tsx`, `queries.ts`, `custom-service-portal/settings/route.ts`, `blog/page.tsx`, `ref_crypto`, `subadmin-workforce.ts`, `triggers/service.ts`?**
-  _High betweenness centrality (0.081) - this node is a cross-community bridge._
+- **Why does `next` connect `next` to `email/service.ts`, `requireAdmin`, `Button`, `logger.ts`, `auditLog`, `CallToAction`, `Badge`, `AdminLayoutClient.tsx`, `@prisma/client`, `package.json`, `AdminProductsClient.tsx`, `EmailShell`, `otp.ts`, `requireServiceCenterAccess`, `service-lifecycle-service.ts`, `CheckoutClient.tsx`, `auditLog`, `MyProductsClient.tsx`, `emitEvent`, `cn`, `ProductCard.tsx`, `ServiceCampaignCenterClient.tsx`, `CouponsClient.tsx`, `requireGovernanceViewer`, `notifications.ts`, `(public)/page.tsx`, `requireHumanApprover`, `@sentry/nextjs`, `CustomServiceDiscussionClient.tsx`, `serializePrisma`, `Navbar.tsx`, `PaymentsInspectionClient.tsx`, `AdminServiceEditClient.tsx`, `clerk-user-sync.ts`, `custom-service-portal.ts`, `@clerk/nextjs`, `governance/index.ts`, `marketplace/page.tsx`, `product-service-profile.ts`, `views.ts`, `subadmin-workforce.ts`, `service-discovery.ts`, `governance/http.ts`, `ServiceDiscoveryShelf.tsx`, `governance/actions.ts`, `openai.ts`, `CartProvider.tsx`, `revenue/page.tsx`, `webhook-handler.ts`, `dashboard/SubscriptionsClient.tsx`, `ai-quota-service.ts`, `PricingClient.tsx`, `marketplace/index.tsx`, `admin/service-requests/page.tsx`, `FeedbackClient.tsx`, `payments/index.tsx`, `getPortalSetting`, `marketplace/[slug]/page.tsx`, `revalidate.ts`, `AdminServiceCategoriesClient.tsx`, `queries.ts`, `ui.tsx`, `[id]/TicketDetailClient.tsx`, `(public)/ai-agents/page.tsx`, `marketing/index.tsx`, `validateSubadminCredentialSession`, `subadmin-permission-policy.ts`, `vitest`, `Input`, `requireApiAuth`, `requireSuperAdmin`, `query-service.ts`, `(public)/layout.tsx`, `RazorpayButton.tsx`, `agent-gateway/health.ts`, `useDashboardStore`, `ai-agents/[slug]/page.tsx`, `unauthorized/page.tsx`, `HeroSection.tsx`, `PricingCards.tsx`, `CheckoutButton.tsx`, `lucide-react`, `vendor/page.tsx`, `react`, `developers/page.tsx`, `products/page.tsx`, `useRealtimeChannel`, `PremiumServiceDetailClient.tsx`, `ref_crypto`, `ecosystem/page.tsx`, `app/layout.tsx`, `triggers/page.tsx`, `DashboardLayoutClient.tsx`, `[category]/page.tsx`, `subscription-guard.ts`, `agent-governance/layout.tsx`, `dashboard/service-requests/page.tsx`, `blog/[slug]/page.tsx`, `ProductCompare.tsx`, `sentry-example-page/page.tsx`?**
+  _High betweenness centrality (0.180) - this node is a cross-community bridge._
+- **Why does `react` connect `react` to `next`, `Button`, `logger.ts`, `CallToAction`, `Badge`, `AdminLayoutClient.tsx`, `package.json`, `AdminProductsClient.tsx`, `EmailShell`, `requireServiceCenterAccess`, `CheckoutClient.tsx`, `auditLog`, `MyProductsClient.tsx`, `cn`, `ProductCard.tsx`, `ServiceCampaignCenterClient.tsx`, `BillingCenterClient.tsx`, `CustomServiceRequestForm.tsx`, `CouponsClient.tsx`, `workers.ts`, `shared/index.tsx`, `(public)/page.tsx`, `@sentry/nextjs`, `CustomServiceDiscussionClient.tsx`, `SubadminManagementClient`, `serializePrisma`, `Navbar.tsx`, `PaymentsInspectionClient.tsx`, `AdminServiceEditClient.tsx`, `clerk-user-sync.ts`, `@clerk/nextjs`, `PremiumServicesClient.tsx`, `marketplace/page.tsx`, `subadmin-workforce.ts`, `sendEmail`, `ServiceDiscoveryShelf.tsx`, `dashboard/index.tsx`, `CartProvider.tsx`, `dashboard/SubscriptionsClient.tsx`, `CRMPipeline.tsx`, `dialogs.tsx`, `PricingClient.tsx`, `marketplace/index.tsx`, `admin/service-requests/page.tsx`, `FeedbackClient.tsx`, `admin/index.tsx`, `payments/index.tsx`, `DemoTimer.tsx`, `template-registry.tsx`, `AdminServiceCategoriesClient.tsx`, `ui.tsx`, `[id]/TicketDetailClient.tsx`, `(public)/ai-agents/page.tsx`, `validateSubadminCredentialSession`, `vitest`, `Input`, `RichTextEditor.tsx`, `NeuralBackground.tsx`, `query-service.ts`, `(public)/layout.tsx`, `RazorpayButton.tsx`, `join-our-team/page.tsx`, `useDashboardStore`, `lucide-react`, `vendor/page.tsx`, `startWorkers`, `useRealtimeChannel`, `PremiumServiceDetailClient.tsx`, `ref_crypto`, `app/layout.tsx`, `DashboardLayoutClient.tsx`, `agent-governance/layout.tsx`, `sentry-example-page/page.tsx`, `BackgroundVideo`, `WelcomeEmail.tsx`, `VerificationEmail.tsx`, `LoginAlertEmail.tsx`?**
+  _High betweenness centrality (0.147) - this node is a cross-community bridge._
+- **Why does `db` connect `next` to `email/service.ts`, `requireAdmin`, `requireSuperAdmin`, `logger.ts`, `requireApiAuth`, `auditLog`, `[category]/page.tsx`, `Button`, `CallToAction`, `Badge`, `query-service.ts`, `@prisma/client`, `dashboard/service-requests/page.tsx`, `AdminProductsClient.tsx`, `EmailShell`, `otp.ts`, `requireServiceCenterAccess`, `service-lifecycle-service.ts`, `blog/[slug]/page.tsx`, `auditLog`, `CheckoutClient.tsx`, `emitEvent`, `cn`, `agent-gateway/health.ts`, `subscription-guard.ts`, `featureFlags.ts`, `CouponsClient.tsx`, `workers.ts`, `runtime.ts`, `ai-agents/[slug]/page.tsx`, `notifications.ts`, `(public)/page.tsx`, `approvals/index.ts`, `autonomy/policy-store.ts`, `SubadminManagementClient`, `tasks/engine.ts`, `serializePrisma`, `AgentExecutionContext`, `PaymentsInspectionClient.tsx`, `clerk-user-sync.ts`, `custom-service-portal.ts`, `governance/index.ts`, `vendor/page.tsx`, `guard.ts`, `marketplace/page.tsx`, `react`, `product-service-profile.ts`, `gate.ts`, `subadmin-workforce.ts`, `service-discovery.ts`, `ServiceDiscoveryShelf.tsx`, `governance/actions.ts`, `openai.ts`, `(public)/layout.tsx`, `ai-quota-service.ts`, `products/page.tsx`, `CRMPipeline.tsx`, `authorization/policy-store.ts`, `PricingClient.tsx`, `admin/service-requests/page.tsx`, `connection-service.ts`, `marketplace/[slug]/page.tsx`, `AdminServiceCategoriesClient.tsx`, `queries.ts`, `(public)/ai-agents/page.tsx`, `ref_crypto`, `validateSubadminCredentialSession`, `triggers/service.ts`?**
+  _High betweenness centrality (0.102) - this node is a cross-community bridge._
 - **Are the 7 inferred relationships involving `auth()` (e.g. with `Auth helper functions (exact call chains)` and `Identity layers (current, human-facing)`) actually correct?**
   _`auth()` has 7 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 27 inferred relationships involving `requireAdmin()` (e.g. with `3. Authorization Architecture (current)` and `5. Known Architectural Inconsistencies (documented, not fixed — see BUG-BASELINE.md)`) actually correct?**
   _`requireAdmin()` has 27 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `dynamic`, `dynamic`, `dynamic` to the rest of the system?**
-  _1669 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `auth` be split into smaller, more focused modules?**
-  _Cohesion score 0.022099039172209903 - nodes in this community are weakly interconnected._
+- **What connects `1. Deployment topology decision`, `2. Trust boundary`, `3. Entry point` to the rest of the system?**
+  _1674 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `next` be split into smaller, more focused modules?**
+  _Cohesion score 0.02066789658030534 - nodes in this community are weakly interconnected._

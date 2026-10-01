@@ -24,7 +24,10 @@ import {
   updateTriggerAction,
 } from "./actions"
 import { governanceErrorResponse, governanceOk, readJsonBody } from "./http"
+import { requestRecoveryAction, verifyLedgerAction } from "./evidence"
 import {
+  ledgerVerifySchema,
+  recoveryRequestSchema,
   policyCreateSchema,
   policyRollbackSchema,
   policyToggleSchema,
@@ -140,5 +143,27 @@ export function policyToggleRoute(enabled: boolean) {
     } catch (err) {
       return governanceErrorResponse(err)
     }
+  }
+}
+
+// ── Phase 11 — evidence and recovery ─────────────────────────────────────
+
+export async function requestRecoveryRoute(req: Request): Promise<Response> {
+  try {
+    const actor = await requireGovernanceOperator(req)
+    const body = await readJsonBody(req, recoveryRequestSchema)
+    return governanceOk({ recovery: await requestRecoveryAction(body, actor.userId, req) })
+  } catch (err) {
+    return governanceErrorResponse(err)
+  }
+}
+
+export async function verifyLedgerRoute(req: Request): Promise<Response> {
+  try {
+    const actor = await requireGovernanceOperator(req)
+    const body = await readJsonBody(req, ledgerVerifySchema)
+    return governanceOk({ verification: await verifyLedgerAction(body, actor.userId, req) })
+  } catch (err) {
+    return governanceErrorResponse(err)
   }
 }

@@ -7,19 +7,22 @@
  * authentication-failure classes (invalid credential, replay, signature
  * failure, revoked-credential reuse).
  *
- * Per spec: "Use the existing event/logging architecture when possible.
- * Do not prematurely implement the final immutable AgentAuditLog ledger."
- * Two existing mechanisms are reused, deliberately NOT a new ledger:
+ * Two existing mechanisms are reused:
  *   1. Admin-actor-driven lifecycle mutations (create/suspend/reactivate/
  *      revoke/rotate) write to the EXISTING AuditLog table via the
  *      EXISTING lib/audit.ts helper — these are indistinguishable in kind
  *      from any other admin action already audited that way in this app.
  *   2. Authentication-time events (success/failure/replay/signature
  *      failure) go through the EXISTING gateway audit hook
- *      (observability/audit-hook.ts), which already logs per-request —
- *      no new table for these either.
+ *      (observability/audit-hook.ts), which already logs per-request.
+ *
+ * Phase 11: each lifecycle mutation is also appended to the agent audit
+ * ledger (IDENTITY category) with the human actor and the status change —
+ * never a credential, fingerprint or secret.
  */
 import { auditLog } from "@/lib/audit"
+import { recordAudit } from "../audit-ledger/recorder"
+import type { AuditAction } from "../audit-ledger/types"
 
 export const AGENT_LIFECYCLE_EVENTS = {
   CONNECTION_CREATED: "AGENT_CONNECTION_CREATED",
@@ -42,6 +45,22 @@ interface RecordLifecycleEventInput {
   after?: object
 }
 
+const LEDGER_ACTIONS: Record<AgentLifecycleEventName, AuditAction> = {
+  AGENT_CONNECTION_CREATED: "connection.created",
+  AGENT_CREDENTIAL_GENERATED: "credential.generated",
+  AGENT_CREDENTIAL_ROTATED: "credential.rotated",
+  AGENT_CREDENTIAL_REVOKED: "credential.revoked",
+  AGENT_CONNECTION_SUSPENDED: "connection.suspended",
+  AGENT_CONNECTION_REACTIVATED: "connection.reactivated",
+  AGENT_CONNECTION_REVOKED: "connection.revoked",
+  AGENT_CONNECTION_EXPIRED: "connection.expired",
+}
+
+function status(value: object | undefined): string | undefined {
+  const s = (value as { status?: unknown } | undefined)?.status
+  return typeof s === "string" ? s : undefined
+}
+
 /**
  * Writes a lifecycle mutation into the EXISTING AuditLog table. Never
  * includes a raw credential/secret value in `before`/`after` — callers
@@ -57,4 +76,15 @@ export function recordLifecycleEvent(input: RecordLifecycleEventInput): void {
     before: input.before,
     after: input.after,
   })
+  try {
+    recordAudit({
+      action: LEDGER_ACTIONS[input.action],
+      outcome: "SUCCESS",
+      actor: { type: "HUMAN", id: input.actorId },
+      connectionId: input.connectionId,
+      metadata: { statusFrom: status(input.before), statusTo: status(input.after) },
+    })
+  } catch {
+    // Evidence never blocks a lifecycle change (AuditLog above is the primary record).
+  }
 }

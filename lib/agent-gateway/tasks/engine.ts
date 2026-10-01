@@ -45,6 +45,8 @@ import { applyDueTimeTransition, emit, payloadFor } from "./lifecycle"
 import { taskExecutionContext, type PolicyEvaluator } from "./guard"
 import { toTaskView } from "./view"
 import type { AgentTaskRow, AgentTaskView, CancelTaskResult, SubmitTaskResult, TaskCallerIdentity } from "./types"
+import { currentTraceContext } from "../observability/trace-context"
+import { withAgentSpan } from "../observability/tracing"
 
 /** The part of the ExecutionGate the engine uses (grant = authorize + consumed approval). */
 export interface TaskGate extends PolicyEvaluator {
@@ -112,6 +114,19 @@ export class AgentTaskService {
   // ── Submit ──────────────────────────────────────────────────────────────
 
   async submit(gatewayContext: AgentGatewayRequestContext, environment: string, args: SubmitTaskArgs, origin?: TaskOrigin): Promise<SubmitTaskResult> {
+    return withAgentSpan(
+      "agent.task",
+      {
+        "agent.request.id": gatewayContext.requestId,
+        "agent.connection.id": gatewayContext.machine?.connectionId,
+        "agent.capability.id": typeof args.capabilityId === "string" ? args.capabilityId : undefined,
+        "agent.environment": environment,
+      },
+      () => this.submitTask(gatewayContext, environment, args, origin)
+    )
+  }
+
+  private async submitTask(gatewayContext: AgentGatewayRequestContext, environment: string, args: SubmitTaskArgs, origin?: TaskOrigin): Promise<SubmitTaskResult> {
     const machine = gatewayContext.machine
     if (!machine || machine.connectionStatus !== "ACTIVE") {
       throw new TaskError("AUTHORIZATION_REVOKED", "The agent identity is not valid for execution.")
@@ -214,6 +229,8 @@ export class AgentTaskService {
         queuedAt: now,
         expiresAt: new Date(deadline),
         triggerId: origin?.triggerId ?? null,
+        // Phase 11: the worker continues this trace.
+        traceId: currentTraceContext()?.traceId ?? null,
       })
     } catch (err) {
       if (isUniqueViolation(err)) {
@@ -404,7 +421,7 @@ export class AgentTaskService {
     const capability = this.deps.capabilityRegistry.getVersion(row.capabilityId, row.capabilityVersion)
     if (!capability) return false
     try {
-      await this.deps.gate.evaluatePolicy(taskExecutionContext(row, "ACTIVE", this.clock(), new AbortController().signal), capability, row.input)
+      await this.deps.gate.evaluatePolicy(taskExecutionContext(row, "ACTIVE", this.clock(), new AbortController().signal), capability, row.input, "result_read")
       return true
     } catch {
       return false

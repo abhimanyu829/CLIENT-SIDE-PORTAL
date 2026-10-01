@@ -46,6 +46,8 @@ import { verifyTaskForExecution, type GuardDeps, type PolicyEvaluator } from "./
 import { filterTaskResult } from "./result-filter"
 import { runTaskMaintenance } from "./maintenance"
 import type { AgentTaskRow } from "./types"
+import { newTraceId, runWithTraceContext } from "../observability/trace-context"
+import { withAgentSpan } from "../observability/tracing"
 
 export interface TaskExecutor {
   execute(capabilityRef: string, rawInput: unknown, gatewayContext: AgentGatewayRequestContext, idempotencyKey?: string): Promise<ExecutionResult>
@@ -74,7 +76,8 @@ export interface TaskJobLike {
   id?: string | null
 }
 
-type AttemptOutcome = { kind: "success"; output: unknown } | { kind: "timeout" } | { kind: "error"; code: string }
+/** `preDispatch`: the resolver proved the adapter never ran (Phase 11 refusals before dispatch). */
+type AttemptOutcome = { kind: "success"; output: unknown } | { kind: "timeout" } | { kind: "error"; code: string; preDispatch: boolean }
 
 export class AgentTaskWorker {
   private readonly config: TaskEngineConfig
@@ -122,6 +125,18 @@ export class AgentTaskWorker {
     }
     if (isTerminalTask(task.status, task.retryScheduled)) return
 
+    // Phase 11: the attempt continues the trace of the request that created
+    // the task, and every ledger event inside it carries the taskRef.
+    return runWithTraceContext({ traceId: task.traceId ?? newTraceId(), requestId: task.requestId, taskRef: task.taskRef }, () =>
+      withAgentSpan(
+        "agent.worker",
+        { "agent.task.ref": task.taskRef, "agent.connection.id": task.connectionId, "agent.capability.id": task.capabilityId, "agent.attempt": payload.attempt },
+        () => this.processTask(job, payload, task)
+      )
+    )
+  }
+
+  private async processTask(job: TaskJobLike, payload: TaskJobPayload, task: AgentTaskRow): Promise<void> {
     const jobId = job.id ?? jobIdFor(task.id, payload.attempt)
     if (!this.payloadMatches(payload, task)) {
       await this.rejectTampered(task)
@@ -267,7 +282,10 @@ export class AgentTaskWorker {
       const run = this.executor
         .execute(`${task.capabilityId}@v${task.capabilityVersion}`, task.input, gatewayContext, task.idempotencyKey ?? undefined)
         .then((result): AttemptOutcome => ({ kind: "success", output: result.output }))
-        .catch((err: unknown): AttemptOutcome => ({ kind: "error", code: toExecutionError(err).code }))
+        .catch((err: unknown): AttemptOutcome => {
+          const e = toExecutionError(err)
+          return { kind: "error", code: e.code, preDispatch: e.details?.dispatched === false }
+        })
       return await Promise.race([run, timeout])
     } finally {
       if (timer) clearTimeout(timer)
@@ -315,6 +333,6 @@ export class AgentTaskWorker {
     }
     const fresh = await findTaskById(task.id)
     if (!fresh || fresh.attempts !== attempts || (fresh.status !== "RUNNING" && fresh.status !== "CANCELLING")) return
-    await failAttempt(fresh, { preDispatch: false, transient: isTransientExecutionCode(outcome.code), detailCode: outcome.code }, this.lifecycle)
+    await failAttempt(fresh, { preDispatch: outcome.preDispatch, transient: isTransientExecutionCode(outcome.code), detailCode: outcome.code }, this.lifecycle)
   }
 }

@@ -47,6 +47,7 @@ import { generateRequestId } from "../shared/crypto"
 import { logGatewayDenial, logGatewayError, logGatewayRequest } from "../observability/request-log"
 import { incrementMetric } from "../observability/metrics"
 import { getAuditHook } from "../observability/audit-hook"
+import { countRequest, recordAuthenticationFailure, recordAuthenticationSuccess, withRequestTrace } from "../observability/request-evidence"
 
 const authenticator = new CompositeAuthenticator()
 const rateLimiter = new GatewayRedisRateLimiter()
@@ -65,6 +66,11 @@ function jsonResponse(body: unknown, status: number): Response {
  */
 export async function handleGatewayRequest(request: Request): Promise<Response> {
   const requestId = generateRequestId()
+  // Phase 11: one trace scope + agent.request span per request.
+  return withRequestTrace("HTTP", requestId, () => processGatewayRequest(request, requestId))
+}
+
+async function processGatewayRequest(request: Request, requestId: string): Promise<Response> {
   const startedAt = Date.now()
   const controller = new AbortController()
   incrementMetric("gateway_requests_total")
@@ -108,12 +114,16 @@ export async function handleGatewayRequest(request: Request): Promise<Response> 
         statusCode: err.statusCode,
       })
       logGatewayDenial({ requestId, errorCode: internalCode }, "agent_gateway_auth_denied")
+      recordAuthenticationFailure("HTTP", requestId, internalCode)
       return jsonResponse(toErrorBody(err, requestId), err.statusCode)
     }
     incrementMetric("gateway_auth_success_total")
 
-    // Steps 8/12: construct the trusted request context.
-    const context = buildRequestContext(request, authResult, controller.signal)
+    // Steps 8/12: construct the trusted request context. Phase 11: the
+    // context carries THIS pipeline's requestId, so every downstream event
+    // correlates with the id returned in error bodies.
+    const context = buildRequestContext(request, authResult, controller.signal, requestId)
+    if (context.machine) recordAuthenticationSuccess("HTTP", requestId, context.machine)
 
     // Best-effort last-seen/last-authenticated metadata update. Never
     // blocks or affects the outcome of this already-successful request.
@@ -121,9 +131,7 @@ export async function handleGatewayRequest(request: Request): Promise<Response> 
       const { getAgentConnectionService } = await import("../identity/connection-service")
       void getAgentConnectionService().recordAuthenticationSuccess(context.machine.connectionId, context.machine.credentialId)
     }
-    // The pipeline-generated requestId (not context.requestId) is the one
-    // used for logging/audit correlation up to this point in the function
-    // for consistency with the value returned in error bodies above.
+    // Since Phase 11 the pipeline requestId and context.requestId are the same id.
 
     // Step 11: rate limit, keyed by connectionId now that identity is known.
     const rateLimitResult = await rateLimiter.check(rateLimitKeyFor(context))
@@ -144,6 +152,7 @@ export async function handleGatewayRequest(request: Request): Promise<Response> 
         { requestId, connectionId: context.connectionId, errorCode: err.code },
         "agent_gateway_rate_limited"
       )
+      countRequest("HTTP", "DENIED")
       return jsonResponse(toErrorBody(err, requestId), err.statusCode)
     }
 
@@ -166,9 +175,11 @@ export async function handleGatewayRequest(request: Request): Promise<Response> 
       { requestId, connectionId: context.connectionId, authMethod: context.authMethod, statusCode: response.status, latencyMs: Date.now() - startedAt },
       "agent_gateway_request_completed"
     )
+    countRequest("HTTP", "SUCCESS")
     return response
   } catch (rawErr) {
     const err = toGatewayError(rawErr)
+    countRequest("HTTP", err.code === "INTERNAL_GATEWAY_ERROR" ? "ERROR" : "DENIED")
     if (err.code === "SIGNATURE_INVALID" || err.code === "SIGNATURE_EXPIRED") {
       incrementMetric("gateway_signature_failure_total")
     }

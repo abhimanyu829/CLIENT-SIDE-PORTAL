@@ -48,6 +48,20 @@ export function eventFields(task: AgentTaskRow, extra: Partial<TaskEventFields> 
     status: task.status,
     attempt: task.attempts,
     errorCode: task.errorCode,
+    // Phase 11 — ledger context (all server-derived task columns).
+    ownerId: task.ownerId,
+    teamId: task.teamId ?? null,
+    agentId: task.agentId ?? null,
+    environment: task.environment,
+    resourceType: task.resourceType ?? null,
+    resourceId: task.resourceId ?? null,
+    authorizationPolicyRef: task.authorizationPolicyRef,
+    autonomyPolicyVersion: task.autonomyPolicyVersion ?? null,
+    inputDigest: task.inputDigest,
+    adapterId: task.adapterId,
+    traceId: task.traceId ?? null,
+    queuedAt: task.queuedAt ?? null,
+    origin: task.triggerId ? "TRIGGER" : "AGENT",
     ...extra,
   }
 }

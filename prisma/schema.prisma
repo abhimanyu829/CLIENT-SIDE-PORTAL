@@ -3911,6 +3911,9 @@ model AgentTask {
 
   /// Phase 9 — the trigger that created this task (null for agent-submitted tasks).
   triggerId              String?
+  /// Phase 11 — trace id of the request that created the task, so the worker
+  /// continues the same trace (correlation only; never a security input).
+  traceId                String?
 
   connection      AgentConnection       @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   approvalRequest AgentApprovalRequest? @relation(fields: [approvalRequestId], references: [id], onDelete: SetNull)
@@ -4056,4 +4059,145 @@ model AgentTriggerRun {
 
   @@unique([triggerId, deliveryKey])
   @@index([triggerId, receivedAt])
+}
+
+// ── Abhibhi Agent Gateway — Phase 11: audit ledger and recovery ─────────────
+// AgentAuditEvent is the append-only evidence ledger for agent operations
+// (security/business evidence — not application logs, not telemetry). Rows
+// form ONE hash chain: eventDigest = sha256(domain tag, previousEventDigest,
+// canonical event). UPDATE / DELETE / TRUNCATE are refused by a database
+// trigger (see the Phase 11 migration). Deliberately no foreign keys: the
+// evidence must outlive, and never cascade from, the rows it describes.
+// No secret, credential, token, raw input or raw output is ever stored:
+// inputs/outputs are digests, metadata is allowlisted and redacted.
+
+enum AgentAuditCategory {
+  AUTHENTICATION
+  IDENTITY
+  CAPABILITY
+  AUTHORIZATION
+  APPROVAL
+  AUTONOMY
+  EXECUTION
+  TASK
+  TRIGGER
+  WEBHOOK
+  SCHEDULE
+  POLICY
+  SECURITY
+  FAILURE
+  ROLLBACK
+  ADMIN_GOVERNANCE
+  CONFIGURATION
+}
+
+enum AgentAuditOutcome {
+  SUCCESS
+  DENIED
+  FAILED
+  INFO
+}
+
+model AgentAuditEvent {
+  id                     String             @id @default(cuid())
+  /// Position in the single chain (1, 2, 3 ...). A gap means a deleted event.
+  sequence               Int                @unique
+  /// Server-generated ("aud_" + 32 hex). Never client-supplied.
+  eventId                String             @unique
+  schemaVersion          Int
+  category               AgentAuditCategory
+  /// Dotted action name, e.g. "execution.succeeded" (closed vocabulary in code).
+  action                 String
+  outcome                AgentAuditOutcome
+  occurredAt             DateTime
+  recordedAt             DateTime           @default(now())
+  requestId              String?
+  traceId                String?
+  /// AGENT | HUMAN | SYSTEM
+  actorType              String
+  /// connectionId (agent) or user id (human); null for the system.
+  actorId                String?
+  connectionId           String?
+  agentId                String?
+  ownerId                String?
+  teamId                 String?
+  capabilityId           String?
+  capabilityVersion      Int?
+  riskTier               String?
+  resourceType           String?
+  resourceRef            String?
+  environment            String?
+  authorizationDecision  String?
+  authorizationPolicyRef String?
+  autonomyLevel          String?
+  autonomyPolicyVersion  Int?
+  /// Display-safe references (approval publicRef, taskRef, trigger publicRef).
+  approvalRef            String?
+  taskRef                String?
+  triggerRef             String?
+  adapterId              String?
+  executionStatus        String?
+  resultCode             String?
+  errorCode              String?
+  inputDigest            String?
+  outputDigest           String?
+  /// Allowlisted, redacted metadata only (see audit-ledger/redaction.ts).
+  metadata               Json?
+  previousEventDigest    String
+  eventDigest            String             @unique
+
+  @@index([occurredAt])
+  @@index([category, occurredAt])
+  @@index([connectionId, occurredAt])
+  @@index([capabilityId, occurredAt])
+  @@index([requestId])
+  @@index([traceId])
+  @@index([taskRef])
+  @@index([approvalRef])
+  @@index([triggerRef])
+}
+
+enum AgentRecoveryStatus {
+  REQUESTED
+  EXECUTING
+  APPROVAL_REQUIRED
+  SUCCEEDED
+  FAILED
+  MANUAL_RECOVERY_REQUIRED
+}
+
+/// One recovery attempt for one recorded execution (capability-aware
+/// rollback). Operational state, not evidence: every transition is also
+/// appended to AgentAuditEvent. One row per source execution event, so a
+/// duplicate rollback request can never run the recovery twice.
+model AgentRecovery {
+  id                        String              @id @default(cuid())
+  /// Display-safe reference ("rcv_" + 32 hex).
+  publicRef                 String              @unique
+  /// eventId of the AgentAuditEvent ("execution.succeeded") being recovered.
+  sourceEventId             String              @unique
+  connectionId              String
+  ownerId                   String
+  capabilityId              String
+  capabilityVersion         Int
+  /// REVERSIBLE | COMPENSATABLE | PARTIALLY_REVERSIBLE | IRREVERSIBLE
+  recoveryClass             String
+  recoveryCapabilityId      String?
+  recoveryCapabilityVersion Int?
+  status                    AgentRecoveryStatus @default(REQUESTED)
+  attempts                  Int                 @default(0)
+  /// Optimistic concurrency: every state change is conditional on it.
+  version                   Int                 @default(1)
+  reason                    String?
+  recommendation            String?
+  residualEffects           String?
+  approvalRef               String?
+  errorCode                 String?
+  requestedById             String
+  requestedAt               DateTime            @default(now())
+  completedAt               DateTime?
+  updatedAt                 DateTime            @updatedAt
+
+  @@index([connectionId, requestedAt])
+  @@index([status])
 }

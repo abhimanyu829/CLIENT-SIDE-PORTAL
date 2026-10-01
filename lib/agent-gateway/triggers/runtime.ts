@@ -61,6 +61,43 @@ import {
   transitionTriggerStatus,
 } from "./store"
 import type { AgentTriggerRow, AgentTriggerRunRow, TriggerDelivery, TriggerRunStatus, TriggerStatus } from "./types"
+import { currentTraceContext, newTraceId, runWithTraceContext, withTraceFields } from "../observability/trace-context"
+import { withAgentSpan } from "../observability/tracing"
+import { countMetric } from "../observability/agent-metrics"
+import { recordAudit } from "../audit-ledger/recorder"
+import type { AuditOutcome } from "../audit-ledger/types"
+
+const FIRE_OUTCOME_LEDGER: Partial<Record<FireOutcome, AuditOutcome>> = {
+  TASK_CREATED: "SUCCESS",
+  DENIED: "DENIED",
+  APPROVAL_REQUIRED: "INFO",
+  FAILED: "FAILED",
+  DROPPED: "INFO",
+  PENDING: "INFO",
+  DUPLICATE: "INFO",
+}
+
+/** Phase 11 — one ledger event + metric per firing outcome (schedules under SCHEDULE, the rest under TRIGGER). */
+function recordFireEvidence(trigger: AgentTriggerRow, source: string, result: FireResult): void {
+  const outcome = FIRE_OUTCOME_LEDGER[result.outcome]
+  if (!outcome) return
+  countMetric("agent_trigger_total", { source, outcome: result.outcome })
+  recordAudit({
+    action: source === "SCHEDULE" ? "schedule.fired" : "trigger.fired",
+    outcome,
+    actor: { type: "SYSTEM" },
+    connectionId: trigger.connectionId,
+    ownerId: trigger.ownerId,
+    teamId: trigger.teamId ?? null,
+    capabilityId: trigger.capabilityId,
+    capabilityVersion: trigger.capabilityVersion,
+    environment: trigger.environment,
+    triggerRef: trigger.publicRef,
+    resultCode: result.outcome,
+    errorCode: result.errorCode ?? null,
+    metadata: { source, runRef: result.runRef, retryable: result.retryable },
+  })
+}
 
 /** The part of the Phase 8 task service a trigger uses. */
 export interface TriggerTaskSubmitter {
@@ -323,7 +360,9 @@ export class TriggerRuntime {
       // A delivery whose task creation failed transiently is retried, not swallowed.
       if (!(await rearmRun(existing.id))) {
         gatewayLogger.info({ triggerRef: trigger.publicRef, runRef: existing.publicRef }, "agent_gateway_trigger_delivery_duplicate")
-        return { outcome: "DUPLICATE", runRef: existing.publicRef }
+        const duplicate: FireResult = { outcome: "DUPLICATE", runRef: existing.publicRef }
+        recordFireEvidence(trigger, delivery.source, duplicate)
+        return duplicate
       }
       run = { ...existing, status: "PENDING", errorCode: null, completedAt: null }
     }
@@ -334,13 +373,17 @@ export class TriggerRuntime {
 
     if (trigger.concurrency === "QUEUE_ONE" && (await claimPendingSlot(run.id, trigger.id))) {
       gatewayLogger.info({ triggerRef: trigger.publicRef, runRef: run.publicRef }, "agent_gateway_trigger_run_queued")
-      return { outcome: "PENDING", runRef: run.publicRef }
+      const pending: FireResult = { outcome: "PENDING", runRef: run.publicRef }
+      recordFireEvidence(trigger, delivery.source, pending)
+      return pending
     }
     const errorCode = trigger.concurrency === "QUEUE_ONE" ? "COALESCED" : "CONCURRENCY_LIMIT"
     await finishRun(run.id, "DROPPED", this.clock(), { errorCode })
     await recordTriggerOutcome(trigger.id, "NEUTRAL", this.clock())
     gatewayLogger.info({ triggerRef: trigger.publicRef, runRef: run.publicRef, errorCode }, "agent_gateway_trigger_run_dropped")
-    return { outcome: "DROPPED", runRef: run.publicRef, errorCode }
+    const dropped: FireResult = { outcome: "DROPPED", runRef: run.publicRef, errorCode }
+    recordFireEvidence(trigger, delivery.source, dropped)
+    return dropped
   }
 
   /** Takes the trigger's active slot, first freeing it if its holder is finished or stale. */
@@ -399,7 +442,27 @@ export class TriggerRuntime {
 
   // ── Task creation ───────────────────────────────────────────────────────
 
+  /**
+   * Phase 11: each firing runs in a trace scope carrying the trigger ref (a
+   * webhook delivery continues the webhook request's trace; an event or a
+   * schedule occurrence gets its own), inside an agent.trigger span, and
+   * its outcome is appended to the audit ledger.
+   */
   private async execute(run: AgentTriggerRunRow, trigger: AgentTriggerRow): Promise<FireResult> {
+    const fire = () =>
+      withAgentSpan(
+        "agent.trigger",
+        { "agent.trigger.ref": trigger.publicRef, "agent.trigger.source": run.source, "agent.connection.id": trigger.connectionId, "agent.capability.id": trigger.capabilityId },
+        async () => {
+          const result = await this.executeRun(run, trigger)
+          recordFireEvidence(trigger, run.source, result)
+          return result
+        }
+      )
+    return currentTraceContext() ? withTraceFields({ triggerRef: trigger.publicRef }, fire) : runWithTraceContext({ traceId: newTraceId(), triggerRef: trigger.publicRef }, fire)
+  }
+
+  private async executeRun(run: AgentTriggerRunRow, trigger: AgentTriggerRow): Promise<FireResult> {
     const now = this.clock()
     const finish = async (status: TriggerRunStatus, errorCode: string, retryable = false): Promise<FireResult> => {
       await finishRun(run.id, status, this.clock(), { errorCode, releaseSlot: true })

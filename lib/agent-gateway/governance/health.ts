@@ -17,6 +17,7 @@ import { getGatewayHealth, type GatewayHealthPayload } from "../health"
 import { getMcpConfig } from "../mcp/config"
 import { getTaskEngineConfig } from "../tasks/config"
 import { getTriggerConfig } from "../triggers/config"
+import { getCircuitBreakers, type BreakerSnapshot } from "../resilience/circuit-breaker"
 
 const PROBE_TIMEOUT_MS = 2_000
 const DAY = 24 * 60 * 60_000
@@ -55,6 +56,8 @@ export interface RuntimeSnapshot {
   schedules: { overdue: number; oldestOverdueAt: string | null }
   approvals: { pending: number; oldestPendingAt: string | null }
   triggers: { failing: number; failedRunsLast24h: number }
+  /** Phase 11: circuit breakers that are not fully closed, as seen by THIS server process. */
+  breakers: BreakerSnapshot[]
   limits: {
     taskQueueTimeoutMs: number
     taskExecutionTimeoutMs: number
@@ -75,6 +78,14 @@ async function defaultQueueCounts(): Promise<QueueCounts> {
   const counts = (await agentTaskQueue.getJobCounts("waiting", "active", "delayed", "failed", "completed")) as Partial<QueueCounts> | undefined
   if (!counts || typeof counts !== "object") throw new Error("queue unavailable")
   return { waiting: counts.waiting ?? 0, active: counts.active ?? 0, delayed: counts.delayed ?? 0, failed: counts.failed ?? 0, completed: counts.completed ?? 0 }
+}
+
+function safeBreakerSnapshot(): BreakerSnapshot[] {
+  try {
+    return getCircuitBreakers().snapshot().slice(0, 50)
+  } catch {
+    return []
+  }
 }
 
 export async function getRuntimeSnapshot(now: Date = new Date(), deps: RuntimeDeps = {}): Promise<RuntimeSnapshot> {
@@ -130,6 +141,7 @@ export async function getRuntimeSnapshot(now: Date = new Date(), deps: RuntimeDe
     schedules: { overdue, oldestOverdueAt: oldestOverdue?.nextRunAt ? new Date(oldestOverdue.nextRunAt).toISOString() : null },
     approvals: { pending, oldestPendingAt: oldestPending ? new Date(oldestPending.createdAt).toISOString() : null },
     triggers: { failing, failedRunsLast24h: failedRuns },
+    breakers: safeBreakerSnapshot(),
     limits: {
       taskQueueTimeoutMs: tasks.queueTimeoutMs,
       taskExecutionTimeoutMs: tasks.executionTimeoutMs,

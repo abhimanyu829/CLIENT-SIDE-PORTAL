@@ -16,6 +16,9 @@ export const GOVERNANCE_SECTIONS = [
   { href: "/admin/agent-governance/schedules", label: "Schedules" },
   { href: "/admin/agent-governance/webhooks", label: "Webhooks" },
   { href: "/admin/agent-governance/runtime", label: "Runtime" },
+  // Phase 11
+  { href: "/admin/agent-governance/ledger", label: "Audit ledger" },
+  { href: "/admin/agent-governance/recoveries", label: "Recoveries" },
 ] as const
 
 /** Section navigation for Agent Governance; the current section carries aria-current="page". */

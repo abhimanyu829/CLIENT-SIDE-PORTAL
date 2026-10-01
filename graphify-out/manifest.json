@@ -4140,9 +4140,9 @@
     "semantic_hash": ""
   },
   "lib/agent-gateway/auth/signature-verifier.ts": {
-    "mtime": 1790706498.0333862,
-    "seen": 1790742982.9922519,
-    "ast_hash": "02cb7d14d3b5ddbe1209d305d7d34296",
+    "mtime": 1790834035.6935904,
+    "seen": 1790835429.9389422,
+    "ast_hash": "7ac02aaa1e706af23ebc5973728302aa",
     "semantic_hash": ""
   },
   "lib/agent-gateway/auth/signed-request-authenticator.ts": {
@@ -4176,9 +4176,9 @@
     "semantic_hash": ""
   },
   "lib/agent-gateway/identity/connection-service.ts": {
-    "mtime": 1790708388.4775856,
-    "seen": 1790742982.9922519,
-    "ast_hash": "b4f4f5f977cbda36eab0aa70c1ebcc77",
+    "mtime": 1790834425.2760937,
+    "seen": 1790835429.9389422,
+    "ast_hash": "5e843fe6c726f26ab3c37a00616f1430",
     "semantic_hash": ""
   },
   "lib/agent-gateway/identity/request-identity.ts": {
@@ -4314,9 +4314,9 @@
     "semantic_hash": ""
   },
   "lib/agent-gateway/tests/fake-db.ts": {
-    "mtime": 1790708805.807341,
-    "seen": 1790742982.9922519,
-    "ast_hash": "058a3bb8ff3dd92061ab16fa327604b5",
+    "mtime": 1790834412.3866117,
+    "seen": 1790835429.9389422,
+    "ast_hash": "5bd3eff6f14ca63a32e96f02830cae40",
     "semantic_hash": ""
   },
   "lib/agent-gateway/tests/identity-spoofing.test.ts": {
@@ -4356,9 +4356,9 @@
     "semantic_hash": ""
   },
   "lib/agent-gateway/tests/signature-verifier.test.ts": {
-    "mtime": 1790704347.7740211,
-    "seen": 1790742982.9922519,
-    "ast_hash": "207ebfbf80623b72b84c6fe80fd1a051",
+    "mtime": 1790834116.65703,
+    "seen": 1790835429.9389422,
+    "ast_hash": "5a6f303160eb7e332c656bd9c8aca043",
     "semantic_hash": ""
   },
   "lib/agent-gateway/tests/state-machine.test.ts": {
@@ -4596,15 +4596,15 @@
     "semantic_hash": ""
   },
   "docs/agent-gateway/phase-1/PHASE-1-ARCHITECTURE.md": {
-    "mtime": 1790705081.4471865,
-    "seen": 1790742982.9922519,
-    "ast_hash": "c13a21a8421ce57ede291ce22239f153",
+    "mtime": 1790834788.2215083,
+    "seen": 1790835429.9389422,
+    "ast_hash": "1a1a4fb562664ea552ea25d899ecf878",
     "semantic_hash": ""
   },
   "docs/agent-gateway/phase-2/PHASE-2-ARCHITECTURE.md": {
-    "mtime": 1790710537.1225927,
-    "seen": 1790742982.9922519,
-    "ast_hash": "5d1d0973aa037fa7c87fd6a2d46ad80e",
+    "mtime": 1790834801.3152082,
+    "seen": 1790835429.9389422,
+    "ast_hash": "e462227de83d120ca4e44aebf5febaef",
     "semantic_hash": ""
   },
   "public/uploads/utr/Untitled design (1).gif": {
@@ -6282,9 +6282,9 @@
     "semantic_hash": ""
   },
   "docs/agent-gateway/phase-9/05-webhook-security.md": {
-    "mtime": 1790799845.1095798,
-    "seen": 1790827273.3740234,
-    "ast_hash": "43eb97d2c7152073e6b72d533df5ba76",
+    "mtime": 1790834824.6763048,
+    "seen": 1790835429.9389422,
+    "ast_hash": "448be47abfd2e01de9d88f524eecadcf",
     "semantic_hash": ""
   },
   "docs/agent-gateway/phase-9/06-replay-protection.md": {
@@ -6324,9 +6324,9 @@
     "semantic_hash": ""
   },
   "docs/agent-gateway/phase-9/12-bug-report.md": {
-    "mtime": 1790826794.752589,
-    "seen": 1790827273.3740234,
-    "ast_hash": "b3ea440a1e9ddda0311f4eb77f7ac58f",
+    "mtime": 1790834822.402071,
+    "seen": 1790835429.9389422,
+    "ast_hash": "3941c084f3ffe2329a1d5879c277dbc0",
     "semantic_hash": ""
   },
   "docs/agent-gateway/phase-9/13-database-verification.md": {
@@ -6336,9 +6336,9 @@
     "semantic_hash": ""
   },
   "docs/agent-gateway/phase-9/14-phase-9-exit-checklist.md": {
-    "mtime": 1790827131.858112,
-    "seen": 1790827273.3740234,
-    "ast_hash": "a2c6781f938c4cf5139540c0f4c8ffdb",
+    "mtime": 1790834836.6705816,
+    "seen": 1790835429.9389422,
+    "ast_hash": "a4f3e70722e53931cbe57b6be59bd727",
     "semantic_hash": ""
   },
   "app/(admin)/admin/agent-governance/approvals/page.tsx": {
@@ -6726,9 +6726,9 @@
     "semantic_hash": ""
   },
   "docs/agent-gateway/phase-10/03-connection-management.md": {
-    "mtime": 1790831386.5179586,
-    "seen": 1790832715.8796709,
-    "ast_hash": "1c2f11c4fd87ae62e518d7d1fd4ec5c0",
+    "mtime": 1790834883.5198498,
+    "seen": 1790835429.9389422,
+    "ast_hash": "56d8ade66ffde93f3d93095c0aad3484",
     "semantic_hash": ""
   },
   "docs/agent-gateway/phase-10/04-capability-governance.md": {
@@ -6792,9 +6792,9 @@
     "semantic_hash": ""
   },
   "docs/agent-gateway/phase-10/14-bug-report.md": {
-    "mtime": 1790831856.0284774,
-    "seen": 1790832715.8796709,
-    "ast_hash": "7fc2696586962c7d447c5a859cb6a021",
+    "mtime": 1790834869.6880264,
+    "seen": 1790835429.9389422,
+    "ast_hash": "513305a7c9503d5037285d7f9c9320b9",
     "semantic_hash": ""
   },
   "docs/agent-gateway/phase-10/15-database-verification.md": {
@@ -6804,15 +6804,27 @@
     "semantic_hash": ""
   },
   "docs/agent-gateway/phase-10/16-phase-10-exit-checklist.md": {
-    "mtime": 1790832112.2748005,
-    "seen": 1790832715.8796709,
-    "ast_hash": "9e2b7bfd7644b92f3b4efca2a56d1ef4",
+    "mtime": 1790834949.883461,
+    "seen": 1790835429.9389422,
+    "ast_hash": "cc32906a8669d84133f4bb01ba3dd9b7",
     "semantic_hash": ""
   },
   "docs/agent-gateway/phases-8-10-final-report.md": {
-    "mtime": 1790832207.8645918,
-    "seen": 1790832715.8796709,
-    "ast_hash": "18575e15f3f8269aefc9b5d9104cce41",
+    "mtime": 1790835105.9652536,
+    "seen": 1790835429.9389422,
+    "ast_hash": "86156c490f891cd737b2938dc96f8e98",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/connection-lifecycle-race.test.ts": {
+    "mtime": 1790834564.052518,
+    "seen": 1790835429.9389422,
+    "ast_hash": "79406aa31500247fd0862ec842e05d80",
+    "semantic_hash": ""
+  },
+  "lib/agent-gateway/tests/signed-request-nonce.test.ts": {
+    "mtime": 1790834219.1360872,
+    "seen": 1790835429.9389422,
+    "ast_hash": "5d901ba732ff1334af98bce69b3fb837",
     "semantic_hash": ""
   }
 }

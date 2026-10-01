@@ -12,6 +12,7 @@
  */
 import { CapabilityRegistry } from "./registry"
 import { registerCoreCapabilities } from "./manifest"
+import { setKnownCapabilityIds } from "../observability/agent-metrics"
 
 let singleton: CapabilityRegistry | null = null
 
@@ -20,6 +21,8 @@ export function getCapabilityRegistry(): CapabilityRegistry {
     const registry = new CapabilityRegistry()
     registerCoreCapabilities(registry)
     singleton = registry
+    // Phase 11: only registered ids may ever become a metric label value.
+    setKnownCapabilityIds(registry.list({ includeDisabled: true, includeForbidden: true }).map((d) => d.id))
   }
   return singleton
 }

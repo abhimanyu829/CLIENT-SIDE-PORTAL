@@ -42,6 +42,7 @@ import { recordMcpEvent } from "./observability"
 import { getAuditHook } from "../observability/audit-hook"
 import { logGatewayDenial, logGatewayError } from "../observability/request-log"
 import { incrementMetric } from "../observability/metrics"
+import { countRequest, recordAuthenticationFailure, recordAuthenticationSuccess, withRequestTrace } from "../observability/request-evidence"
 
 const authenticator = new CompositeAuthenticator()
 const rateLimiter = new GatewayRedisRateLimiter()
@@ -58,6 +59,11 @@ function jsonResponse(body: unknown, status: number): Response {
  */
 export async function handleMcpRequest(request: Request): Promise<Response> {
   const requestId = generateRequestId()
+  // Phase 11: one trace scope + agent.request span per request.
+  return withRequestTrace("MCP", requestId, () => processMcpRequest(request, requestId))
+}
+
+async function processMcpRequest(request: Request, requestId: string): Promise<Response> {
   const controller = new AbortController()
   incrementMetric("gateway_requests_total")
 
@@ -99,11 +105,13 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
       })
       logGatewayDenial({ requestId, errorCode: internalCode }, "agent_gateway_mcp_auth_denied")
       recordMcpEvent({ event: "authentication_outcome", requestId, outcome: "DENIED", errorCode: internalCode })
+      recordAuthenticationFailure("MCP", requestId, internalCode)
       return jsonResponse(toErrorBody(err, requestId), err.statusCode)
     }
     incrementMetric("gateway_auth_success_total")
 
-    const gatewayContext = buildRequestContext(request, authResult, controller.signal)
+    // Phase 11: the context carries THIS pipeline's requestId (one id per request).
+    const gatewayContext = buildRequestContext(request, authResult, controller.signal, requestId)
     if (!gatewayContext.machine) {
       // Should be unreachable given authResult.authenticated === true, but
       // fail closed explicitly rather than proceed with a partial identity.
@@ -111,11 +119,13 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
       return jsonResponse(toErrorBody(err, requestId), err.statusCode)
     }
     recordMcpEvent({ event: "authentication_outcome", requestId, connectionId: gatewayContext.machine.connectionId, outcome: "SUCCESS" })
+    recordAuthenticationSuccess("MCP", requestId, gatewayContext.machine)
 
     // Step 4: rate limiting, keyed by connectionId now that identity is known.
     const rateLimitResult = await rateLimiter.check(rateLimitKeyFor(gatewayContext))
     if (!rateLimitResult.allowed) {
       incrementMetric("gateway_rate_limited_total")
+      countRequest("MCP", "DENIED")
       const err = new GatewayError("RATE_LIMITED", "Rate limit exceeded.")
       return jsonResponse(toErrorBody(err, requestId), err.statusCode)
     }
@@ -183,6 +193,7 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
         connectionId: gatewayContext.machine.connectionId,
         statusCode: response.status,
       })
+      countRequest("MCP", "SUCCESS")
       return response
     } finally {
       await transport.close()
@@ -190,6 +201,7 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     }
   } catch (rawErr) {
     const err = toGatewayError(rawErr)
+    countRequest("MCP", err.code === "INTERNAL_GATEWAY_ERROR" ? "ERROR" : "DENIED")
     recordMcpEvent({ event: "protocol_failure", requestId, errorCode: err.code })
     logGatewayError({ requestId, errorCode: err.code, err: err.code === "INTERNAL_GATEWAY_ERROR" ? rawErr : undefined }, "agent_gateway_mcp_request_failed")
     return jsonResponse(toErrorBody(err, requestId), err.statusCode)

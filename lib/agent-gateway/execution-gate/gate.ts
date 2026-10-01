@@ -46,7 +46,8 @@ import {
 } from "../approvals/request-service"
 import { APPROVAL_METHOD_STEP_UP, APPROVER_SCOPE_SUPER_ADMIN } from "../approvals/constants"
 import { describeApprovalSurface } from "../human-in-the-loop/cua-contract"
-import { recordGateEvent } from "./observability"
+import { recordGateEvent, type GateEventFields } from "./observability"
+import { withAgentSpan } from "../observability/tracing"
 
 /** Phase 6 as a value source (implemented by PolicyEngineAuthorizer.decide). */
 export interface AuthorizationDecider {
@@ -86,7 +87,20 @@ interface GateEventBase {
   resourceType: string | null
   resourceRef: string | null
   riskTier: string
+  // Phase 11 — ledger context.
+  ownerId: string
+  teamId: string | null
+  environment: string
+  purpose: GatePurpose
 }
+
+/**
+ * Phase 11 — why the gate is being asked: a new decision (sync call / task
+ * submission), the worker's re-verification before an attempt, or a stored
+ * result being read back. Ledger volume and wording depend on it; the
+ * decision itself never does.
+ */
+export type GatePurpose = "decision" | "revalidation" | "result_read"
 
 /**
  * The live policy evaluation of one operation (Phase 6 + autonomy), without
@@ -156,7 +170,24 @@ export class ExecutionGate implements CapabilityAuthorizer {
    * async Task Engine can bind the consumed approval to the task it creates.
    */
   async grant(context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown): Promise<GateGrant> {
-    return this.failClosed(context, capability, () => this.evaluate(context, capability, input, true))
+    return this.failClosed(context, capability, () => this.traced(context, capability, "decision", () => this.evaluate(context, capability, input, true, "decision")))
+  }
+
+  /** Phase 11 — one agent.authorization span per gate evaluation. */
+  private traced<T>(context: AgentExecutionContext, capability: CapabilityDefinition, purpose: GatePurpose, run: () => Promise<T>): Promise<T> {
+    return withAgentSpan(
+      "agent.authorization",
+      {
+        "agent.request.id": context.requestId,
+        "agent.connection.id": context.connectionId,
+        "agent.capability.id": capability.id,
+        "agent.capability.version": capability.version,
+        "agent.risk_tier": capability.operationType,
+        "agent.environment": context.environment,
+        "agent.reason_code": purpose.toUpperCase(),
+      },
+      run
+    )
   }
 
   /**
@@ -166,8 +197,13 @@ export class ExecutionGate implements CapabilityAuthorizer {
    * verifies the approval already bound to the task instead of consuming a
    * new one. Denials and failures are thrown exactly like `authorize()`.
    */
-  async evaluatePolicy(context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown): Promise<GateEvaluation> {
-    return this.failClosed(context, capability, () => this.evaluate(context, capability, input, false))
+  async evaluatePolicy(
+    context: AgentExecutionContext,
+    capability: CapabilityDefinition,
+    input: unknown,
+    purpose: Exclude<GatePurpose, "decision"> = "revalidation"
+  ): Promise<GateEvaluation> {
+    return this.failClosed(context, capability, () => this.traced(context, capability, purpose, () => this.evaluate(context, capability, input, false, purpose)))
   }
 
   private async failClosed<T>(context: AgentExecutionContext, capability: CapabilityDefinition, run: () => Promise<T>): Promise<T> {
@@ -188,12 +224,16 @@ export class ExecutionGate implements CapabilityAuthorizer {
         outcome: "DENIED",
         reasonCode: "POLICY_UNAVAILABLE",
         durationMs: 0,
+        ownerId: context.ownerId,
+        teamId: context.teamId ?? null,
+        environment: context.environment,
+        purpose: "decision",
       })
       throw new ExecutionGateDeniedError("POLICY_UNAVAILABLE", `Capability "${capability.id}" could not be evaluated. Failing closed.`)
     }
   }
 
-  private async evaluate(context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown, consume: boolean): Promise<GateGrant> {
+  private async evaluate(context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown, consume: boolean, purpose: GatePurpose): Promise<GateGrant> {
     const startedAt = Date.now()
     const now = this.clock()
     const authzContext = buildAuthorizationContext(context, capability, input)
@@ -206,9 +246,15 @@ export class ExecutionGate implements CapabilityAuthorizer {
       resourceType: authzContext.capabilityResourceType ?? null,
       resourceRef: authzContext.resourceId ?? null,
       riskTier: capability.operationType,
+      ownerId: context.ownerId,
+      teamId: context.teamId ?? null,
+      environment: context.environment,
+      purpose,
     }
+    // Phase 11: what is known so far about the decision, for the ledger.
+    const decided: Partial<GateEventFields> = {}
     const deny = (code: GateCode, message: string, autonomyLevel: string, approvalRef?: string, approvalState?: string): never => {
-      recordGateEvent({ ...base, autonomyLevel, outcome: "DENIED", reasonCode: code, approvalRef, approvalState, durationMs: Date.now() - startedAt })
+      recordGateEvent({ ...base, ...decided, autonomyLevel, outcome: "DENIED", reasonCode: code, approvalRef, approvalState, durationMs: Date.now() - startedAt })
       throw new ExecutionGateDeniedError(code, message)
     }
 
@@ -220,6 +266,11 @@ export class ExecutionGate implements CapabilityAuthorizer {
 
     // 2. Phase 6 authorization, freshly evaluated.
     const authorization = await this.deps.authorization.decide(context, capability, input)
+    decided.authorizationDecision = authorization.decision
+    decided.authorizationPolicyRef = authorization.matchedPolicyVersionId
+      ? `${authorization.matchedPolicyVersionId}@v${authorization.matchedPolicyVersion ?? 0}`
+      : "none"
+    decided.policyEvaluationMs = authorization.evaluationDurationMs
 
     // 3. Autonomy policy, freshly loaded. A load failure is POLICY_UNAVAILABLE, never "no policy".
     let policy: EffectiveAutonomyPolicy | null = null
@@ -240,6 +291,7 @@ export class ExecutionGate implements CapabilityAuthorizer {
       resourceType: authzContext.capabilityResourceType ?? null,
       resourceId: authzContext.resourceId ?? null,
     })
+    decided.autonomyPolicyVersion = autonomy.policyVersion
 
     if (autonomy.outcome === "POLICY_UNAVAILABLE") {
       deny("POLICY_UNAVAILABLE", `Capability "${capability.id}" could not be evaluated because a policy subsystem is unavailable. Failing closed.`, autonomy.effectiveLevel)
@@ -262,21 +314,23 @@ export class ExecutionGate implements CapabilityAuthorizer {
       inputDigest: computeInputDigest(input),
     }
 
+    decided.inputDigest = evaluation.inputDigest
+
     if (autonomy.outcome === "ALLOW_AUTONOMOUS") {
-      recordGateEvent({ ...base, autonomyLevel: autonomy.effectiveLevel, outcome: "ALLOWED", reasonCode: autonomy.reasonCode, durationMs: Date.now() - startedAt })
+      recordGateEvent({ ...base, ...decided, autonomyLevel: autonomy.effectiveLevel, outcome: "ALLOWED", reasonCode: autonomy.reasonCode, durationMs: Date.now() - startedAt })
       return { ...evaluation, approval: null }
     }
 
     if (!consume) {
       // Evaluation only (Phase 8 worker re-check): the caller must verify the
       // approval it already holds. Nothing is created or consumed here.
-      recordGateEvent({ ...base, autonomyLevel: autonomy.effectiveLevel, outcome: "APPROVAL_REQUIRED", reasonCode: autonomy.reasonCode, durationMs: Date.now() - startedAt })
+      recordGateEvent({ ...base, ...decided, autonomyLevel: autonomy.effectiveLevel, outcome: "APPROVAL_REQUIRED", reasonCode: autonomy.reasonCode, durationMs: Date.now() - startedAt })
       return { ...evaluation, approval: null }
     }
 
     // 4. Human approval required. Any storage error fails closed.
     try {
-      const approval = await this.requireApproval(context, capability, input, evaluation, now, startedAt, base)
+      const approval = await this.requireApproval(context, capability, input, evaluation, now, startedAt, { ...base, ...decided })
       return { ...evaluation, approval }
     } catch (err) {
       if (err instanceof AuthorizationDeniedError) throw err
@@ -291,7 +345,7 @@ export class ExecutionGate implements CapabilityAuthorizer {
     evaluation: GateEvaluation,
     now: Date,
     startedAt: number,
-    base: GateEventBase
+    base: GateEventBase & Partial<GateEventFields>
   ): Promise<ConsumedApproval> {
     const { autonomy, resourceId, resourceType } = evaluation
     const level = autonomy.effectiveLevel

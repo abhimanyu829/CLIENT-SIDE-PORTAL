@@ -30,7 +30,8 @@ import { computeBindingDigest, computeInputDigest, type OperationBinding } from 
 import type { AgentTaskRow, TaskErrorCode } from "./types"
 
 export interface PolicyEvaluator {
-  evaluatePolicy(context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown): Promise<GateEvaluation>
+  /** `purpose` (Phase 11) only changes what is recorded as evidence, never the decision. */
+  evaluatePolicy(context: AgentExecutionContext, capability: CapabilityDefinition, input: unknown, purpose?: "revalidation" | "result_read"): Promise<GateEvaluation>
 }
 
 export interface TaskConnectionState {

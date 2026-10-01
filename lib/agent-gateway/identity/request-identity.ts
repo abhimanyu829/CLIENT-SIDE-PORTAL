@@ -15,7 +15,12 @@ import { resolveClientIp } from "../security/headers"
 export function buildRequestContext(
   request: Request,
   authResult: AuthenticationResult,
-  signal: AbortSignal
+  signal: AbortSignal,
+  /**
+   * Phase 11: the entry point's own (server-generated) request id, so one
+   * request has ONE id end to end. Omitted = a fresh id, as before.
+   */
+  requestId?: string
 ): AgentGatewayRequestContext {
   // Phase 2: only construct the full `machine` identity when the
   // authenticator resolved a credentialId/connectionStatus (i.e. it went
@@ -36,7 +41,7 @@ export function buildRequestContext(
       : undefined
 
   return {
-    requestId: generateRequestId(),
+    requestId: requestId && /^req_[0-9a-f]{32}$/.test(requestId) ? requestId : generateRequestId(),
     receivedAt: new Date(),
     authenticated: authResult.authenticated,
     machine,

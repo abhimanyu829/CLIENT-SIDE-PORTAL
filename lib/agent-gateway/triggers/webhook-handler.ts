@@ -36,6 +36,9 @@ import { openWebhookSecret, parseWebhookTimestamp, verifyWebhookSignature, WEBHO
 import { findTriggerByRef, TRIGGER_REF_PATTERN } from "./store"
 import type { FireResult } from "./runtime"
 import type { AgentTriggerRow, TriggerDelivery } from "./types"
+import { deriveTraceId, runWithTraceContext } from "../observability/trace-context"
+import { countMetric } from "../observability/agent-metrics"
+import { recordAudit, recordAuditThrottled } from "../audit-ledger/recorder"
 
 const NONCE_PATTERN = /^[A-Za-z0-9_-]{16,128}$/
 const EVENT_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/
@@ -91,7 +94,48 @@ async function readBounded(request: Request, limit: number): Promise<string | nu
   return Buffer.concat(chunks.map((c) => Buffer.from(c))).toString("utf8")
 }
 
+const REJECTION_BY_STATUS: Record<number, Code> = {
+  400: "INVALID_REQUEST",
+  401: "SIGNATURE_INVALID",
+  404: "NOT_FOUND",
+  409: "REPLAY_DETECTED",
+  413: "PAYLOAD_TOO_LARGE",
+  415: "UNSUPPORTED_MEDIA_TYPE",
+  429: "RATE_LIMITED",
+  503: "UNAVAILABLE",
+}
+
+/**
+ * Phase 11 wrapper: one trace scope per delivery (the task it creates
+ * continues this trace) and webhook evidence in the audit ledger.
+ * Rejections are provoked by anyone on the internet, so they are throttled
+ * per trigger ref + reason; a ref that is not well formed is never stored.
+ */
 export async function handleAgentWebhook(request: Request, triggerRef: string, deps: WebhookHandlerDeps): Promise<NextResponse> {
+  return runWithTraceContext({ traceId: deriveTraceId() }, async () => {
+    const response = await processAgentWebhook(request, triggerRef, deps)
+    const ref = typeof triggerRef === "string" && TRIGGER_REF_PATTERN.test(triggerRef) ? triggerRef : null
+    if (response.status === 200 || response.status === 202) {
+      recordAudit({
+        action: "webhook.accepted",
+        outcome: response.status === 202 ? "SUCCESS" : "INFO",
+        actor: { type: "SYSTEM" },
+        triggerRef: ref,
+        metadata: { source: "WEBHOOK", decision: response.status === 202 ? "ACCEPTED" : "DUPLICATE" },
+      })
+    } else {
+      const code = REJECTION_BY_STATUS[response.status] ?? "INVALID_REQUEST"
+      countMetric("agent_trigger_total", { source: "WEBHOOK", outcome: "DENIED" })
+      recordAuditThrottled(
+        { action: "webhook.rejected", outcome: "DENIED", actor: { type: "SYSTEM" }, triggerRef: ref, errorCode: code, metadata: { reasonCode: code, source: "WEBHOOK" } },
+        `webhook-rejected:${ref ?? "invalid"}:${code}`
+      )
+    }
+    return response
+  })
+}
+
+async function processAgentWebhook(request: Request, triggerRef: string, deps: WebhookHandlerDeps): Promise<NextResponse> {
   const config = getTriggerConfig()
   if (!(deps.enabled ?? (() => config.enabled))()) return reject(404, "NOT_FOUND")
   if (typeof triggerRef !== "string" || !TRIGGER_REF_PATTERN.test(triggerRef)) return reject(404, "NOT_FOUND")

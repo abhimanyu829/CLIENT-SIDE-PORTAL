@@ -44,6 +44,12 @@ const TONES: Record<string, string> = {
   FAILED: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30",
   DENIED: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30",
   TIMED_OUT: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30",
+  // Phase 11 — ledger outcomes and recovery states.
+  SUCCESS: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+  INFO: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30",
+  REQUESTED: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
+  EXECUTING: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30",
+  MANUAL_RECOVERY_REQUIRED: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
 }
 
 export function StatusPill({ status }: { status: string }) {

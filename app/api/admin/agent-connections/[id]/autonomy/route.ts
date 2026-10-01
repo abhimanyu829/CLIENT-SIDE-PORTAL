@@ -74,7 +74,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireHumanApprover(req)
+    const admin = await requireHumanApprover(req)
     const { id } = await params
     // Phase 10: optional `?expectedVersion=<n>` (the ACTIVE version being disabled).
     const raw = new URL(req.url).searchParams.get("expectedVersion")
@@ -83,7 +83,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       if (!/^\d{1,9}$/.test(raw)) return NextResponse.json({ success: false, error: "Invalid expectedVersion" }, { status: 400 })
       expectedVersion = Number(raw)
     }
-    await disableAutonomyPolicy(id, expectedVersion)
+    await disableAutonomyPolicy(id, expectedVersion, admin.userId)
     return NextResponse.json({ success: true, effectiveDefault: "OBSERVE_ONLY" })
   } catch (err) {
     if (err instanceof AutonomyConflictError) return conflictResponse()

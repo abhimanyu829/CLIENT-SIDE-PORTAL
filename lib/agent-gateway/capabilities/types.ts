@@ -148,6 +148,13 @@ export interface RollbackMetadata {
   reversibility: ReversibilityClass
   /** How a human/admin would reverse this today, if at all. Descriptive only — not an executable rollback action. */
   mechanism: string
+  /**
+   * Phase 11 — the explicit, declarative recovery mapping (see
+   * recovery/spec.ts). Absent on a write = manual recovery only. Never a
+   * function, never an arbitrary operation: a registered capability id +
+   * version and a field map from the original execution's identifiers.
+   */
+  recovery?: import("../recovery/spec").RecoverySpec
 }
 
 export interface CapabilityErrorContractEntry {

@@ -18,3 +18,5 @@ export * from "./views"
 export { getRuntimeSnapshot } from "./health"
 export type { RuntimeSnapshot, QueueCounts, RuntimeDeps } from "./health"
 export * from "./actions"
+// Phase 11 — evidence (ledger read + verification) and recovery requests.
+export * from "./evidence"

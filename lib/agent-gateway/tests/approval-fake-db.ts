@@ -367,6 +367,27 @@ export function createApprovalFakeDb() {
     () => ({ status: "ACTIVE", fingerprint: null, keyId: null, signingSecretRef: null, activatedAt: null, expiresAt: null, lastUsedAt: null, revokedAt: null, replacesCredentialId: null })
   )
   const auditLogs = createTable("audit", [], () => ({ userId: null, entity: null, entityId: null, beforeJson: null, afterJson: null, ip: null, userAgent: null }))
+  // Phase 11 — the audit ledger, with the migration's unique constraints. It
+  // is deliberately NOT part of the transactional snapshot below: ledger
+  // appends never run inside a transaction, and (as in Postgres) a rolled
+  // back transaction must not erase evidence appended concurrently.
+  const auditEvents = createTable(
+    "audev",
+    [
+      { name: "sequence", key: (r) => (typeof r.sequence === "number" ? String(r.sequence) : null) },
+      { name: "eventId", key: (r) => (r.eventId as string) ?? null },
+      { name: "eventDigest", key: (r) => (r.eventDigest as string) ?? null },
+    ],
+    () => ({})
+  )
+  const recoveries = createTable(
+    "rcvrow",
+    [
+      { name: "publicRef", key: (r) => (r.publicRef as string) ?? null },
+      { name: "sourceEventId", key: (r) => (r.sourceEventId as string) ?? null },
+    ],
+    () => ({ attempts: 0, version: 1, reason: null, recommendation: null, residualEffects: null, approvalRef: null, errorCode: null, completedAt: null, requestedAt: new Date() })
+  )
   const connections = connectionTable.rows
   // `include: { connection: true }` (Phase 2 credential authentication).
   const credentialFindUnique = credentials.api.findUnique
@@ -388,6 +409,8 @@ export function createApprovalFakeDb() {
     agentConnection: connectionTable.api,
     agentCredential: credentials.api,
     auditLog: auditLogs.api,
+    agentAuditEvent: auditEvents.api,
+    agentRecovery: recoveries.api,
     user: {
       findUnique: vi.fn(async ({ where, select }: { where: { id: string }; select?: Record<string, boolean> }) => project(users.get(where.id) as Row | undefined, select)),
     },
@@ -484,6 +507,8 @@ export function createApprovalFakeDb() {
     _connections: connections,
     _credentials: credentials.rows,
     _auditLogs: auditLogs.rows,
+    _auditEvents: auditEvents.rows,
+    _recoveries: recoveries.rows,
     _users: users,
   }
 }
