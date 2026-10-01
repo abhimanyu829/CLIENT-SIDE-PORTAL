@@ -37,6 +37,14 @@ export function idempotencyScopeFor(connectionId: string, idempotencyKey: string
  */
 export const TRIGGER_IDEMPOTENCY_PREFIX = "trigger."
 
+/** Phase 13 — keys of Phase 11 recovery executions; reserved for the same reason. */
+export const RECOVERY_IDEMPOTENCY_PREFIX = "recovery."
+
+/** True for a key an agent may not choose (it belongs to a trigger run or a recovery). */
+export function isReservedIdempotencyKey(key: string): boolean {
+  return key.startsWith(TRIGGER_IDEMPOTENCY_PREFIX) || key.startsWith(RECOVERY_IDEMPOTENCY_PREFIX)
+}
+
 /** Deterministic task idempotency key of one trigger run (re-deliveries reuse it). */
 export function triggerIdempotencyKey(runRef: string): string {
   return `${TRIGGER_IDEMPOTENCY_PREFIX}${runRef.replace(/^trr_/, "")}`

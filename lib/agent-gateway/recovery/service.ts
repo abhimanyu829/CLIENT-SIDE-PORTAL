@@ -49,6 +49,7 @@ import { countMetric } from "../observability/agent-metrics"
 import { currentTraceContext, newTraceId, runWithTraceContext } from "../observability/trace-context"
 import { withAgentSpan } from "../observability/tracing"
 import { resolveRecoverySpec, type RecoveryClass, type RecoverySpec } from "./spec"
+import { RECOVERY_IDEMPOTENCY_PREFIX } from "../tasks/ids"
 import {
   createRecovery,
   findRecoveryBySourceEvent,
@@ -343,7 +344,7 @@ export class RecoveryService {
         }
         // 5. The Phase 4 resolver: schema, environment, idempotency, breakers, audit intent.
         try {
-          const key = recovery.idempotency.requiresIdempotencyKey ? `recovery.${fresh.publicRef}` : undefined
+          const key = recovery.idempotency.requiresIdempotencyKey ? `${RECOVERY_IDEMPOTENCY_PREFIX}${fresh.publicRef}` : undefined
           await this.executor.execute(`${recovery.id}@v${recovery.version}`, recoveryInput, gatewayContext, key)
         } catch (err) {
           const code = toExecutionError(err).code

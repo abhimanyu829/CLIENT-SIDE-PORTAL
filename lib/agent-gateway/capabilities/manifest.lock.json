@@ -1,7 +1,340 @@
 {
   "summaryVersion": 1,
-  "fingerprint": "4c11f2c9e31c33ea0724e891bad2b76cc7900cf4a3b559c0d31d5075dc948863",
+  "fingerprint": "e9abf0b9e9e02054614c8bbeea6ada7bffa26a81825b2ee8d789c1cbb80a601c",
   "capabilities": [
+    {
+      "id": "analytics.productPerformance",
+      "version": 1,
+      "domain": "analytics",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "READ",
+      "adapterKey": "analytics.productPerformanceAdapter",
+      "permission": "read:analytics",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "Product",
+        "locator": "productId"
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": null,
+      "contentTrust": "SYSTEM_GENERATED",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "days": {
+            "optional": {
+              "union": [
+                {
+                  "type": "literal",
+                  "value": 7
+                },
+                {
+                  "type": "literal",
+                  "value": 30
+                },
+                {
+                  "type": "literal",
+                  "value": 90
+                }
+              ]
+            }
+          },
+          "productId": {
+            "type": "string",
+            "checks": [
+              "max:64",
+              "min:1"
+            ]
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "averageRating": {
+            "type": "number",
+            "checks": []
+          },
+          "cartAdds": {
+            "type": "number",
+            "checks": [
+              "int",
+              "min:0"
+            ]
+          },
+          "checkoutsStarted": {
+            "type": "number",
+            "checks": [
+              "int",
+              "min:0"
+            ]
+          },
+          "conversionRate": {
+            "nullable": {
+              "type": "number",
+              "checks": [
+                "min:0"
+              ]
+            }
+          },
+          "days": {
+            "type": "number",
+            "checks": [
+              "int"
+            ]
+          },
+          "productId": {
+            "type": "string",
+            "checks": []
+          },
+          "purchases": {
+            "type": "number",
+            "checks": [
+              "int",
+              "min:0"
+            ]
+          },
+          "reviewCount": {
+            "type": "number",
+            "checks": [
+              "int",
+              "min:0"
+            ]
+          },
+          "views": {
+            "type": "number",
+            "checks": [
+              "int",
+              "min:0"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "analytics.summary",
+      "version": 1,
+      "domain": "analytics",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "READ",
+      "adapterKey": "analytics.summaryAdapter",
+      "permission": "read:analytics",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "AccountSummary",
+        "locator": null
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": null,
+      "contentTrust": "SYSTEM_GENERATED",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {}
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "products": {
+            "nullable": {
+              "type": "object",
+              "unknownKeys": "strict",
+              "fields": {
+                "published": {
+                  "type": "number",
+                  "checks": [
+                    "int",
+                    "min:0"
+                  ]
+                },
+                "total": {
+                  "type": "number",
+                  "checks": [
+                    "int",
+                    "min:0"
+                  ]
+                }
+              }
+            }
+          },
+          "subscriptions": {
+            "type": "object",
+            "unknownKeys": "strict",
+            "fields": {
+              "active": {
+                "type": "number",
+                "checks": [
+                  "int",
+                  "min:0"
+                ]
+              },
+              "total": {
+                "type": "number",
+                "checks": [
+                  "int",
+                  "min:0"
+                ]
+              }
+            }
+          },
+          "tickets": {
+            "type": "object",
+            "unknownKeys": "strict",
+            "fields": {
+              "open": {
+                "type": "number",
+                "checks": [
+                  "int",
+                  "min:0"
+                ]
+              },
+              "total": {
+                "type": "number",
+                "checks": [
+                  "int",
+                  "min:0"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "campaigns.getActive",
+      "version": 1,
+      "domain": "campaigns",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "READ",
+      "adapterKey": "campaigns.getActiveAdapter",
+      "permission": null,
+      "requiredIdentityContext": [
+        "connectionId"
+      ],
+      "resource": {
+        "type": "Campaign",
+        "locator": null
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": null,
+      "contentTrust": "THIRD_PARTY_CONTENT",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {}
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "campaign": {
+            "nullable": {
+              "type": "object",
+              "unknownKeys": "strict",
+              "fields": {
+                "applicableTierIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "checks": []
+                  },
+                  "min": null,
+                  "max": 50
+                },
+                "bannerText": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                },
+                "discountPercent": {
+                  "type": "number",
+                  "checks": []
+                },
+                "endsAt": {
+                  "type": "string",
+                  "checks": []
+                },
+                "id": {
+                  "type": "string",
+                  "checks": []
+                },
+                "label": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                },
+                "name": {
+                  "type": "string",
+                  "checks": []
+                },
+                "secondsRemaining": {
+                  "type": "number",
+                  "checks": [
+                    "int",
+                    "min:0"
+                  ]
+                },
+                "startsAt": {
+                  "type": "string",
+                  "checks": []
+                },
+                "type": {
+                  "type": "string",
+                  "checks": []
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     {
       "id": "coupons.create",
       "version": 1,
@@ -397,6 +730,107 @@
       }
     },
     {
+      "id": "products.listMine",
+      "version": 1,
+      "domain": "products",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "READ",
+      "adapterKey": "products.listMineAdapter",
+      "permission": "read:products",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "Product",
+        "locator": null
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": null,
+      "contentTrust": "THIRD_PARTY_CONTENT",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "limit": {
+            "optional": {
+              "type": "number",
+              "checks": [
+                "int",
+                "max:50",
+                "min:1"
+              ]
+            }
+          },
+          "status": {
+            "optional": {
+              "type": "enum",
+              "values": [
+                "ARCHIVED",
+                "AVAILABLE",
+                "DRAFT",
+                "EXPIRED",
+                "HIDDEN",
+                "MAINTENANCE",
+                "REPUBLISH_PENDING",
+                "RESERVED",
+                "SCHEDULED"
+              ]
+            }
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "unknownKeys": "strip",
+              "fields": {
+                "id": {
+                  "type": "string",
+                  "checks": []
+                },
+                "name": {
+                  "type": "string",
+                  "checks": []
+                },
+                "slug": {
+                  "type": "string",
+                  "checks": []
+                },
+                "status": {
+                  "type": "string",
+                  "checks": []
+                },
+                "type": {
+                  "type": "string",
+                  "checks": []
+                }
+              }
+            },
+            "min": null,
+            "max": 50
+          }
+        }
+      }
+    },
+    {
       "id": "products.updatePricing",
       "version": 1,
       "domain": "products",
@@ -562,6 +996,399 @@
             "checks": []
           },
           "status": {
+            "type": "string",
+            "checks": []
+          }
+        }
+      }
+    },
+    {
+      "id": "subscriptions.list",
+      "version": 1,
+      "domain": "subscriptions",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "READ",
+      "adapterKey": "subscriptions.listAdapter",
+      "permission": "read:billing",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "Subscription",
+        "locator": null
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": null,
+      "contentTrust": "SYSTEM_GENERATED",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "limit": {
+            "optional": {
+              "type": "number",
+              "checks": [
+                "int",
+                "max:50",
+                "min:1"
+              ]
+            }
+          },
+          "status": {
+            "optional": {
+              "type": "enum",
+              "values": [
+                "ACTIVE",
+                "CANCELLED",
+                "PAST_DUE",
+                "PAUSED",
+                "TRIALING"
+              ]
+            }
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "unknownKeys": "strict",
+              "fields": {
+                "cancelAtPeriodEnd": {
+                  "type": "boolean"
+                },
+                "currentPeriodEnd": {
+                  "type": "string",
+                  "checks": []
+                },
+                "id": {
+                  "type": "string",
+                  "checks": []
+                },
+                "planId": {
+                  "type": "string",
+                  "checks": []
+                },
+                "productId": {
+                  "type": "string",
+                  "checks": []
+                },
+                "status": {
+                  "type": "string",
+                  "checks": []
+                }
+              }
+            },
+            "min": null,
+            "max": 50
+          }
+        }
+      }
+    },
+    {
+      "id": "tickets.close",
+      "version": 1,
+      "domain": "tickets",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "LOW_RISK_WRITE",
+      "adapterKey": "tickets.closeAdapter",
+      "permission": "write:tickets",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "Ticket",
+        "locator": "ticketId"
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": {
+        "class": "IRREVERSIBLE",
+        "capabilityId": null,
+        "capabilityVersion": null,
+        "inputMapping": null,
+        "manual": true
+      },
+      "contentTrust": "SYSTEM_GENERATED",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "ticketId": {
+            "type": "string",
+            "checks": [
+              "max:64",
+              "min:1"
+            ]
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "changed": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "checks": []
+          },
+          "status": {
+            "type": "string",
+            "checks": []
+          }
+        }
+      }
+    },
+    {
+      "id": "tickets.create",
+      "version": 1,
+      "domain": "tickets",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "LOW_RISK_WRITE",
+      "adapterKey": "tickets.createAdapter",
+      "permission": "write:tickets",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "Ticket",
+        "locator": null
+      },
+      "idempotency": {
+        "requiresKey": true,
+        "retrySafe": false,
+        "class": "NON_IDEMPOTENT",
+        "scope": "connectionId+idempotencyKey"
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": {
+        "class": "COMPENSATABLE",
+        "capabilityId": "tickets.close",
+        "capabilityVersion": 1,
+        "inputMapping": {
+          "ticketId": "output.id"
+        },
+        "manual": false
+      },
+      "contentTrust": "THIRD_PARTY_CONTENT",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "category": {
+            "optional": {
+              "type": "enum",
+              "values": [
+                "ACCOUNT",
+                "BILLING",
+                "GENERAL",
+                "OTHER",
+                "PRODUCT",
+                "TECHNICAL"
+              ]
+            }
+          },
+          "description": {
+            "type": "string",
+            "checks": [
+              "max:5000",
+              "min:10"
+            ]
+          },
+          "priority": {
+            "optional": {
+              "type": "enum",
+              "values": [
+                "HIGH",
+                "LOW",
+                "MEDIUM"
+              ]
+            }
+          },
+          "subject": {
+            "type": "string",
+            "checks": [
+              "max:200",
+              "min:3"
+            ]
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "category": {
+            "type": "string",
+            "checks": []
+          },
+          "createdAt": {
+            "type": "string",
+            "checks": []
+          },
+          "id": {
+            "type": "string",
+            "checks": []
+          },
+          "priority": {
+            "type": "string",
+            "checks": []
+          },
+          "status": {
+            "type": "string",
+            "checks": []
+          },
+          "subject": {
+            "type": "string",
+            "checks": []
+          }
+        }
+      }
+    },
+    {
+      "id": "tickets.get",
+      "version": 1,
+      "domain": "tickets",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "READ",
+      "adapterKey": "tickets.getAdapter",
+      "permission": "read:tickets",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "Ticket",
+        "locator": "ticketId"
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": null,
+      "contentTrust": "THIRD_PARTY_CONTENT",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "ticketId": {
+            "type": "string",
+            "checks": [
+              "max:64",
+              "min:1"
+            ]
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "category": {
+            "type": "string",
+            "checks": []
+          },
+          "createdAt": {
+            "type": "string",
+            "checks": []
+          },
+          "description": {
+            "type": "string",
+            "checks": []
+          },
+          "id": {
+            "type": "string",
+            "checks": []
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "unknownKeys": "strict",
+              "fields": {
+                "content": {
+                  "type": "string",
+                  "checks": []
+                },
+                "createdAt": {
+                  "type": "string",
+                  "checks": []
+                },
+                "fromCustomer": {
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string",
+                  "checks": []
+                }
+              }
+            },
+            "min": null,
+            "max": 50
+          },
+          "messagesTruncated": {
+            "type": "boolean"
+          },
+          "priority": {
+            "type": "string",
+            "checks": []
+          },
+          "status": {
+            "type": "string",
+            "checks": []
+          },
+          "subject": {
+            "type": "string",
+            "checks": []
+          },
+          "updatedAt": {
             "type": "string",
             "checks": []
           }

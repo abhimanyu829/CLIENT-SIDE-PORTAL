@@ -64,6 +64,15 @@ describe("A.13 — retry classification from Phase 3/4 metadata", () => {
       "products.get": "SAFE_RETRY",
       "subscriptions.get": "SAFE_RETRY",
       "tickets.list": "SAFE_RETRY",
+      // Phase 13
+      "products.listMine": "SAFE_RETRY",
+      "campaigns.getActive": "SAFE_RETRY",
+      "subscriptions.list": "SAFE_RETRY",
+      "tickets.get": "SAFE_RETRY",
+      "analytics.summary": "SAFE_RETRY",
+      "analytics.productPerformance": "SAFE_RETRY",
+      "tickets.create": "CONDITIONAL_RETRY", // keyed: retried only with its idempotency key
+      "tickets.close": "SAFE_RETRY", // end-state idempotent
       "products.createDraft": "CONDITIONAL_RETRY",
       "coupons.create": "CONDITIONAL_RETRY",
       "products.updatePricing": "CONDITIONAL_RETRY",
@@ -233,9 +242,25 @@ describe("configuration, capability declaration and queue payload", () => {
       taskRetentionMs: 2_592_000_000,
     })
   })
-  it("exactly the four READ capabilities declare async support; SYNC stays their default mode", () => {
+  it("exactly the executable capabilities declare async support; SYNC stays their default mode", () => {
     const asyncIds = CORE_CAPABILITY_MANIFEST.filter((c) => c.async.asyncSupported).map((c) => c.id)
-    expect(asyncIds).toEqual(["products.list", "products.get", "subscriptions.get", "tickets.list"])
+    // Phase 8: the four READ capabilities. Phase 13: the new domain reads and the two ticket writes.
+    expect(asyncIds).toEqual([
+      "products.list",
+      "products.get",
+      "subscriptions.get",
+      "tickets.list",
+      "products.listMine",
+      "campaigns.getActive",
+      "subscriptions.list",
+      "tickets.get",
+      "analytics.summary",
+      "analytics.productPerformance",
+      "tickets.create",
+      "tickets.close",
+    ])
+    // Never on a capability without an adapter binding.
+    for (const c of CORE_CAPABILITY_MANIFEST.filter((x) => x.async.asyncSupported)) expect(c.executionReference).not.toBeNull()
     for (const c of CORE_CAPABILITY_MANIFEST) expect(c.async.executionMode).toBe("SYNC")
     for (const c of CORE_CAPABILITY_MANIFEST.filter((x) => x.async.asyncSupported)) expect(c.async.cooperativeCancellation).toBeFalsy()
   })

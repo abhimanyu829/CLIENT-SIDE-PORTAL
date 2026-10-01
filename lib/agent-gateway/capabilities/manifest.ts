@@ -147,6 +147,311 @@ const ticketsList: CapabilityDefinition = {
   contentTrust: "THIRD_PARTY_CONTENT",
 }
 
+// ── Phase 13 — domain expansion (READ tier) ─────────────────────────────
+// docs/agent-gateway/phase-13/07-capability-map.md maps every capability to
+// the existing route / model it traces to, and lists what stays NOT_READY.
+
+const ticketStatusFilter = z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"])
+const productStatusFilter = z.enum(["DRAFT", "AVAILABLE", "RESERVED", "EXPIRED", "REPUBLISH_PENDING", "SCHEDULED", "ARCHIVED", "HIDDEN", "MAINTENANCE"])
+const listLimit = z.number().int().min(1).max(50).optional()
+
+const productsListMine: CapabilityDefinition = {
+  id: "products.listMine",
+  version: 1,
+  domain: "products",
+  name: "List my vendor products",
+  description: "List the products of the caller's own vendor profile, any status. Read-only.",
+  status: "ACTIVE",
+  operationType: "READ",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({ status: productStatusFilter.optional(), limit: listLimit }).strict(),
+  outputSchema: z.object({ items: z.array(productSummarySchema).max(50) }).strict(),
+  errorContract: [{ code: "INVALID_INPUT", description: "Filter parameters failed validation." }],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "Product" },
+  permission: { permission: "read:products" },
+  sideEffects: { effects: [] },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
+  async: READ_ASYNC_SUPPORT,
+  rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
+  executionReference: { adapterKey: "products.listMineAdapter" },
+  securityClassification: "INTERNAL (the vendor's own catalogue, drafts included) — scoped by VendorProfile.userId = owner.",
+  contentTrust: "THIRD_PARTY_CONTENT",
+}
+
+const campaignsGetActive: CapabilityDefinition = {
+  id: "campaigns.getActive",
+  version: 1,
+  domain: "campaigns",
+  name: "Get the active campaign",
+  description: "Get the promotional campaign running now, if any, as shown on the storefront. Read-only.",
+  status: "ACTIVE",
+  operationType: "READ",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({}).strict(),
+  outputSchema: z
+    .object({
+      campaign: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          label: z.string().nullable(),
+          type: z.string(),
+          discountPercent: z.number(),
+          bannerText: z.string().nullable(),
+          startsAt: z.string(),
+          endsAt: z.string(),
+          applicableTierIds: z.array(z.string()).max(50),
+          secondsRemaining: z.number().int().nonnegative(),
+        })
+        .strict()
+        .nullable(),
+    })
+    .strict(),
+  errorContract: [],
+  requiredIdentityContext: ["connectionId"],
+  resource: { resourceType: "Campaign" },
+  permission: { permission: null, note: "Public storefront data (app/api/campaigns/active is unauthenticated); no RBAC constant covers marketing reads." },
+  sideEffects: { effects: [] },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
+  async: READ_ASYNC_SUPPORT,
+  rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
+  executionReference: { adapterKey: "campaigns.getActiveAdapter" },
+  securityClassification: "PUBLIC (the same fields as the public active-campaign endpoint).",
+  contentTrust: "THIRD_PARTY_CONTENT",
+}
+
+const subscriptionsList: CapabilityDefinition = {
+  id: "subscriptions.list",
+  version: 1,
+  domain: "subscriptions",
+  name: "List my subscriptions",
+  description: "List the caller's own subscriptions. Read-only.",
+  status: "ACTIVE",
+  operationType: "READ",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({ status: z.enum(["ACTIVE", "CANCELLED", "PAST_DUE", "TRIALING", "PAUSED"]).optional(), limit: listLimit }).strict(),
+  outputSchema: z
+    .object({
+      items: z
+        .array(z.object({ id: z.string(), status: z.string(), planId: z.string(), productId: z.string(), currentPeriodEnd: z.string(), cancelAtPeriodEnd: z.boolean() }).strict())
+        .max(50),
+    })
+    .strict(),
+  errorContract: [{ code: "INVALID_INPUT", description: "Filter parameters failed validation." }],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "Subscription" },
+  permission: { permission: "read:billing" },
+  sideEffects: { effects: [] },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
+  async: READ_ASYNC_SUPPORT,
+  rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
+  executionReference: { adapterKey: "subscriptions.listAdapter" },
+  securityClassification: "SENSITIVE (billing) — owner-scoped; payment-gateway ids and metadata excluded.",
+  contentTrust: "SYSTEM_GENERATED",
+}
+
+const ticketsGet: CapabilityDefinition = {
+  id: "tickets.get",
+  version: 1,
+  domain: "tickets",
+  name: "Get a ticket",
+  description: "Get one of the caller's support tickets with its conversation (staff-internal notes excluded). Read-only.",
+  status: "ACTIVE",
+  operationType: "READ",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({ ticketId: z.string().min(1).max(64) }).strict(),
+  outputSchema: z
+    .object({
+      id: z.string(),
+      subject: z.string(),
+      description: z.string(),
+      status: z.string(),
+      priority: z.string(),
+      category: z.string(),
+      createdAt: z.string(),
+      updatedAt: z.string(),
+      messages: z.array(z.object({ id: z.string(), content: z.string(), fromCustomer: z.boolean(), createdAt: z.string() }).strict()).max(50),
+      messagesTruncated: z.boolean(),
+    })
+    .strict(),
+  errorContract: [{ code: "RESOURCE_NOT_FOUND", description: "No ticket exists, or it is not the caller's." }],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "Ticket", resourceLocator: "ticketId" },
+  permission: { permission: "read:tickets" },
+  sideEffects: { effects: [] },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
+  async: READ_ASYNC_SUPPORT,
+  rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
+  executionReference: { adapterKey: "tickets.getAdapter" },
+  securityClassification: "INTERNAL/CONFIDENTIAL — owner-scoped; internal notes and staff identities excluded.",
+  contentTrust: "THIRD_PARTY_CONTENT",
+}
+
+const analyticsSummary: CapabilityDefinition = {
+  id: "analytics.summary",
+  version: 1,
+  domain: "analytics",
+  name: "My account summary",
+  description: "Counts of the caller's own subscriptions, tickets and (for vendors) products. Read-only.",
+  status: "ACTIVE",
+  operationType: "READ",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({}).strict(),
+  outputSchema: z
+    .object({
+      subscriptions: z.object({ active: z.number().int().nonnegative(), total: z.number().int().nonnegative() }).strict(),
+      tickets: z.object({ open: z.number().int().nonnegative(), total: z.number().int().nonnegative() }).strict(),
+      products: z.object({ published: z.number().int().nonnegative(), total: z.number().int().nonnegative() }).strict().nullable(),
+    })
+    .strict(),
+  errorContract: [],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "AccountSummary" },
+  permission: { permission: "read:analytics" },
+  sideEffects: { effects: [] },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
+  async: READ_ASYNC_SUPPORT,
+  rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
+  executionReference: { adapterKey: "analytics.summaryAdapter" },
+  securityClassification: "INTERNAL — owner-scoped counts only; platform-wide analytics are not agent-available.",
+  contentTrust: "SYSTEM_GENERATED",
+}
+
+const analyticsProductPerformance: CapabilityDefinition = {
+  id: "analytics.productPerformance",
+  version: 1,
+  domain: "analytics",
+  name: "My product performance",
+  description: "Views, cart adds, checkouts, purchases and rating of one of the caller's vendor products over 7, 30 or 90 days. Read-only.",
+  status: "ACTIVE",
+  operationType: "READ",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({ productId: z.string().min(1).max(64), days: z.union([z.literal(7), z.literal(30), z.literal(90)]).optional() }).strict(),
+  outputSchema: z
+    .object({
+      productId: z.string(),
+      days: z.number().int(),
+      views: z.number().int().nonnegative(),
+      cartAdds: z.number().int().nonnegative(),
+      checkoutsStarted: z.number().int().nonnegative(),
+      purchases: z.number().int().nonnegative(),
+      conversionRate: z.number().min(0).nullable(),
+      averageRating: z.number(),
+      reviewCount: z.number().int().nonnegative(),
+    })
+    .strict(),
+  errorContract: [{ code: "RESOURCE_NOT_FOUND", description: "No product exists, or it is not the caller's." }],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "Product", resourceLocator: "productId" },
+  permission: { permission: "read:analytics" },
+  sideEffects: { effects: [] },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
+  async: READ_ASYNC_SUPPORT,
+  rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
+  executionReference: { adapterKey: "analytics.productPerformanceAdapter" },
+  securityClassification: "INTERNAL — the vendor's own product only; counts, no buyer data.",
+  contentTrust: "SYSTEM_GENERATED",
+}
+
+// ── Phase 13 — first executable writes (LOW_RISK_WRITE, support domain) ──
+
+/** Writes run synchronously (with an idempotency key) or through the task engine. */
+const WRITE_ASYNC_SUPPORT: CapabilityDefinition["async"] = {
+  executionMode: "SYNC",
+  asyncSupported: true,
+  queue: "agent-task",
+  worker: "agent-task",
+  pollingSupported: true,
+}
+
+const ticketsCreate: CapabilityDefinition = {
+  id: "tickets.create",
+  version: 1,
+  domain: "tickets",
+  name: "Open a support ticket",
+  description: "Open a support ticket for the caller. Requires an idempotency key. Compensated by closing the ticket.",
+  status: "ACTIVE",
+  operationType: "LOW_RISK_WRITE",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z
+    .object({
+      subject: z.string().min(3).max(200),
+      description: z.string().min(10).max(5000),
+      priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
+      category: z.enum(["GENERAL", "BILLING", "TECHNICAL", "ACCOUNT", "PRODUCT", "OTHER"]).optional(),
+    })
+    .strict(),
+  outputSchema: z.object({ id: z.string(), subject: z.string(), status: z.string(), priority: z.string(), category: z.string(), createdAt: z.string() }).strict(),
+  errorContract: [
+    { code: "INVALID_INPUT", description: "Subject or description missing or malformed." },
+    { code: "IDEMPOTENCY_KEY_REQUIRED", description: "No idempotency key was supplied." },
+  ],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "Ticket" },
+  permission: { permission: "write:tickets" },
+  sideEffects: { effects: ["database write (Ticket)"] },
+  idempotency: {
+    requiresIdempotencyKey: true,
+    idempotencyScope: "connectionId+idempotencyKey",
+    retrySafe: false,
+    duplicateBehavior: "Ticket has no natural unique key: a retry without the same idempotency key opens a second ticket.",
+    class: "NON_IDEMPOTENT",
+  },
+  async: WRITE_ASYNC_SUPPORT,
+  rollback: {
+    reversibility: "REVERSIBLE",
+    mechanism: "Close the ticket (tickets.close). The ticket stays on record.",
+    recovery: {
+      class: "COMPENSATABLE",
+      capabilityId: "tickets.close",
+      capabilityVersion: 1,
+      inputMapping: { ticketId: "output.id" },
+      residualEffects: "The ticket remains on record as CLOSED; staff may already have seen it.",
+      manualRecoveryRequired: false,
+      recommendation: "Close the ticket opened by the agent; tell support staff if it was already being worked on.",
+    },
+  },
+  executionReference: { adapterKey: "tickets.createAdapter" },
+  securityClassification: "INTERNAL/CONFIDENTIAL — always created for the connection owner; no project linkage; CRITICAL priority is staff-only.",
+  contentTrust: "THIRD_PARTY_CONTENT",
+}
+
+const ticketsClose: CapabilityDefinition = {
+  id: "tickets.close",
+  version: 1,
+  domain: "tickets",
+  name: "Close a support ticket",
+  description: "Close one of the caller's support tickets. Closing a closed ticket changes nothing.",
+  status: "ACTIVE",
+  operationType: "LOW_RISK_WRITE",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({ ticketId: z.string().min(1).max(64) }).strict(),
+  outputSchema: z.object({ id: z.string(), status: z.string(), changed: z.boolean() }).strict(),
+  errorContract: [
+    { code: "RESOURCE_NOT_FOUND", description: "No ticket exists, or it is not the caller's." },
+    { code: "CONFLICT", description: "The ticket changed while it was being closed." },
+  ],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "Ticket", resourceLocator: "ticketId" },
+  permission: { permission: "write:tickets" },
+  sideEffects: { effects: ["database write (Ticket.status)"] },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "End-state idempotent: closing a CLOSED ticket is a no-op (changed: false).", class: "IDEMPOTENT" },
+  async: WRITE_ASYNC_SUPPORT,
+  rollback: {
+    reversibility: "REVERSIBLE",
+    mechanism: "Support staff can reopen the ticket from the admin ticket view; there is no agent-side reopen.",
+    recovery: {
+      class: "IRREVERSIBLE",
+      manualRecoveryRequired: true,
+      recommendation: "Ask support staff to reopen the ticket from the admin ticket view (no agent capability reopens tickets).",
+    },
+  },
+  executionReference: { adapterKey: "tickets.closeAdapter" },
+  securityClassification: "INTERNAL/CONFIDENTIAL — owner-scoped; only the client 'close' transition, never staff transitions.",
+  contentTrust: "SYSTEM_GENERATED",
+}
+
 // ── LOW_RISK_WRITE tier ─────────────────────────────────────────────────
 
 const productsCreateDraft: CapabilityDefinition = {
@@ -320,6 +625,15 @@ export const CORE_CAPABILITY_MANIFEST: readonly CapabilityDefinition[] = [
   productsGet,
   subscriptionsGet,
   ticketsList,
+  // Phase 13
+  productsListMine,
+  campaignsGetActive,
+  subscriptionsList,
+  ticketsGet,
+  analyticsSummary,
+  analyticsProductPerformance,
+  ticketsCreate,
+  ticketsClose,
   productsCreateDraft,
   couponsCreate,
   productsUpdatePricing,

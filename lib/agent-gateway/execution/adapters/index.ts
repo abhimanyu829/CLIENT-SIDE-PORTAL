@@ -24,10 +24,27 @@ import { ProductsListAdapter } from "./products-list-adapter"
 import { ProductsGetAdapter } from "./products-get-adapter"
 import { SubscriptionsGetAdapter } from "./subscriptions-get-adapter"
 import { TicketsListAdapter } from "./tickets-list-adapter"
+// Phase 13 — domain expansion (docs/agent-gateway/phase-13/07-capability-map.md).
+import { ProductsListMineAdapter } from "./products-list-mine-adapter"
+import { CampaignsGetActiveAdapter } from "./campaigns-get-active-adapter"
+import { SubscriptionsListAdapter } from "./subscriptions-list-adapter"
+import { TicketsGetAdapter } from "./tickets-get-adapter"
+import { TicketsCreateAdapter } from "./tickets-create-adapter"
+import { TicketsCloseAdapter } from "./tickets-close-adapter"
+import { AnalyticsSummaryAdapter } from "./analytics-summary-adapter"
+import { AnalyticsProductPerformanceAdapter } from "./analytics-product-performance-adapter"
 
 export function registerCoreAdapters(registry: AdapterRegistry): void {
   registry.register(new ProductsListAdapter())
   registry.register(new ProductsGetAdapter())
   registry.register(new SubscriptionsGetAdapter())
   registry.register(new TicketsListAdapter())
+  registry.register(new ProductsListMineAdapter())
+  registry.register(new CampaignsGetActiveAdapter())
+  registry.register(new SubscriptionsListAdapter())
+  registry.register(new TicketsGetAdapter())
+  registry.register(new TicketsCreateAdapter())
+  registry.register(new TicketsCloseAdapter())
+  registry.register(new AnalyticsSummaryAdapter())
+  registry.register(new AnalyticsProductPerformanceAdapter())
 }

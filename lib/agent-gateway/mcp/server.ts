@@ -30,6 +30,7 @@ import { AdapterResolver } from "../execution/resolver/adapter-resolver"
 import { projectTools, resolveProjectedTool, toolAnnotationsFor } from "./tool-projection"
 import { extractTrustedIdentity } from "./identity-context"
 import { toolSuccessResult } from "./content-result"
+import { IDEMPOTENCY_META_KEY, idempotencyKeyFromMeta } from "./request-meta"
 import { CapabilityError } from "../capabilities/errors"
 import { isInputHygieneDetails } from "../security/input-hygiene"
 import { recordInputRejected } from "../security/evidence"
@@ -108,6 +109,16 @@ export function createMcpServerForRequest(
             return errorResult("CAPABILITY_NOT_FOUND", `Tool "${tool.name}" is not currently available.`)
           }
 
+          // Phase 13: a write's idempotency key travels in params._meta (request-meta.ts).
+          const keyFromMeta = idempotencyKeyFromMeta(extra._meta)
+          if (!keyFromMeta.ok) return errorResult("INVALID_INPUT", keyFromMeta.message)
+          if (resolved.capability.idempotency.requiresIdempotencyKey && !keyFromMeta.key) {
+            return errorResult(
+              "IDEMPOTENCY_KEY_REQUIRED",
+              `Tool "${tool.name}" requires an idempotency key: pass params._meta["${IDEMPOTENCY_META_KEY}"], or submit it with agent_task_submit and an idempotencyKey.`
+            )
+          }
+
           // Phase 12: input hygiene (and the Phase 3 schema) BEFORE the gate,
           // so a hostile input never reaches an approval request a human reads.
           try {
@@ -162,7 +173,7 @@ export function createMcpServerForRequest(
             connectionId: gatewayContext.machine?.connectionId,
             toolName: tool.name,
           })
-          const result = await resolver.execute(`${resolved.capability.id}@v${resolved.capability.version}`, args, gatewayContext)
+          const result = await resolver.execute(`${resolved.capability.id}@v${resolved.capability.version}`, args, gatewayContext, keyFromMeta.key)
           recordMcpEvent({
             event: "adapter_completed",
             requestId: gatewayContext.requestId,

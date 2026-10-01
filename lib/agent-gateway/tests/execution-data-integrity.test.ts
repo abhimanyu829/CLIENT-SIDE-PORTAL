@@ -51,13 +51,24 @@ describe("Phase 4 data integrity", () => {
     vi.resetModules()
   })
 
-  it("no unexpected writes: none of the 4 registered adapters expose a write/update/delete/create method on the fake db they touch", async () => {
-    const { fake } = await setup()
+  it("no unexpected writes: the 4 Phase 4 READ adapters never reach a write method of the models they touch", async () => {
+    const { resolver, fake } = await setup()
+    // Products and subscriptions have no write path at all in the fake.
     expect((fake.client.product as Record<string, unknown>).update).toBeUndefined()
     expect((fake.client.product as Record<string, unknown>).create).toBeUndefined()
     expect((fake.client.subscription as Record<string, unknown>).update).toBeUndefined()
+    // Tickets gained create / updateMany in Phase 13 (tickets.create / tickets.close);
+    // the READ adapters must still never call them.
+    fake.seedProduct({ id: "p1", name: "A", slug: "a", status: "AVAILABLE", type: "SAAS" })
+    fake.seedSubscription({ id: "s1", userId: "owner_1", status: "ACTIVE", tierId: "t1" })
+    fake.seedTicket({ id: "t1", clientId: "owner_1", title: "Mine", status: "OPEN", assignedTo: null })
+    await resolver.execute("products.list", {}, gatewayCtx())
+    await resolver.execute("products.get", { id: "p1" }, gatewayCtx())
+    await resolver.execute("subscriptions.get", { subscriptionId: "s1" }, gatewayCtx())
+    await resolver.execute("tickets.list", {}, gatewayCtx())
     expect((fake.client.ticket as Record<string, unknown>).update).toBeUndefined()
-    expect((fake.client.ticket as Record<string, unknown>).create).toBeUndefined()
+    expect(fake.client.ticket.create).not.toHaveBeenCalled()
+    expect(fake.client.ticket.updateMany).not.toHaveBeenCalled()
   })
 
   it("no orphaned records: read-only capabilities never create any record before or after execution", async () => {

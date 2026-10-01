@@ -32,7 +32,24 @@ describe("Phase 12 D — executable-only tool surface", () => {
       .filter((d) => d.exposure === "AGENT_AVAILABLE" && d.status === "ACTIVE" && d.executionReference !== null && k.adapters.has(d.id, d.version))
       .map((d) => d.id)
     expect(names).toEqual([...executable, "agent_task_cancel", "agent_task_status", "agent_task_submit"].sort())
-    expect(names).toEqual(["agent_task_cancel", "agent_task_status", "agent_task_submit", "products.get", "products.list", "subscriptions.get", "tickets.list"])
+    expect(names).toEqual([
+      "agent_task_cancel",
+      "agent_task_status",
+      "agent_task_submit",
+      // Phase 13 domain capabilities (each with a registered adapter)
+      "analytics.productPerformance",
+      "analytics.summary",
+      "campaigns.getActive",
+      "products.get",
+      "products.list",
+      "products.listMine",
+      "subscriptions.get",
+      "subscriptions.list",
+      "tickets.close",
+      "tickets.create",
+      "tickets.get",
+      "tickets.list",
+    ])
     // Contract-only capabilities (no adapter) and non-agent exposure are never tools.
     for (const hidden of ["products.createDraft", "coupons.create", "products.updatePricing", "refunds.process"]) expect(names).not.toContain(hidden)
   })

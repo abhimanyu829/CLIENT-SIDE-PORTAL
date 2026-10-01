@@ -28,7 +28,7 @@ import { AuthorizationDeniedError } from "../mcp/errors"
 import type { GateGrant } from "../execution-gate/gate"
 import { canonicalJson } from "../approvals/canonical-json"
 import { computeInputDigest } from "../approvals/binding"
-import { generateTaskRef, idempotencyScopeFor, isValidIdempotencyKey, isValidTaskRef, jobIdFor, operationKeyFor, TRIGGER_IDEMPOTENCY_PREFIX } from "./ids"
+import { generateTaskRef, idempotencyScopeFor, isReservedIdempotencyKey, isValidIdempotencyKey, isValidTaskRef, jobIdFor, operationKeyFor, TRIGGER_IDEMPOTENCY_PREFIX } from "./ids"
 import { classifyRetry, maxAttemptsFor } from "./retry-policy"
 import { TaskError, taskNotFound } from "./errors"
 import { getTaskEngineConfig, type TaskEngineConfig } from "./config"
@@ -155,6 +155,9 @@ export class AgentTaskService {
     }
     if (!origin && args.idempotencyKey?.startsWith(TRIGGER_IDEMPOTENCY_PREFIX)) {
       throw new TaskError("INVALID_INPUT", `Idempotency keys starting with "${TRIGGER_IDEMPOTENCY_PREFIX}" are reserved.`)
+    }
+    if (!origin && args.idempotencyKey && isReservedIdempotencyKey(args.idempotencyKey)) {
+      throw new TaskError("INVALID_INPUT", "Idempotency keys starting with a reserved prefix (trigger., recovery.) cannot be used.")
     }
     if (capability.idempotency.requiresIdempotencyKey && !args.idempotencyKey) {
       throw new TaskError("IDEMPOTENCY_KEY_REQUIRED", `Capability "${capability.id}" requires an idempotency key.`)
