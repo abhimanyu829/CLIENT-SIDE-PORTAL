@@ -26,6 +26,9 @@ export type ExecutionErrorCode =
   | "IDEMPOTENCY_KEY_REQUIRED"
   | "IDEMPOTENCY_CONFLICT"
   | "INTERNAL_ERROR"
+  // Phase 15 — release controls (resolver re-check immediately before dispatch)
+  | "KILL_SWITCH_ACTIVE"
+  | "ROLLOUT_BLOCKED"
 
 export class ExecutionError extends Error {
   readonly code: ExecutionErrorCode

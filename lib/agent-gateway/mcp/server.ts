@@ -24,6 +24,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js"
 import type { ServerRequest, ServerNotification, CallToolResult } from "@modelcontextprotocol/sdk/types.js"
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js"
 import type { CapabilityRegistry } from "../capabilities/registry"
 import type { AdapterRegistry } from "../execution/resolver/adapter-registry"
 import { AdapterResolver } from "../execution/resolver/adapter-resolver"
@@ -54,6 +55,13 @@ export interface McpServerDependencies {
    * surface is exactly Phase 5's.
    */
   taskService?: AgentTaskService
+  /**
+   * Phase 15 — capability ids this connection may currently use under the
+   * release controls (rollout/controls.ts visibleCapabilities). When given,
+   * nothing else is listed or callable as a tool; the gate re-checks on
+   * every call regardless.
+   */
+  visibleCapabilityIds?: ReadonlySet<string>
 }
 
 const MCP_SERVER_NAME = "abhibhi-agent-gateway"
@@ -80,7 +88,7 @@ export function createMcpServerForRequest(
 
   const resolver = new AdapterResolver(deps.capabilityRegistry, deps.adapterRegistry)
   // Phase 12: executable-only — a capability without a registered adapter is never a tool.
-  const tools = projectTools(deps.capabilityRegistry, deps.adapterRegistry)
+  const tools = projectTools(deps.capabilityRegistry, deps.adapterRegistry).filter((t) => !deps.visibleCapabilityIds || deps.visibleCapabilityIds.has(t.capability.id))
 
   if (deps.taskService) {
     assertNoTaskToolCollision(tools.map((t) => t.name))
@@ -202,6 +210,15 @@ export function createMcpServerForRequest(
         }
       }
     )
+  }
+
+  // Phase 15: with every tool hidden (kill switch, unreleased capabilities)
+  // and no task tools, the SDK would never install its tools handlers, so
+  // tools/list and tools/call would fail with "method not found". An agent
+  // must see an empty surface and a stable refusal instead.
+  if (tools.length === 0 && !deps.taskService) {
+    server.server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [] }))
+    server.server.setRequestHandler(CallToolRequestSchema, async () => errorResult("CAPABILITY_NOT_FOUND", "The requested tool is not available."))
   }
 
   return server

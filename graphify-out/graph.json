@@ -3225,7 +3225,7 @@
       "file_type": "code",
       "norm_label": "fuzzcase",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L100"
+      "source_location": "L101"
     },
     {
       "id": "lib_agent_gateway_simulation_fuzzer_rng",
@@ -21291,7 +21291,7 @@
       "file_type": "code",
       "norm_label": "deepvalue()",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L94"
+      "source_location": "L95"
     },
     {
       "id": "lib_agent_gateway_simulation_fuzzer_fuzzcases",
@@ -21303,7 +21303,7 @@
       "file_type": "code",
       "norm_label": "fuzzcases()",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L113"
+      "source_location": "L114"
     },
     {
       "id": "lib_agent_gateway_simulation_fuzzer_hostilevalue",
@@ -21315,7 +21315,7 @@
       "file_type": "code",
       "norm_label": "hostilevalue()",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L81"
+      "source_location": "L82"
     },
     {
       "id": "lib_agent_gateway_simulation_fuzzer_int",
@@ -53429,7 +53429,7 @@
       "file_type": "code",
       "norm_label": "hostile_numbers",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L76"
+      "source_location": "L77"
     },
     {
       "id": "lib_agent_gateway_simulation_fuzzer_hostile_strings",
@@ -53451,7 +53451,7 @@
       "file_type": "code",
       "norm_label": "identity_keys",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L78"
+      "source_location": "L79"
     },
     {
       "id": "lib_agent_gateway_simulation_fuzzer_proto_keys",
@@ -53462,7 +53462,7 @@
       "file_type": "code",
       "norm_label": "proto_keys",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L79"
+      "source_location": "L80"
     },
     {
       "id": "lib_agent_gateway_tests_p14_property_test",
@@ -113231,7 +113231,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L114",
+      "source_location": "L115",
       "weight": 1.0
     },
     {
@@ -113243,7 +113243,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L123",
+      "source_location": "L124",
       "weight": 1.0
     },
     {
@@ -113255,7 +113255,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L123",
+      "source_location": "L124",
       "weight": 1.0
     },
     {
@@ -113267,7 +113267,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L135",
+      "source_location": "L136",
       "weight": 1.0
     },
     {
@@ -113279,7 +113279,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L83",
+      "source_location": "L84",
       "weight": 1.0
     },
     {
@@ -113291,7 +113291,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L87",
+      "source_location": "L88",
       "weight": 1.0
     },
     {
@@ -278350,7 +278350,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L100",
+      "source_location": "L101",
       "weight": 1.0
     },
     {
@@ -278361,7 +278361,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L113",
+      "source_location": "L114",
       "weight": 1.0
     },
     {
@@ -278427,7 +278427,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L76",
+      "source_location": "L77",
       "weight": 1.0
     },
     {
@@ -278438,7 +278438,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L78",
+      "source_location": "L79",
       "weight": 1.0
     },
     {
@@ -278449,7 +278449,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L79",
+      "source_location": "L80",
       "weight": 1.0
     },
     {
@@ -278460,7 +278460,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L81",
+      "source_location": "L82",
       "weight": 1.0
     },
     {
@@ -278471,7 +278471,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "lib/agent-gateway/simulation/fuzzer.ts",
-      "source_location": "L94",
+      "source_location": "L95",
       "weight": 1.0
     },
     {
@@ -304870,5 +304870,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "21bb82fcc4222b27f310b072f7c57ba2348ca1b5"
+  "built_at_commit": "534e621073f5993f99c8119c3dbc0c9558c5f975"
 }

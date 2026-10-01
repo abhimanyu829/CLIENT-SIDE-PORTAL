@@ -19,6 +19,8 @@ export const GOVERNANCE_SECTIONS = [
   // Phase 11
   { href: "/admin/agent-governance/ledger", label: "Audit ledger" },
   { href: "/admin/agent-governance/recoveries", label: "Recoveries" },
+  // Phase 15
+  { href: "/admin/agent-governance/release", label: "Release controls" },
 ] as const
 
 /** Section navigation for Agent Governance; the current section carries aria-current="page". */

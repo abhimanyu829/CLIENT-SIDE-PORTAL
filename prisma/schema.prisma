@@ -4201,3 +4201,69 @@ model AgentRecovery {
   @@index([connectionId, requestedAt])
   @@index([status])
 }
+
+// ── Phase 15 — release controls (rollout stages, kill switches) ─────────────
+
+enum AgentRolloutStage {
+  DISABLED
+  INTERNAL
+  CANARY
+  GENERAL
+  PAUSED
+}
+
+/// The release stage of one capability in one environment. Read on every
+/// gated call (no cache). A missing row means "legacy ACTIVE" while
+/// AGENT_GATEWAY_ROLLOUT_ENFORCED is off, and DISABLED when it is on.
+model AgentRollout {
+  id                   String            @id @default(cuid())
+  capabilityId         String
+  environment          String
+  stage                AgentRolloutStage @default(DISABLED)
+  /// CANARY: share (0-100) of connections, by a stable hash of connection + capability.
+  canaryPercent        Int               @default(0)
+  /// INTERNAL / CANARY: connections that always receive the capability.
+  allowedConnectionIds String[]
+  /// Set while PAUSED: the stage to resume to.
+  pausedFromStage      AgentRolloutStage?
+  pausedReason         String?
+  /// Optimistic concurrency: every change is conditional on it.
+  version              Int               @default(1)
+  updatedById          String
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  @@unique([capabilityId, environment])
+  @@index([environment, stage])
+}
+
+enum AgentKillSwitchScope {
+  GLOBAL
+  CAPABILITY
+  CONNECTION
+  RISK_TIER
+}
+
+/// An emergency stop. While active it refuses every matching agent
+/// operation at the gate and the resolver (queued tasks fail terminally).
+/// Rows are never deleted: deactivation is recorded on the row and in the
+/// audit ledger.
+model AgentKillSwitch {
+  id            String               @id @default(cuid())
+  /// Display-safe reference ("ksw_" + 32 hex).
+  publicRef     String               @unique
+  scope         AgentKillSwitchScope
+  /// capability id / connection id / risk tier; null for GLOBAL.
+  target        String?
+  environment   String
+  active        Boolean              @default(true)
+  reason        String
+  activatedById String
+  activatedAt   DateTime             @default(now())
+  deactivatedById String?
+  deactivatedAt DateTime?
+  deactivationReason String?
+  version       Int                  @default(1)
+  updatedAt     DateTime             @updatedAt
+  @@index([environment, active])
+  @@index([scope, target])
+}

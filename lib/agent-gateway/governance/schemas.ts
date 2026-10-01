@@ -57,6 +57,55 @@ export const recoveryRequestSchema = z
   .object({ eventId: z.string().regex(/^aud_[0-9a-f]{32}$/), reason: z.string().trim().min(3).max(500) })
   .strict()
 
+// ── Phase 15 — release controls ─────────────────────────────────────────
+
+const releaseReason = z.string().trim().min(3).max(500)
+const capabilityIdField = z.string().regex(/^[a-z][a-zA-Z0-9]*\.[a-z][a-zA-Z0-9]*$/)
+const connectionIdField = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/)
+
+export const killSwitchActivateSchema = z
+  .object({ scope: z.enum(["GLOBAL", "CAPABILITY", "CONNECTION", "RISK_TIER"]), target: z.string().trim().min(1).max(100).optional(), reason: releaseReason })
+  .strict()
+
+export const killSwitchDeactivateSchema = z.object({ expectedVersion: z.number().int().min(1), reason: releaseReason }).strict()
+
+export const rolloutConfigureSchema = z
+  .object({
+    capabilityId: capabilityIdField,
+    canaryPercent: z.number().int().min(0).max(100),
+    allowedConnectionIds: z.array(connectionIdField).max(50),
+    expectedVersion: z.number().int().min(1).optional(),
+    reason: releaseReason,
+  })
+  .strict()
+
+export const rolloutTransitionSchema = z
+  .object({
+    capabilityId: capabilityIdField,
+    action: z.enum(["advance", "pause", "resume", "rollback"]),
+    targetStage: z.enum(["DISABLED", "INTERNAL", "CANARY"]).optional(),
+    expectedVersion: z.number().int().min(1),
+    reason: releaseReason,
+  })
+  .strict()
+
+export const autonomyChangeSchema = z
+  .object({
+    direction: z.enum(["promote", "demote"]),
+    targetLevel: z.enum(["OBSERVE_ONLY", "ASSISTED", "APPROVAL_REQUIRED", "LIMITED_AUTONOMY"]).optional(),
+    reason: releaseReason,
+  })
+  .strict()
+  .refine((b) => (b.direction === "demote") === (b.targetLevel !== undefined), { message: "A demotion names its target level; a promotion never does (one level up)." })
+
+export const attestationSchema = z
+  .object({
+    capabilityId: capabilityIdField,
+    confirmed: z.array(z.enum(["TESTS_PASSED", "SECURITY_REVIEWED", "ROLLBACK_PLAN_READY", "MONITORING_READY", "ON_CALL_ASSIGNED"])).max(5),
+    reason: releaseReason,
+  })
+  .strict()
+
 /** Verify the ledger's hash chain (read-only; POST so it is never prefetched). */
 export const ledgerVerifySchema = z
   .object({ fromSequence: z.number().int().min(1).optional(), maxEvents: z.number().int().min(1).max(100_000).optional() })

@@ -45,6 +45,7 @@ import { withAgentSpan } from "../../observability/tracing"
 import { countMetric, observeMetric } from "../../observability/agent-metrics"
 import { getCircuitBreakers, isBreakerFailure, type BreakerScope } from "../../resilience/circuit-breaker"
 import { captureRecoveryInput, resolveRecoverySpec } from "../../recovery/spec"
+import { checkRuntimeControls, recordRuntimeControlRefusal, type RuntimeControlDeps } from "../../rollout/controls"
 import { guardAgentOutput } from "../../security/content-guard"
 import { recordContentFindings, recordInputRejected, recordOutputWithheld } from "../../security/evidence"
 import { isInputHygieneDetails } from "../../security/input-hygiene"
@@ -69,7 +70,9 @@ function resourceRefOf(definition: CapabilityDefinition, input: unknown): string
 export class AdapterResolver {
   constructor(
     private readonly capabilityRegistry: CapabilityRegistry,
-    private readonly adapterRegistry: AdapterRegistry
+    private readonly adapterRegistry: AdapterRegistry,
+    /** Phase 15 — release controls; defaults to the database stores. */
+    private readonly runtimeControls?: RuntimeControlDeps
   ) {}
 
   /**
@@ -205,6 +208,16 @@ export class AdapterResolver {
         throw new ExecutionError("FORBIDDEN", "The machine identity's connection could not be re-verified.")
       }
       assertEnvironmentMatches(connectionSummary.environment, getGatewayConfig().AGENT_GATEWAY_ENVIRONMENT)
+
+      // Phase 15: release controls, re-checked immediately before dispatch (a
+      // kill switch flipped after the gate decision still stops the call).
+      const releaseSubject = { capabilityId: definition.id, riskTier: definition.operationType, connectionId: gatewayContext.machine!.connectionId, environment: connectionSummary.environment }
+      const release = await checkRuntimeControls(releaseSubject, this.runtimeControls)
+      if (!release.allowed) {
+        recordRuntimeControlRefusal({ ...releaseSubject, requestId: gatewayContext.requestId, ownerId: gatewayContext.machine!.ownerId }, release, "RESOLVER")
+        if (release.code === "RELEASE_CONTROLS_UNAVAILABLE") throw new ExecutionError("EXECUTION_UNAVAILABLE", "Release controls are unavailable, so this operation was not executed. Retry later.")
+        throw new ExecutionError(release.code, release.code === "KILL_SWITCH_ACTIVE" ? "This capability is stopped by an operator kill switch." : "This capability is not released to this connection in this environment.")
+      }
 
       const machine = gatewayContext.machine!
       audit = {

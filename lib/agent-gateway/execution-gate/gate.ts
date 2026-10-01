@@ -48,6 +48,7 @@ import { APPROVAL_METHOD_STEP_UP, APPROVER_SCOPE_SUPER_ADMIN } from "../approval
 import { describeApprovalSurface } from "../human-in-the-loop/cua-contract"
 import { recordGateEvent, type GateEventFields } from "./observability"
 import { withAgentSpan } from "../observability/tracing"
+import { checkRuntimeControls, recordRuntimeControlRefusal, type RuntimeControlDeps } from "../rollout/controls"
 
 /** Phase 6 as a value source (implemented by PolicyEngineAuthorizer.decide). */
 export interface AuthorizationDecider {
@@ -57,6 +58,8 @@ export interface AuthorizationDecider {
 export interface ExecutionGateDeps {
   authorization: AuthorizationDecider
   loadAutonomyPolicy?: (connectionId: string) => Promise<EffectiveAutonomyPolicy | null>
+  /** Phase 15 — release controls (kill switches, rollout stages); defaults to the database stores. */
+  runtimeControls?: RuntimeControlDeps
   clock?: () => Date
 }
 
@@ -74,6 +77,9 @@ export type GateCode =
   | "APPROVAL_NOT_FOUND"
   | "IDENTITY_INVALID"
   | "ENVIRONMENT_BLOCKED"
+  // Phase 15 — release controls
+  | "KILL_SWITCH_ACTIVE"
+  | "ROLLOUT_BLOCKED"
   | "POLICY_UNAVAILABLE"
   | "EXECUTION_GATE_DENIED"
 
@@ -262,6 +268,22 @@ export class ExecutionGate implements CapabilityAuthorizer {
     //    authentication time; this is defense in depth.
     if (!context.connectionId || !context.ownerId || context.connectionStatus !== "ACTIVE") {
       deny("IDENTITY_INVALID", "The agent identity is not valid for execution.", "OBSERVE_ONLY")
+    }
+
+    // 1b. Phase 15 release controls — before authorization, autonomy and any
+    //     approval is created or consumed. A store failure fails closed
+    //     (POLICY_UNAVAILABLE: transient for a queued task, a denial for a call).
+    const release = await checkRuntimeControls(
+      { capabilityId: capability.id, riskTier: capability.operationType, connectionId: context.connectionId, environment: context.environment },
+      this.deps.runtimeControls
+    )
+    if (!release.allowed) {
+      recordRuntimeControlRefusal({ capabilityId: capability.id, riskTier: capability.operationType, connectionId: context.connectionId, environment: context.environment, requestId: context.requestId, ownerId: context.ownerId }, release, "GATE")
+      if (release.code === "RELEASE_CONTROLS_UNAVAILABLE") {
+        deny("POLICY_UNAVAILABLE", `Capability "${capability.id}" could not be evaluated because the release controls are unavailable. Failing closed.`, "OBSERVE_ONLY")
+      }
+      if (release.code === "KILL_SWITCH_ACTIVE") deny("KILL_SWITCH_ACTIVE", `Capability "${capability.id}" is stopped by an operator kill switch.`, "OBSERVE_ONLY")
+      deny("ROLLOUT_BLOCKED", `Capability "${capability.id}" is not released to this connection in this environment.`, "OBSERVE_ONLY")
     }
 
     // 2. Phase 6 authorization, freshly evaluated.

@@ -42,6 +42,18 @@ const gatewayConfigSchema = z.object({
     .transform((v) => v === "1" || v === "true"),
 
   AGENT_GATEWAY_ENVIRONMENT: z.enum(["development", "production", "test"]).optional().default("development"),
+
+  /**
+   * Phase 15 — when on, a capability with no AgentRollout row for this
+   * environment is DISABLED (explicit release required). Off (default): a
+   * missing row keeps the pre-Phase-15 behaviour ("legacy ACTIVE"), so
+   * deploying Phase 15 changes nothing until rollouts are configured.
+   * Kill switches apply either way.
+   */
+  AGENT_GATEWAY_ROLLOUT_ENFORCED: z
+    .string()
+    .optional()
+    .transform((v) => v === "1" || v === "true"),
 })
 
 export type AgentGatewayConfig = z.infer<typeof gatewayConfigSchema>

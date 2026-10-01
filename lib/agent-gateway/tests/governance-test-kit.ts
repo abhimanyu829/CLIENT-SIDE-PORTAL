@@ -123,6 +123,7 @@ export async function buildGovernanceKit() {
   const decisions = await import("../approvals/decision-service")
   const governance = await import("../governance")
   const { createMcpServerForRequest } = await import("../mcp/server")
+  const { visibleCapabilities } = await import("../rollout/controls")
   const { buildAuthInfoExtra } = await import("../mcp/identity-context")
   const { getAgentConnectionService } = await import("../identity/connection-service")
   const React = await import("react")
@@ -241,7 +242,9 @@ export async function buildGovernanceKit() {
   /** One JSON-RPC call through the REAL MCP server (Phase 5) with the task tools. */
   async function mcp(method: string, params: Record<string, unknown>, gatewayContext = agentCtx()) {
     const { WebStandardStreamableHTTPServerTransport } = await import("@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js")
-    const server = createMcpServerForRequest({ capabilityRegistry: registry, adapterRegistry: adapters, authorizer: gate, taskService }, gatewayContext, "development")
+    // Phase 15: the tool surface is filtered by the release controls exactly as in mcp/route-handler.ts.
+    const visibleCapabilityIds = await visibleCapabilities(gatewayContext.machine!.connectionId, "development", registry.list())
+    const server = createMcpServerForRequest({ capabilityRegistry: registry, adapterRegistry: adapters, authorizer: gate, taskService, visibleCapabilityIds }, gatewayContext, "development")
     const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true })
     await server.connect(transport)
     try {

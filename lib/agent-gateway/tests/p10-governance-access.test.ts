@@ -43,6 +43,7 @@ async function pages() {
     { name: "schedules", mod: await import(`${PAGE}/schedules/page`) },
     { name: "webhooks", mod: await import(`${PAGE}/webhooks/page`) },
     { name: "runtime", mod: await import(`${PAGE}/runtime/page`) },
+    { name: "release controls", mod: await import(`${PAGE}/release/page`) },
   ] as Array<{ name: string; mod: { default: (p: unknown) => unknown }; params?: Record<string, string> }>
 }
 
@@ -77,6 +78,13 @@ async function routes(): Promise<RouteCase[]> {
     { name: "rollback", mod: await import(`${API}/policies/[id]/rollback/route`), method: "POST" as const, path: `/api/admin/agent-governance/policies/${ids.policyId}/rollback`, params: { id: ids.policyId }, body: { targetVersion: 1, expectedCurrentVersion: 2 } },
     { name: "enable policy", mod: await import(`${API}/policies/[id]/enable/route`), method: "POST" as const, path: `/api/admin/agent-governance/policies/${ids.policyId}/enable`, params: { id: ids.policyId }, body: {} },
     { name: "disable policy", mod: await import(`${API}/policies/[id]/disable/route`), method: "POST" as const, path: `/api/admin/agent-governance/policies/${ids.policyId}/disable`, params: { id: ids.policyId }, body: {} },
+    // Phase 15 — release controls
+    { name: "activate kill switch", mod: await import(`${API}/kill-switches/route`), method: "POST" as const, path: "/api/admin/agent-governance/kill-switches", params: {}, body: { scope: "GLOBAL", reason: "drill" } },
+    { name: "deactivate kill switch", mod: await import(`${API}/kill-switches/[ref]/deactivate/route`), method: "POST" as const, path: `/api/admin/agent-governance/kill-switches/ksw_${"0".repeat(32)}/deactivate`, params: { ref: `ksw_${"0".repeat(32)}` }, body: { expectedVersion: 1, reason: "drill" } },
+    { name: "configure rollout", mod: await import(`${API}/rollouts/route`), method: "POST" as const, path: "/api/admin/agent-governance/rollouts", params: {}, body: { capabilityId: "products.get", canaryPercent: 0, allowedConnectionIds: [], reason: "drill" } },
+    { name: "transition rollout", mod: await import(`${API}/rollouts/transition/route`), method: "POST" as const, path: "/api/admin/agent-governance/rollouts/transition", params: {}, body: { capabilityId: "products.get", action: "advance", expectedVersion: 1, reason: "drill" } },
+    { name: "record attestation", mod: await import(`${API}/attestations/route`), method: "POST" as const, path: "/api/admin/agent-governance/attestations", params: {}, body: { capabilityId: "products.get", confirmed: [], reason: "drill" } },
+    { name: "change autonomy", mod: await import(`${API}/connections/[id]/autonomy/route`), method: "POST" as const, path: "/api/admin/agent-governance/connections/conn_1/autonomy", params: { id: "conn_1" }, body: { direction: "promote", reason: "drill" } },
   ]
 }
 
@@ -227,6 +235,13 @@ describe("Phase 10 J — closed route inventory (no generic endpoint)", () => {
         // Phase 11: chain verification and capability-aware recovery requests.
         "ledger/verify/route.ts",
         "recoveries/route.ts",
+        // Phase 15: release controls (kill switches, rollouts, attestations, guarded autonomy).
+        "kill-switches/route.ts",
+        "kill-switches/[ref]/deactivate/route.ts",
+        "rollouts/route.ts",
+        "rollouts/transition/route.ts",
+        "attestations/route.ts",
+        "connections/[id]/autonomy/route.ts",
         "policies/[id]/disable/route.ts",
         "policies/[id]/enable/route.ts",
         "policies/[id]/rollback/route.ts",

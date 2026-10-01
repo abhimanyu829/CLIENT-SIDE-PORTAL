@@ -31,6 +31,7 @@ import { getGatewayConfig } from "../config"
 import { getMcpConfig } from "./config"
 import { generateRequestId } from "../shared/crypto"
 import { createMcpServerForRequest } from "./server"
+import { visibleCapabilities } from "../rollout/controls"
 import { buildAuthInfoExtra } from "./identity-context"
 import { getCapabilityRegistry } from "../capabilities"
 import { getAdapterRegistry } from "../execution"
@@ -163,6 +164,8 @@ async function processMcpRequest(request: Request, requestId: string): Promise<R
         authorizer: gate,
         // Phase 8 — async task tools, opt-in (AGENT_GATEWAY_TASKS_ENABLED).
         taskService: getTaskEngineConfig().enabled ? createAgentTaskService(gate) : undefined,
+        // Phase 15 — only capabilities released to this connection are tools (fails closed to none).
+        visibleCapabilityIds: await visibleCapabilities(gatewayContext.machine.connectionId, environment, getCapabilityRegistry().list()),
       },
       gatewayContext,
       environment

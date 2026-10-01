@@ -25,7 +25,14 @@ import {
 } from "./actions"
 import { governanceErrorResponse, governanceOk, readJsonBody } from "./http"
 import { requestRecoveryAction, verifyLedgerAction } from "./evidence"
+import { activateKillSwitchAction, changeAutonomyAction, configureRolloutAction, deactivateKillSwitchAction, recordAttestationAction, transitionRolloutAction } from "./release"
 import {
+  attestationSchema,
+  autonomyChangeSchema,
+  killSwitchActivateSchema,
+  killSwitchDeactivateSchema,
+  rolloutConfigureSchema,
+  rolloutTransitionSchema,
   ledgerVerifySchema,
   recoveryRequestSchema,
   policyCreateSchema,
@@ -153,6 +160,74 @@ export async function requestRecoveryRoute(req: Request): Promise<Response> {
     const actor = await requireGovernanceOperator(req)
     const body = await readJsonBody(req, recoveryRequestSchema)
     return governanceOk({ recovery: await requestRecoveryAction(body, actor.userId, req) })
+  } catch (err) {
+    return governanceErrorResponse(err)
+  }
+}
+
+// ── Phase 15 — release controls ─────────────────────────────────────────
+
+export async function activateKillSwitchRoute(req: Request): Promise<Response> {
+  try {
+    const actor = await requireGovernanceOperator(req)
+    const body = await readJsonBody(req, killSwitchActivateSchema)
+    const { killSwitch, created } = await activateKillSwitchAction(body, actor.userId, req)
+    return governanceOk({ killSwitch, created }, created ? 201 : 200)
+  } catch (err) {
+    return governanceErrorResponse(err)
+  }
+}
+
+export async function deactivateKillSwitchRoute(req: Request, { params }: RefContext): Promise<Response> {
+  try {
+    const actor = await requireGovernanceOperator(req)
+    const { ref } = await params
+    const body = await readJsonBody(req, killSwitchDeactivateSchema)
+    return governanceOk({ killSwitch: await deactivateKillSwitchAction(ref, body, actor.userId, req) })
+  } catch (err) {
+    return governanceErrorResponse(err)
+  }
+}
+
+export async function configureRolloutRoute(req: Request): Promise<Response> {
+  try {
+    const actor = await requireGovernanceOperator(req)
+    const body = await readJsonBody(req, rolloutConfigureSchema)
+    return governanceOk({ rollout: await configureRolloutAction(body, actor.userId, req) })
+  } catch (err) {
+    return governanceErrorResponse(err)
+  }
+}
+
+export async function transitionRolloutRoute(req: Request): Promise<Response> {
+  try {
+    const actor = await requireGovernanceOperator(req)
+    const body = await readJsonBody(req, rolloutTransitionSchema)
+    const { rollout, health } = await transitionRolloutAction(body, actor.userId, req)
+    return governanceOk({ rollout, ...(health ? { health } : {}) })
+  } catch (err) {
+    return governanceErrorResponse(err)
+  }
+}
+
+export async function recordAttestationRoute(req: Request): Promise<Response> {
+  try {
+    const actor = await requireGovernanceOperator(req)
+    const body = await readJsonBody(req, attestationSchema)
+    return governanceOk(await recordAttestationAction(body, actor.userId, req), 201)
+  } catch (err) {
+    return governanceErrorResponse(err)
+  }
+}
+
+export async function changeAutonomyRoute(req: Request, { params }: IdContext): Promise<Response> {
+  try {
+    const actor = await requireGovernanceOperator(req)
+    const { id } = await params
+    const body = await readJsonBody(req, autonomyChangeSchema)
+    const result = await changeAutonomyAction(id, body, actor.userId, req)
+    // A blocked promotion is a refusal with its reasons, not a server error.
+    return governanceOk({ change: result }, result.outcome === "BLOCKED" ? 409 : 200)
   } catch (err) {
     return governanceErrorResponse(err)
   }

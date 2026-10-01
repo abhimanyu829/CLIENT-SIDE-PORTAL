@@ -20,6 +20,9 @@ import { gatewayLogger } from "../observability/request-log"
 import { clearResultsFinishedBefore, deleteTasksFinishedBefore, listTasks } from "./store"
 import { applyDueTimeTransition, failAttempt, payloadFor, scheduleRetry, type LifecycleDeps } from "./lifecycle"
 import { jobIdFor } from "./ids"
+import { ReleaseService } from "../rollout/release-service"
+import { getCapabilityRegistry } from "../capabilities"
+import { getGatewayConfig } from "../config"
 
 const BATCH = 200
 /** A FAILED task waiting longer than this for its RETRY_QUEUED step is considered stuck. */
@@ -33,12 +36,14 @@ export interface MaintenanceReport {
   recoveredStarting: number
   resultsCleared: number
   deleted: number
+  /** Phase 15 — INTERNAL / CANARY rollouts paused by their health gate in this pass. */
+  autoPaused: number
   errors: number
 }
 
 export async function runTaskMaintenance(deps: LifecycleDeps, at?: Date): Promise<MaintenanceReport> {
   const now = at ?? deps.clock()
-  const report: MaintenanceReport = { expired: 0, timedOut: 0, requeued: 0, retriesCompleted: 0, recoveredStarting: 0, resultsCleared: 0, deleted: 0, errors: 0 }
+  const report: MaintenanceReport = { expired: 0, timedOut: 0, requeued: 0, retriesCompleted: 0, recoveredStarting: 0, resultsCleared: 0, deleted: 0, autoPaused: 0, errors: 0 }
   const step = async (name: string, run: () => Promise<void>) => {
     try {
       await run()
@@ -102,6 +107,12 @@ export async function runTaskMaintenance(deps: LifecycleDeps, at?: Date): Promis
   await step("retention", async () => {
     report.resultsCleared = await clearResultsFinishedBefore(new Date(now.getTime() - deps.config.resultRetentionMs), now)
     report.deleted = await deleteTasksFinishedBefore(new Date(now.getTime() - deps.config.taskRetentionMs))
+  })
+
+  // Phase 15 — health gates: pause progressive rollouts that are failing (never GENERAL; see rollout/release-service.ts).
+  await step("release-health", async () => {
+    const service = new ReleaseService({ registry: getCapabilityRegistry(), environment: getGatewayConfig().AGENT_GATEWAY_ENVIRONMENT, clock: () => now })
+    report.autoPaused = (await service.autoPauseUnhealthy()).length
   })
 
   gatewayLogger.info({ ...report }, "agent_gateway_task_maintenance")

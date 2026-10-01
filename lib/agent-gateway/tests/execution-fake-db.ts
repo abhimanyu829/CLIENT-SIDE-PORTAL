@@ -18,6 +18,7 @@
  * infrastructure, outside Phase 4's scope to create).
  */
 import { vi } from "vitest"
+import { createReleaseTables } from "./approval-fake-db"
 
 export interface FakeProductRow {
   id: string
@@ -128,6 +129,8 @@ export function createExecutionFakeDb() {
   const campaigns = new Map<string, FakeCampaignRow>()
   const ticketMessages = new Map<string, FakeTicketMessageRow>()
   const metricEvents = new Map<string, FakeMetricEventRow>()
+  // Phase 15 — release controls (empty by default: no kill switch, no rollout row = legacy ACTIVE).
+  const release = createReleaseTables()
 
   const lastCalls: Record<string, unknown[]> = {}
   function record(name: string, args: unknown) {
@@ -254,6 +257,8 @@ export function createExecutionFakeDb() {
         return Array.from(metricEvents.values()).filter((r) => matches(r as unknown as Record<string, unknown>, args?.where)).length
       }),
     },
+    agentRollout: release.rollouts.api,
+    agentKillSwitch: release.killSwitches.api,
   }
 
   return {
@@ -273,5 +278,7 @@ export function createExecutionFakeDb() {
     _campaigns: campaigns,
     _ticketMessages: ticketMessages,
     _metricEvents: metricEvents,
+    _rollouts: release.rollouts.rows,
+    _killSwitches: release.killSwitches.rows,
   }
 }

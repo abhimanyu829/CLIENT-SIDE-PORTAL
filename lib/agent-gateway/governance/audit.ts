@@ -31,6 +31,13 @@ export const GOVERNANCE_AUDIT_ACTIONS = {
   // Phase 11
   RECOVERY_REQUESTED: "AGENT_RECOVERY_REQUESTED",
   LEDGER_VERIFIED: "AGENT_AUDIT_LEDGER_VERIFIED",
+  // Phase 15 (the release services append their own, richer ledger events)
+  KILL_SWITCH_ACTIVATED: "AGENT_KILL_SWITCH_ACTIVATED",
+  KILL_SWITCH_DEACTIVATED: "AGENT_KILL_SWITCH_DEACTIVATED",
+  ROLLOUT_CONFIGURED: "AGENT_ROLLOUT_CONFIGURED",
+  ROLLOUT_TRANSITIONED: "AGENT_ROLLOUT_TRANSITIONED",
+  AUTONOMY_PROMOTION: "AGENT_AUTONOMY_PROMOTION",
+  RELEASE_ATTESTED: "AGENT_RELEASE_ATTESTED",
 } as const
 
 export type GovernanceAuditAction = (typeof GOVERNANCE_AUDIT_ACTIONS)[keyof typeof GOVERNANCE_AUDIT_ACTIONS]
@@ -38,7 +45,7 @@ export type GovernanceAuditAction = (typeof GOVERNANCE_AUDIT_ACTIONS)[keyof type
 export interface GovernanceAuditInput {
   actorId: string
   action: GovernanceAuditAction
-  entity: "AgentTrigger" | "AgentTask" | "AgentPolicy" | "AgentRecovery" | "AgentAuditEvent"
+  entity: "AgentTrigger" | "AgentTask" | "AgentPolicy" | "AgentRecovery" | "AgentAuditEvent" | "AgentKillSwitch" | "AgentRollout" | "AgentAutonomyPolicy"
   entityId: string
   before?: object
   after?: object
@@ -50,6 +57,12 @@ export interface GovernanceAuditInput {
 const LEDGER_ACTIONS: Record<GovernanceAuditAction, AuditAction | null> = {
   AGENT_RECOVERY_REQUESTED: null,
   AGENT_AUDIT_LEDGER_VERIFIED: "governance.ledger_verified",
+  AGENT_KILL_SWITCH_ACTIVATED: null,
+  AGENT_KILL_SWITCH_DEACTIVATED: null,
+  AGENT_ROLLOUT_CONFIGURED: null,
+  AGENT_ROLLOUT_TRANSITIONED: null,
+  AGENT_AUTONOMY_PROMOTION: null,
+  AGENT_RELEASE_ATTESTED: null,
   AGENT_TRIGGER_CREATED: "governance.trigger_created",
   AGENT_TRIGGER_UPDATED: "governance.trigger_updated",
   AGENT_TRIGGER_STATUS_CHANGED: "governance.trigger_status_changed",

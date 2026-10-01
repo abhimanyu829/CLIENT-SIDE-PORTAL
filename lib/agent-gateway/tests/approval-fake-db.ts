@@ -208,6 +208,28 @@ export function createTable(prefix: string, uniques: UniqueSpec[], defaults: (da
   return { rows, api }
 }
 
+/** Phase 15 — AgentRollout / AgentKillSwitch with the migration's unique constraints (shared by the fakes). */
+export function createReleaseTables() {
+  const rollouts = createTable("rollout", [{ name: "capabilityId_environment", key: (r) => `${r.capabilityId}:${r.environment}` }], () => ({
+    stage: "DISABLED",
+    canaryPercent: 0,
+    allowedConnectionIds: [],
+    pausedFromStage: null,
+    pausedReason: null,
+    version: 1,
+  }))
+  const killSwitches = createTable("ksw", [{ name: "publicRef", key: (r) => (r.publicRef as string) ?? null }], () => ({
+    active: true,
+    target: null,
+    activatedAt: new Date(),
+    deactivatedById: null,
+    deactivatedAt: null,
+    deactivationReason: null,
+    version: 1,
+  }))
+  return { rollouts, killSwitches }
+}
+
 export interface FakeUser {
   id: string
   phone: string | null
@@ -398,6 +420,7 @@ export function createApprovalFakeDb() {
     return { ...row, connection: connection ? { ...connection } : null }
   }) as typeof credentials.api.findUnique
   const users = new Map<string, FakeUser>()
+  const release = createReleaseTables()
 
   const client = {
     agentAutonomyPolicy: autonomy.api,
@@ -411,6 +434,8 @@ export function createApprovalFakeDb() {
     auditLog: auditLogs.api,
     agentAuditEvent: auditEvents.api,
     agentRecovery: recoveries.api,
+    agentRollout: release.rollouts.api,
+    agentKillSwitch: release.killSwitches.api,
     user: {
       findUnique: vi.fn(async ({ where, select }: { where: { id: string }; select?: Record<string, boolean> }) => project(users.get(where.id) as Row | undefined, select)),
     },
@@ -509,6 +534,8 @@ export function createApprovalFakeDb() {
     _auditLogs: auditLogs.rows,
     _auditEvents: auditEvents.rows,
     _recoveries: recoveries.rows,
+    _rollouts: release.rollouts.rows,
+    _killSwitches: release.killSwitches.rows,
     _users: users,
   }
 }
