@@ -31,6 +31,7 @@ import { projectTools, resolveProjectedTool, toolAnnotationsFor } from "./tool-p
 import { extractTrustedIdentity } from "./identity-context"
 import { toolSuccessResult } from "./content-result"
 import { IDEMPOTENCY_META_KEY, idempotencyKeyFromMeta } from "./request-meta"
+import { installStableToolErrors } from "./tool-errors"
 import { CapabilityError } from "../capabilities/errors"
 import { isInputHygieneDetails } from "../security/input-hygiene"
 import { recordInputRejected } from "../security/evidence"
@@ -73,6 +74,9 @@ export function createMcpServerForRequest(
     { name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION },
     { capabilities: { tools: {} } } // Only advertise tools — no resources/prompts in this phase (spec: do not build them without an explicit safe use case).
   )
+
+  // Phase 14 (P14-F1): SDK-originated tool errors never reflect agent input.
+  installStableToolErrors(server)
 
   const resolver = new AdapterResolver(deps.capabilityRegistry, deps.adapterRegistry)
   // Phase 12: executable-only — a capability without a registered adapter is never a tool.

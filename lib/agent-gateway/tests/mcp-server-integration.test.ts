@@ -134,7 +134,8 @@ describe("MCP server integration — initialize + tools/list + tools/call", () =
     )
     const body = await callRes.json()
     expect(body.result.isError).toBe(true)
-    expect(body.result.content[0].text).toMatch(/not found/i)
+    // Phase 14 (P14-F1): the SDK's "Tool <name> not found" is mapped to the stable, non-reflecting code.
+    expect(body.result.content[0].text).toBe("CAPABILITY_NOT_FOUND: The requested tool is not available.")
     expect(body.result.structuredContent).toBeUndefined()
   })
 
