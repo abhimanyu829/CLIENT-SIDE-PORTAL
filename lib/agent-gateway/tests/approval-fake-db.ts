@@ -63,9 +63,23 @@ function matchesCondition(actual: unknown, cond: unknown): boolean {
   return (actual ?? null) === (cond ?? null)
 }
 
+const OPERATOR_KEYS = new Set(["in", "gt", "gte", "lt", "lte", "not", "equals"])
+
+/** Prisma compound-unique selector, e.g. `{ triggerId_deliveryKey: { triggerId, deliveryKey } }`. */
+function isCompoundSelector(row: Row, key: string, cond: unknown): cond is Record<string, unknown> {
+  if (!key.includes("_") || key in row) return false
+  if (cond === null || typeof cond !== "object" || cond instanceof Date || Array.isArray(cond)) return false
+  const keys = Object.keys(cond)
+  return keys.length > 1 && keys.every((k) => !OPERATOR_KEYS.has(k))
+}
+
 export function matchesWhere(row: Row, where: Record<string, unknown> | undefined): boolean {
   if (!where) return true
   for (const [key, cond] of Object.entries(where)) {
+    if (isCompoundSelector(row, key, cond)) {
+      if (!matchesWhere(row, cond)) return false
+      continue
+    }
     if (key === "NOT") {
       if (matchesWhere(row, cond as Record<string, unknown>)) return false
       continue
@@ -263,6 +277,60 @@ export function createApprovalFakeDb() {
       resultRemovedAt: null,
       errorCode: null,
       errorDetailCode: null,
+      triggerId: null,
+    })
+  )
+  // Phase 9 — AgentTrigger / AgentTriggerRun, with the migration's unique constraints.
+  const triggers = createTable("trigger", [{ name: "publicRef", key: (r) => (r.publicRef as string) ?? null }], () => ({
+    status: "DRAFT",
+    version: 1,
+    teamId: null,
+    bindResource: false,
+    concurrency: "DROP_WHILE_RUNNING",
+    eventType: null,
+    eventResourceId: null,
+    eventActorScope: null,
+    webhookSecretRef: null,
+    webhookSecretVersion: null,
+    scheduleKind: null,
+    cronExpression: null,
+    timezone: null,
+    runAt: null,
+    missedRunPolicy: null,
+    nextRunAt: null,
+    lastScheduledFor: null,
+    expiresAt: null,
+    lastTriggeredAt: null,
+    lastSuccessAt: null,
+    lastFailureAt: null,
+    failureCount: 0,
+    activatedAt: null,
+    pausedAt: null,
+    disabledAt: null,
+    expiredAt: null,
+    revokedAt: null,
+    updatedById: null,
+  }))
+  const triggerRuns = createTable(
+    "trun",
+    [
+      { name: "publicRef", key: (r) => (r.publicRef as string) ?? null },
+      { name: "taskId", key: (r) => (r.taskId as string | null) ?? null },
+      { name: "activeSlotKey", key: (r) => (r.activeSlotKey as string | null) ?? null },
+      { name: "pendingSlotKey", key: (r) => (r.pendingSlotKey as string | null) ?? null },
+      { name: "triggerId_deliveryKey", key: (r) => `${r.triggerId}\n${r.deliveryKey}` },
+    ],
+    () => ({
+      taskId: null,
+      errorCode: null,
+      resourceId: null,
+      scheduledFor: null,
+      bodyDigest: null,
+      activeSlotKey: null,
+      pendingSlotKey: null,
+      activeSince: null,
+      receivedAt: createdAtNow(),
+      completedAt: null,
     })
   )
   const connections = new Map<string, Row>()
@@ -273,6 +341,8 @@ export function createApprovalFakeDb() {
     agentApprovalRequest: requests.api,
     agentApprovalDecision: decisions.api,
     agentTask: tasks.api,
+    agentTrigger: triggers.api,
+    agentTriggerRun: triggerRuns.api,
     agentConnection: {
       findUnique: vi.fn(async ({ where, select }: { where: { id: string }; select?: Record<string, boolean> }) => project(connections.get(where.id), select)),
     },
@@ -293,7 +363,7 @@ export function createApprovalFakeDb() {
     })
     queue = previous.then(() => next)
     await previous
-    const snap = [autonomy.rows, requests.rows, decisions.rows, tasks.rows].map((m) => new Map(m))
+    const snap = [autonomy.rows, requests.rows, decisions.rows, tasks.rows, triggers.rows, triggerRuns.rows].map((m) => new Map(m))
     try {
       if (Array.isArray(arg)) {
         const results: unknown[] = []
@@ -302,7 +372,7 @@ export function createApprovalFakeDb() {
       }
       return await (arg as (tx: unknown) => Promise<unknown>)(txTarget)
     } catch (err) {
-      ;[autonomy.rows, requests.rows, decisions.rows, tasks.rows].forEach((m, i) => {
+      ;[autonomy.rows, requests.rows, decisions.rows, tasks.rows, triggers.rows, triggerRuns.rows].forEach((m, i) => {
         m.clear()
         for (const [k, v] of snap[i]) m.set(k, v)
       })
@@ -330,6 +400,8 @@ export function createApprovalFakeDb() {
     _requests: requests.rows,
     _decisions: decisions.rows,
     _tasks: tasks.rows,
+    _triggers: triggers.rows,
+    _triggerRuns: triggerRuns.rows,
     _connections: connections,
   }
 }

@@ -28,7 +28,7 @@ import { AuthorizationDeniedError } from "../mcp/errors"
 import type { GateGrant } from "../execution-gate/gate"
 import { canonicalJson } from "../approvals/canonical-json"
 import { computeInputDigest } from "../approvals/binding"
-import { generateTaskRef, idempotencyScopeFor, isValidIdempotencyKey, isValidTaskRef, jobIdFor, operationKeyFor } from "./ids"
+import { generateTaskRef, idempotencyScopeFor, isValidIdempotencyKey, isValidTaskRef, jobIdFor, operationKeyFor, TRIGGER_IDEMPOTENCY_PREFIX } from "./ids"
 import { classifyRetry, maxAttemptsFor } from "./retry-policy"
 import { TaskError, taskNotFound } from "./errors"
 import { getTaskEngineConfig, type TaskEngineConfig } from "./config"
@@ -64,6 +64,14 @@ export interface SubmitTaskArgs {
   capabilityId: string
   input: unknown
   idempotencyKey?: string
+}
+
+/**
+ * Server-side origin of a submission (Phase 9). Never agent input: the MCP
+ * task tools never pass it. A trigger-originated task runs the SAME chain.
+ */
+export interface TaskOrigin {
+  triggerId: string
 }
 
 function isUniqueViolation(err: unknown): boolean {
@@ -103,7 +111,7 @@ export class AgentTaskService {
 
   // ── Submit ──────────────────────────────────────────────────────────────
 
-  async submit(gatewayContext: AgentGatewayRequestContext, environment: string, args: SubmitTaskArgs): Promise<SubmitTaskResult> {
+  async submit(gatewayContext: AgentGatewayRequestContext, environment: string, args: SubmitTaskArgs, origin?: TaskOrigin): Promise<SubmitTaskResult> {
     const machine = gatewayContext.machine
     if (!machine || machine.connectionStatus !== "ACTIVE") {
       throw new TaskError("AUTHORIZATION_REVOKED", "The agent identity is not valid for execution.")
@@ -126,6 +134,9 @@ export class AgentTaskService {
 
     if (args.idempotencyKey !== undefined && !isValidIdempotencyKey(args.idempotencyKey)) {
       throw new TaskError("INVALID_INPUT", "The idempotency key must be 8-128 characters of [A-Za-z0-9._:-].")
+    }
+    if (!origin && args.idempotencyKey?.startsWith(TRIGGER_IDEMPOTENCY_PREFIX)) {
+      throw new TaskError("INVALID_INPUT", `Idempotency keys starting with "${TRIGGER_IDEMPOTENCY_PREFIX}" are reserved.`)
     }
     if (capability.idempotency.requiresIdempotencyKey && !args.idempotencyKey) {
       throw new TaskError("IDEMPOTENCY_KEY_REQUIRED", `Capability "${capability.id}" requires an idempotency key.`)
@@ -152,7 +163,7 @@ export class AgentTaskService {
     const opKey = scope ? null : operationKeyFor(op)
 
     const existing = await this.guardStore(() => this.findExisting(scope, opKey, op))
-    if (existing) return { task: toTaskView(existing), created: false }
+    if (existing) return { task: toTaskView(existing), created: false, taskId: existing.id }
 
     await this.assertConnectionEnvironment(machine.connectionId, environment)
 
@@ -164,7 +175,7 @@ export class AgentTaskService {
       // were denied (e.g. it consumed the approval first): answer with it.
       if (err instanceof AuthorizationDeniedError) {
         const raced = await this.findExisting(scope, opKey, op).catch(() => null)
-        if (raced) return { task: toTaskView(raced), created: false }
+        if (raced) return { task: toTaskView(raced), created: false, taskId: raced.id }
       }
       throw err
     }
@@ -202,12 +213,13 @@ export class AgentTaskService {
         maxAttempts: maxAttemptsFor(retryClass),
         queuedAt: now,
         expiresAt: new Date(deadline),
+        triggerId: origin?.triggerId ?? null,
       })
     } catch (err) {
       if (isUniqueViolation(err)) {
         // Concurrent identical submission won: return it (or reject a key collision).
         const winner = await this.findExisting(scope, opKey, op).catch(() => null)
-        if (winner) return { task: toTaskView(winner), created: false }
+        if (winner) return { task: toTaskView(winner), created: false, taskId: winner.id }
       }
       throw new TaskError("TASK_STORE_UNAVAILABLE", "The task could not be recorded.")
     }
@@ -229,7 +241,7 @@ export class AgentTaskService {
       throw new TaskError("QUEUE_UNAVAILABLE", "Asynchronous execution is currently unavailable.")
     }
     emit("task.queued", row, { jobId: jobIdFor(row.id, 1) })
-    return { task: toTaskView(row), created: true }
+    return { task: toTaskView(row), created: true, taskId: row.id }
   }
 
   // ── Status / result ─────────────────────────────────────────────────────

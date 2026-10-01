@@ -39,7 +39,7 @@ export function createAgentTaskWorker(): AgentTaskWorker {
 }
 
 export { AgentTaskService } from "./engine"
-export type { TaskGate, AgentTaskServiceDeps, SubmitTaskArgs } from "./engine"
+export type { TaskGate, AgentTaskServiceDeps, SubmitTaskArgs, TaskOrigin } from "./engine"
 export { AgentTaskWorker } from "./worker"
 export type { AgentTaskWorkerDeps, TaskExecutor, TaskJobLike } from "./worker"
 export { runTaskMaintenance } from "./maintenance"
@@ -51,5 +51,5 @@ export type { TaskEngineConfig } from "./config"
 export { TaskError } from "./errors"
 export { classifyRetry, maxAttemptsFor, backoffMs, decideAfterFailure, isTransientExecutionCode } from "./retry-policy"
 export { isLegalTaskTransition, isTerminalTask, assertLegalTaskTransition, IllegalTaskTransitionError } from "./state-machine"
-export { generateTaskRef, isValidTaskRef, jobIdFor, operationKeyFor, idempotencyScopeFor } from "./ids"
+export { generateTaskRef, isValidTaskRef, jobIdFor, operationKeyFor, idempotencyScopeFor, triggerIdempotencyKey, TRIGGER_IDEMPOTENCY_PREFIX } from "./ids"
 export * from "./types"

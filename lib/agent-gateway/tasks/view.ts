@@ -25,6 +25,7 @@ export function toTaskView(row: AgentTaskRow): AgentTaskView {
     finishedAt: iso(row.finishedAt),
     expiresAt: new Date(row.expiresAt).toISOString(),
     errorCode: row.errorCode ?? null,
+    origin: row.triggerId ? "TRIGGER" : "AGENT",
   }
   if (row.status === "TIMED_OUT") {
     view.note = "The task deadline was reached. The underlying service call may still have completed; its result was discarded."

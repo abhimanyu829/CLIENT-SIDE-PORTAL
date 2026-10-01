@@ -3489,6 +3489,8 @@ model AgentConnection {
   approvalRequests AgentApprovalRequest[]
   // Phase 8 — back-relation only.
   tasks            AgentTask[]
+  // Phase 9 — back-relation only.
+  triggers         AgentTrigger[]
 
   @@index([ownerId])
   @@index([teamId])
@@ -3907,11 +3909,151 @@ model AgentTask {
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
 
+  /// Phase 9 — the trigger that created this task (null for agent-submitted tasks).
+  triggerId              String?
+
   connection      AgentConnection       @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   approvalRequest AgentApprovalRequest? @relation(fields: [approvalRequestId], references: [id], onDelete: SetNull)
+  trigger         AgentTrigger?         @relation(fields: [triggerId], references: [id], onDelete: SetNull)
 
   @@index([connectionId, status])
   @@index([status, expiresAt])
   @@index([ownerId, createdAt])
   @@index([finishedAt])
+  @@index([triggerId])
+}
+
+// ── Abhibhi Agent Gateway — Phase 9: event / webhook / schedule triggers ─────
+// A trigger is a HUMAN-configured, explicitly authorized request to run one
+// async-capable capability for one agent connection when an allowlisted
+// event, a signed webhook or a schedule fires. Firing never bypasses
+// identity, authorization, autonomy/approval or the execution gate: it
+// submits a Phase 8 task through the same chain as an agent call.
+// Schedule state lives here only (Postgres); BullMQ just ticks.
+
+enum AgentTriggerType {
+  EVENT
+  WEBHOOK
+  SCHEDULE
+}
+
+enum AgentTriggerStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  DISABLED
+  EXPIRED
+  REVOKED
+}
+
+enum AgentTriggerConcurrency {
+  ALLOW_PARALLEL
+  DROP_WHILE_RUNNING
+  QUEUE_ONE
+}
+
+enum AgentTriggerMissedRunPolicy {
+  SKIP
+  CATCH_UP_ONCE
+}
+
+enum AgentTriggerRunStatus {
+  TASK_CREATED
+  PENDING
+  DROPPED
+  DENIED
+  APPROVAL_REQUIRED
+  FAILED
+  SKIPPED_MISSED
+}
+
+model AgentTrigger {
+  id                String                       @id @default(cuid())
+  /// Display-safe reference; also the webhook path segment. Never the DB id.
+  publicRef         String                       @unique
+  name              String
+  type              AgentTriggerType
+  status            AgentTriggerStatus           @default(DRAFT)
+  /// Optimistic-concurrency version for human edits.
+  version           Int                          @default(1)
+  /// Security context — always copied from the connection, never from input.
+  connectionId      String
+  ownerId           String
+  teamId            String?
+  environment       String
+  capabilityId      String
+  capabilityVersion Int
+  /// Fixed, schema-validated capability input.
+  input             Json
+  /// Bind the event / webhook resource id into the capability's resource locator.
+  bindResource      Boolean                      @default(false)
+  concurrency       AgentTriggerConcurrency      @default(DROP_WHILE_RUNNING)
+  // EVENT
+  eventType         String?
+  eventResourceId   String?
+  /// "OWNER" (event caused by / about the owner) or "ANY" (public resources only).
+  eventActorScope   String?
+  // WEBHOOK — secret stored encrypted with lib/encryption.ts (same as Phase 2 signing secrets).
+  webhookSecretRef  String?
+  webhookSecretVersion Int?
+  // SCHEDULE
+  scheduleKind      String?
+  cronExpression    String?
+  timezone          String?
+  runAt             DateTime?
+  missedRunPolicy   AgentTriggerMissedRunPolicy?
+  nextRunAt         DateTime?
+  lastScheduledFor  DateTime?
+  // Bookkeeping
+  expiresAt         DateTime?
+  lastTriggeredAt   DateTime?
+  lastSuccessAt     DateTime?
+  lastFailureAt     DateTime?
+  failureCount      Int                          @default(0)
+  activatedAt       DateTime?
+  pausedAt          DateTime?
+  disabledAt        DateTime?
+  expiredAt         DateTime?
+  revokedAt         DateTime?
+  createdById       String
+  updatedById       String?
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+
+  connection AgentConnection   @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  runs       AgentTriggerRun[]
+  tasks      AgentTask[]
+
+  @@index([type, status])
+  @@index([status, nextRunAt])
+  @@index([eventType, status])
+  @@index([connectionId])
+}
+
+/// One delivery of a trigger (an event, a webhook call, a schedule occurrence).
+model AgentTriggerRun {
+  id             String                @id @default(cuid())
+  publicRef      String                @unique
+  triggerId      String
+  /// Dedup identity within the trigger: "event:<digest>", "webhook:<eventId>", "schedule:<iso>".
+  deliveryKey    String
+  source         AgentTriggerType
+  status         AgentTriggerRunStatus
+  taskId         String?               @unique
+  errorCode      String?
+  resourceId     String?
+  scheduledFor   DateTime?
+  bodyDigest     String?
+  /// Concurrency slots: unique per trigger, set on at most one run each.
+  activeSlotKey  String?               @unique
+  pendingSlotKey String?               @unique
+  /// When this run took the active slot (stale-holder detection).
+  activeSince    DateTime?
+  receivedAt     DateTime              @default(now())
+  completedAt    DateTime?
+
+  trigger AgentTrigger @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+
+  @@unique([triggerId, deliveryKey])
+  @@index([triggerId, receivedAt])
 }

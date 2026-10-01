@@ -77,6 +77,8 @@ export interface AgentTaskView {
   finishedAt: string | null
   expiresAt: string
   errorCode: string | null
+  /** "TRIGGER" when a human-configured Phase 9 trigger created the task; "AGENT" otherwise. */
+  origin: "AGENT" | "TRIGGER"
   /** Present only when status is SUCCEEDED and the result is still retained and readable. */
   result?: unknown
   /** SUCCEEDED but the result is not returned: "REMOVED" (retention) or "AUTHORIZATION_REVOKED". */
@@ -89,6 +91,11 @@ export interface SubmitTaskResult {
   task: AgentTaskView
   /** False when an existing task was returned (idempotent replay / in-flight duplicate). */
   created: boolean
+  /**
+   * Internal row id, for server-side linking only (Phase 9 trigger runs).
+   * Never serialized to agents: the MCP tools return `task` + `created` only.
+   */
+  taskId: string
 }
 
 export interface CancelTaskResult {

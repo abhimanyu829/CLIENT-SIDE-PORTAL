@@ -152,8 +152,11 @@ export const INVOICE_JOBS = {
 } as const
 
 export const AGENT_TASK_JOBS = {
-  EXECUTE:     "agent-task.execute",
-  MAINTENANCE: "agent-task.maintenance",
+  EXECUTE:       "agent-task.execute",
+  MAINTENANCE:   "agent-task.maintenance",
+  // Phase 9 triggers (same queue and worker; reference-only payloads).
+  TRIGGER_EVENT: "agent-trigger.event",
+  TRIGGER_TICK:  "agent-trigger.schedule-tick",
 } as const
 
 export const SUBSCRIPTION_JOBS = {

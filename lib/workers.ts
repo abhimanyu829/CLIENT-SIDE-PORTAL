@@ -8,6 +8,7 @@ import {
   INVOICE_JOBS, SUBSCRIPTION_JOBS, PAYMENT_JOBS, EMAIL_JOBS, PREVIEW_JOBS, AGENT_TASK_JOBS,
 } from "@/lib/queue"
 import { createAgentTaskWorker, getTaskEngineConfig } from "@/lib/agent-gateway/tasks"
+import { createTriggerRuntime, getTriggerConfig } from "@/lib/agent-gateway/triggers"
 import { emitEvent, EVENTS } from "@/lib/services/event-bus"
 import { expireOverdueSubscriptions, markSubscriptionPastDue } from "@/lib/services/subscription-service"
 import { generateInvoiceArtifact, sendInvoiceEmail } from "@/lib/services/invoice-service"
@@ -76,6 +77,15 @@ export async function scheduleRecurringJobs() {
     await agentTaskQueue.add(AGENT_TASK_JOBS.MAINTENANCE, {}, {
       jobId: "agent-task-maintenance-5m",
       repeat: { pattern: "*/5 * * * *" },
+    })
+  }
+  // Phase 9: ONE repeatable tick drives every agent schedule trigger. The
+  // schedules themselves live in Postgres (AgentTrigger.nextRunAt), never as
+  // per-trigger repeatable jobs, so Redis never holds a second copy.
+  if (getTriggerConfig().enabled) {
+    await agentTaskQueue.add(AGENT_TASK_JOBS.TRIGGER_TICK, {}, {
+      jobId: "agent-trigger-tick-1m",
+      repeat: { pattern: "* * * * *" },
     })
   }
 }
@@ -565,7 +575,17 @@ export function startWorkers() {
   const taskConfig = getTaskEngineConfig()
   if (taskConfig.enabled) {
     const agentTaskWorker = createAgentTaskWorker()
-    workers.push(startWorker("agent-task", (job) => agentTaskWorker.process(job), taskConfig.workerConcurrency))
+    // Phase 9: trigger jobs (event references, schedule ticks) share the
+    // same queue and worker; only when AGENT_GATEWAY_TRIGGERS_ENABLED is on.
+    const triggerRuntime = getTriggerConfig().enabled ? createTriggerRuntime() : null
+    workers.push(
+      startWorker(
+        "agent-task",
+        (job) =>
+          triggerRuntime && job.name.startsWith("agent-trigger.") ? triggerRuntime.process(job) : agentTaskWorker.process(job),
+        taskConfig.workerConcurrency
+      )
+    )
     // One reconciliation pass at startup (recovers work lost while the worker was down).
     agentTaskWorker
       .process({ name: AGENT_TASK_JOBS.MAINTENANCE, data: {} })

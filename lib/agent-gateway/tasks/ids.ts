@@ -30,6 +30,18 @@ export function idempotencyScopeFor(connectionId: string, idempotencyKey: string
   return `${connectionId}:${idempotencyKey}`
 }
 
+/**
+ * Key prefix reserved for server-originated (Phase 9 trigger) submissions.
+ * Agents cannot use it, so a trigger run's task identity can never be
+ * pre-claimed or collided with through the agent-facing tools.
+ */
+export const TRIGGER_IDEMPOTENCY_PREFIX = "trigger."
+
+/** Deterministic task idempotency key of one trigger run (re-deliveries reuse it). */
+export function triggerIdempotencyKey(runRef: string): string {
+  return `${TRIGGER_IDEMPOTENCY_PREFIX}${runRef.replace(/^trr_/, "")}`
+}
+
 export interface OperationKeyParts {
   connectionId: string
   capabilityId: string

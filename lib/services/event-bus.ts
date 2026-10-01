@@ -14,6 +14,7 @@ import { getPusherServer } from "@/lib/pusher"
 import { redis } from "@/lib/redis"
 import { logger } from "@/lib/logger"
 import { CACHE_KEYS } from "@/lib/services/cache-service"
+import { notifyAgentEventTriggers } from "@/lib/agent-gateway/triggers/event-intake"
 
 // ── Event type constants ───────────────────────────────────────────────────────
 
@@ -213,6 +214,11 @@ export async function emitEvent(event: PlatformEvent): Promise<void> {
 
   // 4. Structured log
   logger.info({ type, actorId, payload }, `Platform event: ${type}`)
+
+  // 5. Abhibhi Agent Gateway (Phase 9): allowlisted events may drive
+  // human-configured agent triggers. Enqueues one id-only reference job;
+  // a no-op unless AGENT_GATEWAY_TRIGGERS_ENABLED. Never throws.
+  await notifyAgentEventTriggers(event)
 }
 
 // ── Activity message builder ───────────────────────────────────────────────────
