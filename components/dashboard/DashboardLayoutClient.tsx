@@ -314,7 +314,12 @@ export default function DashboardLayout({
             const active = pathname === item.path || (item.path !== "/dashboard" && pathname.startsWith(item.path))
             return (
               <Link key={item.path} href={item.path}>
-                <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all border ${active ? "bg-accent/10 border-accent/20" : "border-transparent hover:bg-accent/5 hover:border-border/50"}`}>
+                <div
+                  aria-current={active ? "page" : undefined}
+                  title={collapsed ? item.name : undefined}
+                  className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all border ${active ? "bg-primary/10 border-primary/20 shadow-sm" : "border-transparent hover:bg-muted hover:border-border/50"}`}
+                >
+                  {active && <span aria-hidden="true" className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-primary" />}
                   <span className={`text-base shrink-0 ${active ? "text-primary" : "text-muted-foreground"}`}>{item.icon}</span>
                   {!collapsed && (
                     <>
@@ -386,7 +391,7 @@ export default function DashboardLayout({
 
             <a
               href="http://abhibhideveloper.tech/join-our-team"
-              className="flex items-center bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+              className="hidden lg:flex items-center bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
             >
               Join Our Team
             </a>
@@ -485,7 +490,7 @@ export default function DashboardLayout({
         <nav className="md:hidden bg-card/90 backdrop-blur-xl border-t border-border flex justify-around p-2 shrink-0">
           {[...NAV.slice(0, 4), { name: "More", path: "/dashboard/profile", icon: "⊕" }].map((item) => (
             <Link key={item.path} href={item.path}>
-              <div className={`flex flex-col items-center gap-0.5 p-2 rounded-xl ${pathname.startsWith(item.path) ? "text-primary" : "text-muted-foreground"}`}>
+              <div className={`flex flex-col items-center gap-0.5 p-2 rounded-xl ${(item.path === "/dashboard" ? pathname === item.path : pathname.startsWith(item.path)) ? "text-primary bg-primary/10" : "text-muted-foreground"}`}>
                 <span className="text-lg">{item.icon}</span>
                 <span className="text-[9px] font-medium">{item.name}</span>
               </div>

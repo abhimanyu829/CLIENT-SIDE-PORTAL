@@ -1,10 +1,11 @@
 "use client"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useDashboardStore } from "@/hooks/useDashboardStore"
 
 export default function ActivityFeed() {
   const { activities, setActivities } = useDashboardStore()
   const isFetching = useRef(false)
+  const [loading, setLoading] = useState(true)
 
   const fetchActivities = async () => {
     if (isFetching.current) return
@@ -18,6 +19,7 @@ export default function ActivityFeed() {
     } catch {
     } finally {
       isFetching.current = false
+      setLoading(false)
     }
   }
 
@@ -26,6 +28,10 @@ export default function ActivityFeed() {
     const interval = setInterval(fetchActivities, 30_000)
     return () => clearInterval(interval)
   }, []) // eslint-disable-line
+
+  // Audit entries arrive as codes ("TICKET_CREATED"): show them as plain words.
+  const readable = (title: string) =>
+    /^[A-Z0-9_]+$/.test(title) ? title.charAt(0) + title.slice(1).toLowerCase().replace(/_/g, " ") : title
 
   const relTime = (ts: string) => {
     const diff = Date.now() - new Date(ts).getTime()
@@ -36,30 +42,43 @@ export default function ActivityFeed() {
   }
 
   return (
-    <div className="bg-[#0e0e0e] border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
-      <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
-        <p className="font-bold text-sm">Recent Activity</p>
-        <div className="flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.06] rounded-full px-2 py-0.5">
-          <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-          <span className="text-[10px] text-zinc-500">Live</span>
+    <section aria-labelledby="recent-activity-title" className="h-full rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col">
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+        <h2 id="recent-activity-title" className="font-sans font-semibold text-sm text-foreground tracking-normal">Recent activity</h2>
+        <div className="flex items-center gap-1.5 rounded-full border border-border bg-background px-2 py-0.5">
+          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+          <span className="text-[10px] font-medium text-muted-foreground">Live</span>
         </div>
       </div>
-      <div className="divide-y divide-white/5 max-h-[300px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-        {activities.length === 0 ? (
-          <div className="px-5 py-8 text-center text-sm text-zinc-600">No recent activity</div>
+      <ul className="divide-y divide-border max-h-[340px] overflow-y-auto flex-1" style={{ scrollbarWidth: "thin" }}>
+        {loading && activities.length === 0 ? (
+          [0, 1, 2, 3].map((i) => (
+            <li key={i} className="px-5 py-3.5 flex gap-3" aria-hidden="true">
+              <span className="h-8 w-8 shrink-0 animate-pulse rounded-lg bg-muted" />
+              <div className="flex-1 space-y-2 pt-0.5">
+                <span className="block h-3 w-2/3 animate-pulse rounded bg-muted" />
+                <span className="block h-2.5 w-1/2 animate-pulse rounded bg-muted" />
+              </div>
+            </li>
+          ))
+        ) : activities.length === 0 ? (
+          <li className="px-5 py-10 text-center">
+            <p className="text-sm font-medium text-foreground">No activity yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">Payments, tickets and account updates will show up here.</p>
+          </li>
         ) : (
           activities.map((a: any) => (
-            <div key={a.id} className="px-4 py-3 flex gap-3 hover:bg-white/5 transition-all">
-              <span className="text-base shrink-0">{a.icon}</span>
+            <li key={a.id} className="px-5 py-3 flex items-start gap-3 hover:bg-muted/60 transition-colors">
+              <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-sm">{a.icon}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold">{a.title}</p>
-                <p className="text-[11px] text-zinc-500 truncate">{a.desc}</p>
+                <p className="text-sm font-medium text-foreground truncate">{readable(String(a.title ?? ""))}</p>
+                {a.desc && <p className="text-xs text-muted-foreground truncate">{a.desc}</p>}
               </div>
-              <span className="text-[10px] text-zinc-600 shrink-0">{relTime(a.time)}</span>
-            </div>
+              <time dateTime={a.time} className="text-[11px] text-muted-foreground shrink-0 pt-0.5 tabular-nums">{relTime(a.time)}</time>
+            </li>
           ))
         )}
-      </div>
-    </div>
+      </ul>
+    </section>
   )
 }

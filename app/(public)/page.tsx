@@ -108,6 +108,11 @@ const getTestimonials = unstable_cache(async () => {
   })
 }, ["testimonials"], { revalidate: 3600, tags: ["products"] })
 
+/** "1,234+" for real counts; small counts are shown exactly (never "0+"). */
+function countLabel(n: number): string {
+  return n >= 10 ? `${n.toLocaleString()}+` : n.toLocaleString()
+}
+
 function toCardProps(p: any) {
   const tier = p.tiers?.[0]
   return {
@@ -153,6 +158,16 @@ export default async function HomePage() {
 
 
 
+
+  // Only counts that have something to show: a row of "0" tiles reads as a broken page.
+  const heroStats = [
+    { n: stats.products, label: "Live Products", icon: "📦" },
+    { n: stats.agents, label: "AI Agents", icon: "🤖" },
+    { n: stats.users, label: "Developers", icon: "🧑‍💻" },
+    { n: stats.subscriptions, label: "Active Deployments", icon: "🚀" },
+  ]
+    .filter((s) => s.n > 0)
+    .map((s) => ({ val: countLabel(s.n), label: s.label, icon: s.icon }))
 
   const COLLECTIONS = [
     { title: "Best AI Agents", href: "/ai-agents", icon: "🤖", count: stats.agents, color: "from-purple-600/20 to-blue-600/20", border: "border-purple-500/20" },
@@ -201,7 +216,7 @@ export default async function HomePage() {
           </MotionWrapper>
 
           <MotionWrapper delay={0.1}>
-            <h1 className="text-5xl md:text-8xl font-black tracking-tighter mb-8 leading-[1.1] text-black">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter mb-8 leading-[1.05] text-foreground text-balance">
               Converse Naturally.<br />
               Beyond Boundaries.<br />
               Infinite Scale.
@@ -209,59 +224,65 @@ export default async function HomePage() {
           </MotionWrapper>
 
           <MotionWrapper delay={0.2}>
-            <p className="text-xl md:text-2xl font-light text-black max-w-3xl mx-auto mb-12 leading-relaxed">
-              Generate highly realistic human audio instantly, replicating vocal signatures. 
+            <p className="text-lg md:text-xl text-neutral-700 max-w-2xl mx-auto mb-12 leading-relaxed text-pretty">
+              Generate highly realistic human audio instantly, replicating vocal signatures.
               Deploy AI agents, SaaS tools, and intelligent software to our global edge infrastructure.
             </p>
           </MotionWrapper>
 
           <MotionWrapper delay={0.3}>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-14">
-              <Link href="/marketplace" className="w-full sm:w-auto">
-                <button className="group relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-2xl bg-slate-950 px-9 py-4 text-xs sm:text-sm font-bold uppercase tracking-widest text-white shadow-xl shadow-slate-950/20 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:shadow-2xl hover:shadow-indigo-500/25 active:translate-y-0 active:scale-[0.98] w-full sm:w-auto">
-                  {/* Subtle animated gradient on hover */}
-                  <span className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-600 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                  {/* Sheen effect */}
-                  <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-                  <span className="relative flex items-center gap-2.5">
-                    <ShoppingBag className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
-                    Browse Marketplace
-                  </span>
-                </button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+              <Link
+                href="/marketplace"
+                className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2.5 overflow-hidden rounded-2xl bg-slate-950 px-9 py-4 text-xs sm:text-sm font-bold uppercase tracking-widest text-white shadow-xl shadow-slate-950/20 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:shadow-2xl hover:shadow-indigo-500/25 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {/* Subtle animated gradient on hover */}
+                <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-amber-600 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                {/* Sheen effect */}
+                <span aria-hidden="true" className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
+                <span className="relative flex items-center gap-2.5">
+                  <ShoppingBag className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
+                  Browse Marketplace
+                </span>
               </Link>
-              <Link href="/register" className="w-full sm:w-auto">
-                <button className="group relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-2xl border border-black/20 bg-white/60 px-9 py-4 text-xs sm:text-sm font-bold uppercase tracking-widest text-black backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:border-black/50 hover:bg-white/90 hover:shadow-xl hover:shadow-black/10 active:translate-y-0 active:scale-[0.98] w-full sm:w-auto">
-                  <span>Sign in</span>
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
-                </button>
+              {/* This always went to sign-up, so it now says so. */}
+              <Link
+                href="/register"
+                className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2.5 overflow-hidden rounded-2xl border border-black/20 bg-white/70 px-9 py-4 text-xs sm:text-sm font-bold uppercase tracking-widest text-black backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:border-black/50 hover:bg-white hover:shadow-xl hover:shadow-black/10 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <span>Start free</span>
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
               </Link>
             </div>
+            <p className="-mt-8 mb-12 text-sm text-neutral-600">
+              Already have an account?{" "}
+              <Link href="/login" className="font-semibold text-foreground underline-offset-4 hover:underline">
+                Sign in
+              </Link>
+            </p>
           </MotionWrapper>
 
           {/* Trust badges */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-16 slide-up" style={{ animationDelay: ".35s" }}>
+          <div className="flex flex-wrap items-center justify-center gap-2.5 mb-14 slide-up" style={{ animationDelay: ".35s" }}>
             {["No credit card required", "Cancel anytime", "99.9% SLA", "SOC 2 Certified"].map(b => (
-              <span key={b} className="stat-pill">
-                <span className="text-primary">✓</span> {b}
+              <span key={b} className="stat-pill bg-white/70">
+                <span className="text-primary font-bold" aria-hidden="true">✓</span> {b}
               </span>
             ))}
           </div>
 
           {/* Live Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto slide-up" style={{ animationDelay: ".4s" }}>
-            {[
-              { val: stats.products.toLocaleString() + "+", label: "Live Products", icon: "📦" },
-              { val: stats.agents.toLocaleString() + "+", label: "AI Agents", icon: "🤖" },
-              { val: stats.users.toLocaleString() + "+", label: "Developers", icon: "🧑‍💻" },
-              { val: stats.subscriptions.toLocaleString() + "+", label: "Active Deployments", icon: "🚀" },
-            ].map(({ val, label, icon }) => (
-              <div key={label} className="bg-card text-card-foreground border border-border rounded-xl p-6 text-center shadow-sm card-hover">
-                <div className="text-2xl mb-2">{icon}</div>
-                <div className="text-2xl font-medium">{val}</div>
-                <div className="text-xs text-muted-foreground mt-1 font-mono uppercase tracking-wider">{label}</div>
+          {heroStats.length > 0 && (
+          <div className={`grid ${heroStats.length >= 4 ? "grid-cols-2 md:grid-cols-4" : heroStats.length === 3 ? "grid-cols-3" : "grid-cols-2"} gap-3 sm:gap-4 max-w-3xl mx-auto slide-up`} style={{ animationDelay: ".4s" }}>
+            {heroStats.map(({ val, label, icon }) => (
+              <div key={label} className="bg-card text-card-foreground border border-border rounded-2xl px-4 py-5 text-center shadow-sm card-hover">
+                <div className="text-2xl mb-2" aria-hidden="true">{icon}</div>
+                <div className="text-2xl font-semibold tabular-nums tracking-tight">{val}</div>
+                <div className="text-[11px] text-muted-foreground mt-1 font-mono uppercase tracking-wider">{label}</div>
               </div>
             ))}
           </div>
+          )}
         </div>
       </section>
 
@@ -271,7 +292,7 @@ export default async function HomePage() {
           <div className="flex-shrink-0 px-4 py-1 border-r border-border mr-4">
             <span className="text-[12px] font-mono text-primary uppercase tracking-widest whitespace-nowrap font-bold">🔴 Live</span>
           </div>
-          <div className="overflow-hidden flex-1">
+          <div className="overflow-hidden flex-1 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">
             <div className="ticker-track">
               {[
                 "🛒 Developer purchased Sales CRM AI · Pro plan",
@@ -302,14 +323,21 @@ export default async function HomePage() {
             </h2>
             <p className="text-muted-foreground mt-4 text-lg">Every category curated and updated daily by our editorial team</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-[16px]">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             {COLLECTIONS.map(col => (
-              <Link key={col.title} href={col.href}>
-                <div className={`bg-card text-card-foreground rounded-xl p-[24px] card-hover border border-border shadow-sm cursor-pointer h-full`}>
-                  <div className="text-3xl mb-3">{col.icon}</div>
-                  <h3 className="font-medium text-lg mb-1">{col.title}</h3>
-                  <p className="text-sm text-muted-foreground font-mono">{col.count}+ products</p>
-                </div>
+              <Link
+                key={col.title}
+                href={col.href}
+                className="group flex h-full flex-col bg-card text-card-foreground rounded-2xl p-5 sm:p-6 card-hover border border-border shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span aria-hidden="true" className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-2xl transition-transform duration-300 group-hover:scale-110">
+                  {col.icon}
+                </span>
+                <h3 className="font-medium text-base sm:text-lg mb-1 group-hover:text-primary transition-colors">{col.title}</h3>
+                <p className="mt-auto flex items-center justify-between gap-2 text-sm text-muted-foreground font-mono">
+                  <span>{col.count > 0 ? `${countLabel(col.count)} products` : "Explore"}</span>
+                  <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1 group-hover:text-primary">→</span>
+                </p>
               </Link>
             ))}
           </div>
@@ -320,12 +348,12 @@ export default async function HomePage() {
       {trending.length > 0 && (
         <section className="py-[80px] px-4 relative bg-background">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-end justify-between mb-10">
+            <div className="flex items-end justify-between gap-4 mb-10">
               <div>
                 <p className="section-label mb-2">Trending Now</p>
                 <h2 className="text-3xl md:text-[40px] font-medium text-foreground">What developers are buying</h2>
               </div>
-              <Link href="/marketplace?sort=trending" className="bg-card text-card-foreground px-5 py-2.5 rounded-lg text-sm font-medium border border-border hover:bg-accent/10 transition-all hidden sm:block">
+              <Link href="/marketplace?sort=trending" className="shrink-0 whitespace-nowrap bg-card text-card-foreground px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-sm font-medium border border-border shadow-sm hover:border-primary/40 hover:text-primary transition-all">
                 View all →
               </Link>
             </div>
@@ -342,12 +370,12 @@ export default async function HomePage() {
       {topSellers.length > 0 && (
         <section className="py-[80px] px-4 bg-background">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-end justify-between mb-10">
+            <div className="flex items-end justify-between gap-4 mb-10">
               <div>
                 <p className="section-label mb-2">Best Sellers</p>
                 <h2 className="text-3xl md:text-[40px] font-medium text-foreground">Most popular products</h2>
               </div>
-              <Link href="/marketplace?filter=bestseller" className="bg-card text-card-foreground px-5 py-2.5 rounded-lg text-sm font-medium border border-border hover:bg-accent/10 transition-all hidden sm:block">
+              <Link href="/marketplace?filter=bestseller" className="shrink-0 whitespace-nowrap bg-card text-card-foreground px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-sm font-medium border border-border shadow-sm hover:border-primary/40 hover:text-primary transition-all">
                 View all →
               </Link>
             </div>
@@ -366,11 +394,19 @@ export default async function HomePage() {
       {/* ── SECTION 7: GIF SHOWCASE ──────────────────────────────────────────── */}
       <section className="py-[80px] px-4 bg-background">
         <div className="max-w-7xl mx-auto flex flex-col items-center justify-center">
-          <img
-            src="/uploads/utr/Untitled design (1).gif"
-            alt="Platform showcase"
-            className="w-full max-w-4xl rounded-2xl shadow-2xl border border-border object-cover"
-          />
+          <div className="text-center mb-10">
+            <p className="section-label mb-3">Product Tour</p>
+            <h2 className="text-3xl md:text-[40px] font-medium tracking-tight text-foreground">See the platform in action</h2>
+          </div>
+          <div className="w-full max-w-4xl rounded-[1.25rem] border border-border bg-card p-2 shadow-2xl shadow-black/10">
+            <img
+              src="/uploads/utr/Untitled design (1).gif"
+              alt="Walkthrough of the platform dashboard: analytics, requests, models and billing"
+              loading="lazy"
+              decoding="async"
+              className="w-full rounded-xl object-cover"
+            />
+          </div>
         </div>
       </section>
 
@@ -416,15 +452,11 @@ export default async function HomePage() {
 
                 {/* CTA Buttons */}
                 <div className="flex gap-4 flex-wrap pt-4">
-                  <Link href="/demo">
-                    <button className="bg-primary text-primary-foreground px-7 py-3.5 rounded-xl font-semibold text-sm shadow-md hover:bg-primary/90 transition-all hover:-translate-y-0.5 flex items-center gap-2">
-                      <span>▶</span> Launch Demo
-                    </button>
+                  <Link href="/demo" className="bg-primary text-primary-foreground px-7 py-3.5 rounded-xl font-semibold text-sm shadow-md hover:bg-primary/90 transition-all hover:-translate-y-0.5 flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                    <span aria-hidden="true">▶</span> Launch Demo
                   </Link>
-                  <Link href="/marketplace">
-                    <button className="bg-background text-foreground border border-border px-7 py-3.5 rounded-xl font-semibold text-sm hover:bg-accent/10 transition-all hover:-translate-y-0.5">
-                      Browse Products
-                    </button>
+                  <Link href="/marketplace" className="bg-background text-foreground border border-border px-7 py-3.5 rounded-xl font-semibold text-sm hover:border-primary/40 hover:text-primary transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                    Browse Products
                   </Link>
                 </div>
               </div>
@@ -558,7 +590,8 @@ export default async function HomePage() {
                   </div>
                 ))
               ) : (
-                <div className="md:col-span-3 bg-card border border-border rounded-2xl p-8 text-center space-y-3">
+                <div className="md:col-span-3 bg-card border border-border rounded-2xl p-8 sm:p-10 text-center space-y-3 shadow-sm">
+                  <div className="flex justify-center gap-1 text-amber-400 text-lg" aria-hidden="true">★★★★★</div>
                   <p className="text-lg font-bold text-foreground">Verified Customer & Admin Feedback</p>
                   <p className="text-sm text-muted-foreground max-w-xl mx-auto">Explore transparent ratings and star feedback submitted directly by service users and platform administrators.</p>
                 </div>
@@ -580,14 +613,14 @@ export default async function HomePage() {
       {/* ── SECTION 12: FINAL CTA ───────────────────────────────────────────── */}
       <section className="py-[80px] px-4 bg-background border-t border-border">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-card text-card-foreground rounded-2xl p-16 relative overflow-hidden text-center border border-border shadow-md">
+          <div className="bg-card text-card-foreground rounded-3xl px-6 py-12 sm:p-12 md:p-16 relative overflow-hidden text-center border border-border shadow-md">
             <CtaVideoBackground />
             <div className="relative z-10">
               <h2 className="text-5xl md:text-[64px] font-medium mb-6 leading-[1.04] tracking-tight">
                 Seamless Streaming
               </h2>
               <p className="text-muted-foreground text-xl mb-8 max-w-2xl mx-auto leading-relaxed">
-                Join {stats.users.toLocaleString()}+ AI developers deploying agents and building products that matter.
+                Join {stats.users >= 10 ? `${stats.users.toLocaleString()}+ ` : ""}AI developers deploying agents and building products that matter.
                 Start free, scale unlimited.
               </p>
 
@@ -624,15 +657,11 @@ export default async function HomePage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/register">
-                  <button className="bg-primary text-primary-foreground px-12 py-5 rounded-lg font-medium text-lg shadow-lg hover:bg-primary/90 transition-all hover:-translate-y-0.5">
-                    Start Building Free
-                  </button>
+                <Link href="/register" className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-10 py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg hover:bg-primary/90 transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  Start Building Free <ArrowRight className="h-5 w-5" aria-hidden="true" />
                 </Link>
-                <Link href="/marketplace">
-                  <button className="bg-background text-foreground px-12 py-5 rounded-lg border border-border font-medium text-lg hover:bg-accent/10 transition-all">
-                    Explore Marketplace
-                  </button>
+                <Link href="/marketplace" className="inline-flex items-center justify-center bg-background text-foreground px-10 py-4 rounded-xl border border-border font-semibold text-base sm:text-lg hover:border-primary/40 hover:text-primary transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  Explore Marketplace
                 </Link>
               </div>
             </div>
