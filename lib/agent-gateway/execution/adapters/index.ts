@@ -33,6 +33,10 @@ import { TicketsCreateAdapter } from "./tickets-create-adapter"
 import { TicketsCloseAdapter } from "./tickets-close-adapter"
 import { AnalyticsSummaryAdapter } from "./analytics-summary-adapter"
 import { AnalyticsProductPerformanceAdapter } from "./analytics-product-performance-adapter"
+// Product mutation adapters
+import { ProductsCreateDraftAdapter } from "./products-create-draft-adapter"
+import { ProductsUpdateAdapter } from "./products-update-adapter"
+import { ProductsArchiveAdapter } from "./products-archive-adapter"
 
 export function registerCoreAdapters(registry: AdapterRegistry): void {
   registry.register(new ProductsListAdapter())
@@ -47,4 +51,8 @@ export function registerCoreAdapters(registry: AdapterRegistry): void {
   registry.register(new TicketsCloseAdapter())
   registry.register(new AnalyticsSummaryAdapter())
   registry.register(new AnalyticsProductPerformanceAdapter())
+  // Product mutations
+  registry.register(new ProductsCreateDraftAdapter())
+  registry.register(new ProductsUpdateAdapter())
+  registry.register(new ProductsArchiveAdapter())
 }

@@ -502,6 +502,83 @@ const productsCreateDraft: CapabilityDefinition = {
   contentTrust: "THIRD_PARTY_CONTENT",
 }
 
+const productsUpdate: CapabilityDefinition = {
+  id: "products.update",
+  version: 1,
+  domain: "products",
+  name: "Update product",
+  description: "Updates an existing product's basic details. Vendor-scoped: only the product owner can update DRAFT products.",
+  status: "ACTIVE",
+  operationType: "LOW_RISK_WRITE",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z
+    .object({
+      productId: z.string().min(1),
+      name: z.string().min(1).max(200).optional(),
+      tagline: z.string().min(1).max(300).optional(),
+      description: z.string().min(1).max(5000).optional(),
+      longDescription: z.string().max(20000).optional(),
+      type: z.enum(["SAAS", "SERVICE", "AI_AGENT", "AI_TOOL", "WEBSITE", "AUTOMATION", "API", "TEMPLATE", "PLUGIN", "PROMPT", "WORKFLOW", "DIGITAL"]).optional(),
+      category: z.string().max(100).optional(),
+      tags: z.array(z.string().max(50)).max(20).optional(),
+      thumbnailUrl: z.string().url().optional(),
+      iconUrl: z.string().url().optional(),
+      demoUrl: z.string().url().optional(),
+      documentationUrl: z.string().url().optional(),
+    })
+    .strict(),
+  outputSchema: z.object({ id: z.string(), name: z.string(), slug: z.string(), status: z.string(), updatedAt: z.string(), changed: z.boolean() }).strict(),
+  errorContract: [
+    { code: "INVALID_INPUT", description: "Update fields failed validation." },
+    { code: "RESOURCE_NOT_FOUND", description: "No product exists for the given id." },
+    { code: "PERMISSION_DENIED", description: "You can only update your own DRAFT products." },
+  ],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "Product", resourceLocator: "productId" },
+  permission: { permission: "write:products" },
+  sideEffects: {
+    effects: ["database write (Product, ProductVersion, AuditLog)"],
+    emitsEvents: ["PRODUCT_UPDATED"],
+  },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Updates are conditional on ownership; retries are safe.", class: "IDEMPOTENT" },
+  async: { executionMode: "SYNC" },
+  rollback: { reversibility: "REVERSIBLE", mechanism: "Restore from ProductVersion snapshot." },
+  executionReference: { adapterKey: "products.updateAdapter" },
+  securityClassification: "INTERNAL — vendor-scoped drafts.",
+  contentTrust: "THIRD_PARTY_CONTENT",
+}
+
+const productsArchive: CapabilityDefinition = {
+  id: "products.archive",
+  version: 1,
+  domain: "products",
+  name: "Archive product",
+  description: "Soft-deletes a product by setting status to ARCHIVED. Vendor-scoped: only the product owner can archive. Idempotent.",
+  status: "ACTIVE",
+  operationType: "LOW_RISK_WRITE",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({ productId: z.string().min(1) }).strict(),
+  outputSchema: z.object({ id: z.string(), name: z.string(), status: z.string(), changed: z.boolean() }).strict(),
+  errorContract: [
+    { code: "RESOURCE_NOT_FOUND", description: "No product exists for the given id." },
+    { code: "PERMISSION_DENIED", description: "You can only archive your own products." },
+    { code: "CONFLICT", description: "The product changed while it was being archived." },
+  ],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "Product", resourceLocator: "productId" },
+  permission: { permission: "write:products" },
+  sideEffects: {
+    effects: ["database write (Product, ProductVersion, AuditLog)"],
+    emitsEvents: ["PRODUCT_ARCHIVED"],
+  },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Archiving an already-archived product returns the same result (changed: false).", class: "IDEMPOTENT" },
+  async: { executionMode: "SYNC" },
+  rollback: { reversibility: "REVERSIBLE", mechanism: "Change status back to DRAFT (products.update)." },
+  executionReference: { adapterKey: "products.archiveAdapter" },
+  securityClassification: "INTERNAL — vendor-scoped products.",
+  contentTrust: "THIRD_PARTY_CONTENT",
+}
+
 const couponsCreate: CapabilityDefinition = {
   id: "coupons.create",
   version: 1,
@@ -635,6 +712,8 @@ export const CORE_CAPABILITY_MANIFEST: readonly CapabilityDefinition[] = [
   ticketsCreate,
   ticketsClose,
   productsCreateDraft,
+  productsUpdate,
+  productsArchive,
   couponsCreate,
   productsUpdatePricing,
   refundsProcess,

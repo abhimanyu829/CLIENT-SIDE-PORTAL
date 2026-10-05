@@ -30,13 +30,9 @@ export const DOMAIN_CAPABILITY_MAP: readonly DomainOperation[] = [
   { domain: "PRODUCTS", operation: "browse the published catalogue", readiness: "READY", capabilityId: "products.list" },
   { domain: "PRODUCTS", operation: "read one published product", readiness: "READY", capabilityId: "products.get" },
   { domain: "PRODUCTS", operation: "list my vendor products", readiness: "READY", capabilityId: "products.listMine" },
-  {
-    domain: "PRODUCTS",
-    operation: "create a product draft",
-    readiness: "NOT_READY",
-    capabilityId: "products.createDraft",
-    blocker: "The existing product service requires a Clerk admin session (requireAdmin); no vendor-scoped, service-principal create path exists to adapt safely.",
-  },
+  { domain: "PRODUCTS", operation: "create a product draft", readiness: "READY", capabilityId: "products.createDraft" },
+  { domain: "PRODUCTS", operation: "update a product draft", readiness: "READY", capabilityId: "products.update" },
+  { domain: "PRODUCTS", operation: "archive a product", readiness: "READY", capabilityId: "products.archive" },
   {
     domain: "PRODUCTS",
     operation: "change pricing",
@@ -44,7 +40,7 @@ export const DOMAIN_CAPABILITY_MAP: readonly DomainOperation[] = [
     capabilityId: "products.updatePricing",
     blocker: "HIGH_RISK_MUTATION with direct financial impact; INTERNAL_ONLY by Phase 3 decision.",
   },
-  { domain: "PRODUCTS", operation: "publish / archive / delete a product", readiness: "NOT_READY", blocker: "Admin moderation workflow (versioning, locking, review) has no agent-safe entry point." },
+  { domain: "PRODUCTS", operation: "publish a product (status change to AVAILABLE)", readiness: "NOT_READY", blocker: "Admin moderation workflow (versioning, locking, review) has no agent-safe entry point." },
 
   // Marketing
   { domain: "MARKETING", operation: "read the active campaign", readiness: "READY", capabilityId: "campaigns.getActive" },
