@@ -13,7 +13,7 @@ import path from "path"
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["lib/services/__tests__/**/*.test.ts"],
+    include: ["lib/services/__tests__/subscription-*.test.ts"],
     testTimeout: 15_000,
     hookTimeout: 15_000,
   },

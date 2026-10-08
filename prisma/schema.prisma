@@ -3019,6 +3019,48 @@ enum SubscriptionPaymentMethod {
   WALLET
 }
 
+// ── Phase 2: Plan Catalog & Bundle Composition ───────────────────────────────
+
+/// Lifecycle of a catalog plan. Server-controlled; never client-supplied.
+enum PlanStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
+/// Commercial plan type. FREE = a plan DEFINITION only; the free-access
+/// engine belongs to a later phase.
+enum PlanType {
+  FREE
+  MONTHLY
+  THREE_MONTH
+  SIX_MONTH
+  YEARLY
+  ENTERPRISE
+  CUSTOM
+}
+
+/// Lifecycle of one immutable-once-published plan version.
+enum PlanVersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/// What a plan version may reference or declare.
+enum PlanItemType {
+  PRODUCT
+  SERVICE
+  FEATURE
+  AI_CAPABILITY
+  STORAGE
+  USER_LIMIT
+  ADMIN_LIMIT
+  RESOURCE_LIMIT
+  SUPPORT
+}
+
 // ==============================================================================
 // ── Subscription & Billing Center Models ──────────────────────────────────────
 // ==============================================================================
@@ -3047,12 +3089,88 @@ model SubscriptionPlan {
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
+  // ── Phase 2 catalog lifecycle (additive; legacy rows default to PUBLISHED) ──
+  /// Catalog lifecycle. Defaults to PUBLISHED so pre-Phase-2 plans stay offered.
+  status           PlanStatus        @default(PUBLISHED)
+  /// Commercial plan type. NULL on legacy rows.
+  planType         PlanType?
+  /// Commercial duration in months (FREE = 0). Distinct from billingCycle.
+  durationMonths   Int?
+  /// Billing interval in months for this plan (1 = monthly, 3, 6, 12).
+  billingIntervalMonths Int?
+  /// Currently effective published version (plain reference; no FK cycle).
+  currentVersionId String?
+  /// Idempotency/optimistic-locking guard for catalog mutations.
+  catalogRevision  Int               @default(0)
+
   benefits        PlanBenefit[]
   subscriptions   UserSubscription[]
+  versions        PlanVersion[]
 
   @@index([slug])
   @@index([tier, isActive])
   @@index([billingCycle])
+  @@index([status, planType])
+}
+
+/// One versioned commercial definition of a SubscriptionPlan.
+/// Immutable once PUBLISHED: a published version's pricing/items never change;
+/// edit by creating a new DRAFT version and publishing that.
+model PlanVersion {
+  id                    String            @id @default(cuid())
+  planId                String
+  version               Int
+  status                PlanVersionStatus @default(DRAFT)
+  price                 Decimal?          @db.Decimal(10, 2)
+  currency              PriceCurrency?
+  billingIntervalMonths Int?
+  durationMonths        Int?
+  notes                 String?           @db.Text
+  createdBy             String?
+  publishedAt           DateTime?
+  archivedAt            DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  plan                  SubscriptionPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  items                 PlanItem[]
+
+  @@unique([planId, version])
+  @@index([planId, status])
+}
+
+/// One composed commercial item inside a PlanVersion.
+/// `itemRefKey` is the durable, non-null identity of the item within the
+/// version (referenced resource id, or a stable key for declared limits).
+/// The (planVersionId, itemType, itemRefKey) unique key gives database-level
+/// duplicate prevention for every item type.
+model PlanItem {
+  id            String       @id @default(cuid())
+  planVersionId String
+  itemType      PlanItemType
+  /// Non-null durable identity within the version. Referential types store the
+  /// referenced resource id; declared types store a stable key (e.g. "storage").
+  itemRefKey    String
+  /// Referenced application resource id (PRODUCT/SERVICE/AI_CAPABILITY). NULL
+  /// for declared types (STORAGE/USER_LIMIT/... /FEATURE/SUPPORT).
+  itemRefId     String?
+  /// Human label override; optional.
+  label         String?
+  quantity      Int?         @default(1)
+  /// Numeric limit for limit/declared types (e.g. GB, seats).
+  limitValue    Decimal?     @db.Decimal(18, 4)
+  /// Unit for limitValue: "GB", "users", "agents", ...
+  limitUnit     String?
+  config        Json         @default("{}")
+  sortOrder     Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  planVersion   PlanVersion  @relation(fields: [planVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([planVersionId, itemType, itemRefKey])
+  @@index([planVersionId])
+  @@index([itemType, itemRefId])
 }
 
 /// Granular features and benefit entitlements associated with a SubscriptionPlan
