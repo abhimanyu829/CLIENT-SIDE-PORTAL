@@ -11,6 +11,7 @@ import { createNotification } from "@/lib/notifications"
 import { auditLog } from "@/lib/audit"
 import { markOrderPaid, fulfillOrder } from "@/lib/services/enterprise-commerce-service"
 import { cancelSubscription, changePlan, markSubscriptionPastDue, revokeUserAccessForOrder, syncSubscriptionAccessState } from "@/lib/services/subscription-service"
+import { currentSubscriptionEnvironment } from "@/lib/services/subscription-state-machine"
 
 // ── Handler: checkout.session.completed ──────────────────────────────────────
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
@@ -81,6 +82,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       productId: tier.productId,
       stripeSubId: stripeSubId ?? undefined,
       status: SubStatus.ACTIVE,
+      source: "STRIPE_WEBHOOK",
+      environment: currentSubscriptionEnvironment(),
       currentPeriodStart: stripeSubscription
         ? new Date(stripeSubscription.current_period_start * 1000)
         : new Date(),

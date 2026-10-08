@@ -11,6 +11,7 @@ import { emitEvent, EVENTS } from "@/lib/services/event-bus"
 import { auditLog } from "@/lib/audit"
 import { markOrderPaid, markOrderPaymentFailed, fulfillOrder } from "@/lib/services/enterprise-commerce-service"
 import { markSubscriptionPastDue, revokeUserAccessForOrder, syncSubscriptionAccessState, cancelSubscription } from "@/lib/services/subscription-service"
+import { currentSubscriptionEnvironment } from "@/lib/services/subscription-state-machine"
 
 function intervalEnd(interval: BillingInterval | string): Date {
   const end = new Date()
@@ -87,6 +88,8 @@ async function handlePaymentCaptured(payload: any) {
         tierId,
         productId: tier.productId,
         status: SubStatus.ACTIVE,
+        source: "RAZORPAY_WEBHOOK",
+        environment: currentSubscriptionEnvironment(),
         currentPeriodStart: new Date(),
         currentPeriodEnd: periodEnd,
         razorpaySubId: razorpaySubId ?? undefined,

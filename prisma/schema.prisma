@@ -100,6 +100,17 @@ enum SubStatus {
   PAUSED
 }
 
+/// Phase 1 subscription domain: where a Subscription record originated.
+/// Controlled server-side set — never taken from an untrusted request body.
+/// NULL = legacy row created before the Phase-1 foundation existed.
+enum SubscriptionSource {
+  CHECKOUT
+  STRIPE_WEBHOOK
+  RAZORPAY_WEBHOOK
+  ADMIN
+  SYSTEM
+}
+
 enum PaymentStatus {
   PENDING
   AUTHORIZED
@@ -913,6 +924,12 @@ model Subscription {
   productId          String
   tierId             String
   status             SubStatus   @default(TRIALING)
+  /// Domain provenance. NULL = legacy (pre-Phase-1) record.
+  source             SubscriptionSource?
+  /// Deployment environment this subscription belongs to ("development" |
+  /// "test" | "production"). NULL = legacy record. Provider-independent —
+  /// never a provider-specific label.
+  environment        String?
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
   cancelAtPeriodEnd  Boolean     @default(false)

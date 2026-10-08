@@ -5,6 +5,7 @@ import { emitEvent, EVENTS } from "@/lib/services/event-bus"
 import { createNotification } from "@/lib/notifications"
 import { emailQueue, EMAIL_JOBS } from "@/lib/queue"
 import { redis } from "@/lib/redis"
+import { currentSubscriptionEnvironment } from "@/lib/services/subscription-state-machine"
 
 const PLATFORM_COMMISSION_RATE = 0.15
 const DEFAULT_TAX_RATE = 0.18
@@ -1029,6 +1030,8 @@ export async function markOrderPaid(orderId: string, gatewayPaymentId?: string, 
             productId: item.productId,
             tierId: item.tier.id,
             status: "ACTIVE",
+            source: "CHECKOUT",
+            environment: currentSubscriptionEnvironment(),
             currentPeriodStart: new Date(),
             currentPeriodEnd: intervalEnd(item.tier.interval),
           },

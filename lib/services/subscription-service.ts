@@ -12,6 +12,30 @@ import { emitEvent, EVENTS } from "@/lib/services/event-bus"
 import { redis } from "@/lib/redis"
 import { aiQuotaCacheKey } from "@/lib/services/cache-service"
 import { BillingInterval, Prisma, SubStatus } from "@prisma/client"
+import { logger } from "@/lib/logger"
+import {
+  canTransitionSubscriptionStatus,
+} from "@/lib/services/subscription-state-machine"
+
+// ── Phase 1 transition guard ────────────────────────────────────────────────
+// Every status mutation below is validated against the controlled state
+// machine (subscription-state-machine.ts) BEFORE any write. Invalid
+// transitions are refused (soft-skip + warn) so webhook callers never see
+// an exception and a cancelled subscription can never be revived by a late
+// "payment failed" event.
+function guardTransition(
+  currentStatus: SubStatus,
+  nextStatus: SubStatus,
+  operation: string,
+  subscriptionId: string,
+): boolean {
+  if (canTransitionSubscriptionStatus(currentStatus, nextStatus)) return true
+  logger.warn(
+    { subscriptionId, from: currentStatus, to: nextStatus, operation },
+    "subscription-service: blocked invalid status transition",
+  )
+  return false
+}
 
 function periodEndFor(interval: BillingInterval, from = new Date()) {
   const end = new Date(from)
@@ -121,6 +145,10 @@ export async function changePlan(
     include: { tier: true, user: true, product: true },
   })
 
+  if (!guardTransition(current.status, SubStatus.ACTIVE, "changePlan", subscriptionId)) {
+    return { success: false, subscription: current }
+  }
+
   const newTier = await db.productTier.findUniqueOrThrow({
     where: { id: newTierId },
   })
@@ -210,6 +238,10 @@ export async function cancelSubscription(
     where: { id: subscriptionId },
   })
 
+  if (!guardTransition(current.status, SubStatus.CANCELLED, "cancelSubscription", subscriptionId)) {
+    return { success: false }
+  }
+
   await db.$transaction(async (tx) => {
     await tx.subscription.update({
       where: { id: subscriptionId },
@@ -255,6 +287,10 @@ export async function reactivateSubscription(
     where: { id: subscriptionId },
     include: { tier: true },
   })
+
+  if (!guardTransition(current.status, SubStatus.ACTIVE, "reactivateSubscription", subscriptionId)) {
+    return { success: false }
+  }
 
   const newPeriodEnd = periodEndFor(current.tier.interval)
 
@@ -306,6 +342,10 @@ export async function pauseSubscription(
     where: { id: subscriptionId },
   })
 
+  if (!guardTransition(current.status, SubStatus.PAUSED, "pauseSubscription", subscriptionId)) {
+    return { success: false }
+  }
+
   await db.$transaction(async (tx) => {
     await tx.subscription.update({
       where: { id: subscriptionId },
@@ -344,6 +384,10 @@ export async function markSubscriptionPastDue(
   const current = await db.subscription.findUniqueOrThrow({
     where: { id: subscriptionId },
   })
+
+  if (!guardTransition(current.status, SubStatus.PAST_DUE, "markSubscriptionPastDue", subscriptionId)) {
+    return { success: false }
+  }
 
   await db.$transaction(async (tx) => {
     await tx.subscription.update({
@@ -400,10 +444,19 @@ export async function revokeUserAccessForOrder(
     })
     for (const entry of subscriptionIds) {
       if (!entry.subscriptionId) continue
-      await tx.subscription.update({
+      const linkedSub = await tx.subscription.findUnique({
         where: { id: entry.subscriptionId },
-        data: { status: SubStatus.CANCELLED, cancelledAt: new Date(), cancelAtPeriodEnd: false },
+        select: { status: true },
       })
+      if (
+        linkedSub &&
+        guardTransition(linkedSub.status, SubStatus.CANCELLED, "revokeUserAccessForOrder", entry.subscriptionId)
+      ) {
+        await tx.subscription.update({
+          where: { id: entry.subscriptionId },
+          data: { status: SubStatus.CANCELLED, cancelledAt: new Date(), cancelAtPeriodEnd: false },
+        })
+      }
       await syncEntitlementForSubscription(tx, entry.subscriptionId)
     }
 
@@ -437,6 +490,11 @@ export async function expireOverdueSubscriptions(now = new Date()): Promise<{ ex
   })
 
   for (const sub of overdue) {
+    if (!canTransitionSubscriptionStatus(sub.status, SubStatus.CANCELLED)) {
+      // Defense in depth: the query already filters, but a racing transition
+      // must not be overwritten by the expiry sweep.
+      continue
+    }
     await db.$transaction(async (tx) => {
       await tx.subscription.update({
         where: { id: sub.id },
@@ -512,6 +570,10 @@ export async function activateSubscription(
     where: { id: subscriptionId },
     include: { tier: true, user: true, product: true },
   })
+
+  if (!guardTransition(current.status, SubStatus.ACTIVE, "activateSubscription", subscriptionId)) {
+    return { success: false, subscription: current }
+  }
 
   // Validate period — if period has expired, set to PAST_DUE instead
   if (current.currentPeriodEnd && new Date(current.currentPeriodEnd) < new Date()) {
@@ -599,6 +661,10 @@ export async function startGracePeriod(
   const current = await db.subscription.findUniqueOrThrow({
     where: { id: subscriptionId },
   })
+
+  if (!guardTransition(current.status, SubStatus.PAST_DUE, "startGracePeriod", subscriptionId)) {
+    return { success: false, gracePeriodEnd: new Date(Date.now() + graceDays * 24 * 60 * 60 * 1000) }
+  }
 
   const gracePeriodEnd = new Date(Date.now() + graceDays * 24 * 60 * 60 * 1000)
 

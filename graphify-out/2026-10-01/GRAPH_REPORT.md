@@ -1,7 +1,7 @@
 # Graph Report - start-client  (2026-10-01)
 
 ## Corpus Check
-- 1254 files · ~1,890,724 words
+- 1253 files · ~1,830,934 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 15 file(s) not represented in the graph (top: (none) 6, .conf 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `21bb82fc`
+- Built from commit: `534e6210`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -329,14 +329,14 @@
 ## Surprising Connections (you probably didn't know these)
 - `Invariants (checked after every scenario, fuzz batch and corpus entry)` --references--> `verifyAuditChain()`  [INFERRED]
   docs/agent-gateway/phase-14/01-simulation.md → lib/agent-gateway/audit-ledger/ledger.ts
-- `Controls, in order, in `AdapterResolver`` --references--> `AdapterResolver`  [INFERRED]
-  docs/agent-gateway/phase-12/06-data-exfiltration.md → lib/agent-gateway/execution/resolver/adapter-resolver.ts
-- `6. No HTTP surface added` --references--> `AdapterResolver`  [INFERRED]
-  docs/agent-gateway/phase-4/01-execution-architecture.md → lib/agent-gateway/execution/resolver/adapter-resolver.ts
-- `Protected-system verification` --references--> `AdapterResolver`  [INFERRED]
-  docs/agent-gateway/phase-4/15-phase-4-exit-checklist.md → lib/agent-gateway/execution/resolver/adapter-resolver.ts
-- `Execution` --references--> `AdapterResolver`  [INFERRED]
-  docs/agent-gateway/phase-8/04-worker-integration.md → lib/agent-gateway/execution/resolver/adapter-resolver.ts
+- `Canonical JSON` --references--> `CanonicalizationError`  [INFERRED]
+  docs/agent-gateway/phase-7/06-binding.md → lib/agent-gateway/approvals/canonical-json.ts
+- `Request path` --references--> `CapabilityAuthorizer`  [INFERRED]
+  docs/agent-gateway/phase-7/01-architecture.md → lib/agent-gateway/mcp/authorization-hook.ts
+- `Principle` --references--> `ExecutionGate`  [INFERRED]
+  docs/agent-gateway/phase-12/03-prompt-injection.md → lib/agent-gateway/execution-gate/gate.ts
+- `Same chain as a synchronous call` --references--> `ExecutionGate`  [INFERRED]
+  docs/agent-gateway/phase-8/09-task-security.md → lib/agent-gateway/execution-gate/gate.ts
 
 ## Import Cycles
 - None detected.
@@ -1420,11 +1420,11 @@ Nodes (3): Phase 7 — Security, Static review of new code, Unauthenticated surf
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `next` connect `next` to `email/service.ts`, `requireAdmin`, `Button`, `logger.ts`, `auditLog`, `Badge`, `AdminLayoutClient.tsx`, `zod`, `package.json`, `otp.ts`, `centers/[slug]/page.tsx`, `service-lifecycle-service.ts`, `CheckoutClient.tsx`, `use-toast.ts`, `emitEvent`, `cn`, `ProductCard.tsx`, `ServiceCampaignCenterClient.tsx`, `CustomServiceRequestForm.tsx`, `CouponsClient.tsx`, `(public)/page.tsx`, `decision-service.ts`, `@sentry/nextjs`, `CustomServiceDiscussionClient.tsx`, `serializePrisma`, `(public)/layout.tsx`, `PaymentsInspectionClient.tsx`, `AdminServiceEditClient.tsx`, `clerk-user-sync.ts`, `custom-service-portal.ts`, `@clerk/nextjs`, `ui.tsx`, `lucide-react`, `product-service-profile.ts`, `TriggerService`, `CallToAction`, `subadmin-workforce.ts`, `service-discovery.ts`, `blog/page.tsx`, `routes.ts`, `ServiceDiscoveryShelf.tsx`, `cron/subscriptions/route.ts`, `revenue/page.tsx`, `webhook-handler.ts`, `dashboard/SubscriptionsClient.tsx`, `ai-quota-service.ts`, `PricingClient.tsx`, `marketplace/index.tsx`, `admin/service-requests/page.tsx`, `FeedbackClient.tsx`, `payments/index.tsx`, `getPortalSetting`, `_shared.tsx`, `revalidate.ts`, `AdminServiceCategoriesClient.tsx`, `queries.ts`, `[id]/TicketDetailClient.tsx`, `marketing/index.tsx`, `marketplace/page.tsx`, `custom-service-portal/settings/route.ts`, `Input`, `autonomy/policy-store.ts`, `db-credential-store.ts`, `requireSuperAdmin`, `agent-approvals/[ref]/page.tsx`, `openai.ts`, `useRealtimeChannel`, `vitest`, `getRazorpay`, `accounts/[id]/route.ts`, `proxy.ts`, `ref_crypto`, `CartProvider.tsx`, `validateSubadminCredentialSession`, `DashboardLayoutClient.tsx`, `CheckoutButton.tsx`, `dashboard/InvoicesClient.tsx`, `audit-ledger/types.ts`, `marketplace/[slug]/page.tsx`, `unauthorized/page.tsx`, `react`, `developers/page.tsx`, `agent-gateway/config.ts`, `useDashboardStore`, `ai-agents/[slug]/page.tsx`, `subscription-guard.ts`, `PremiumServiceDetailClient.tsx`, `blog/[slug]/page.tsx`, `[sessionId]/page.tsx`, `ecosystem/page.tsx`, `ContactSalesClient`, `vendor/page.tsx`, `applications/[id]/route.ts`, `compare-products/page.tsx`, `RazorpayButton.tsx`, `HeroSection.tsx`, `PricingCards.tsx`?**
-  _High betweenness centrality (0.186) - this node is a cross-community bridge._
+  _High betweenness centrality (0.209) - this node is a cross-community bridge._
 - **Why does `react` connect `react` to `AdminAuditClient.tsx`, `email/service.ts`, `requireAdmin`, `Button`, `logger.ts`, `auditLog`, `Badge`, `agent-approvals/[ref]/page.tsx`, `AdminLayoutClient.tsx`, `NeuralBackground.tsx`, `vendor/page.tsx`, `package.json`, `centers/[slug]/page.tsx`, `useRealtimeChannel`, `CheckoutClient.tsx`, `use-toast.ts`, `RazorpayButton.tsx`, `vitest`, `cn`, `ProductCard.tsx`, `ServiceCampaignCenterClient.tsx`, `BillingCenterClient.tsx`, `CustomServiceRequestForm.tsx`, `CouponsClient.tsx`, `workers.ts`, `sendEmail`, `CartProvider.tsx`, `shared/index.tsx`, `(public)/page.tsx`, `validateSubadminCredentialSession`, `@sentry/nextjs`, `DashboardLayoutClient.tsx`, `CustomServiceDiscussionClient.tsx`, `dashboard/InvoicesClient.tsx`, `SubadminManagementClient`, `serializePrisma`, `(public)/layout.tsx`, `PaymentsInspectionClient.tsx`, `AdminServiceEditClient.tsx`, `clerk-user-sync.ts`, `@clerk/nextjs`, `next`, `ui.tsx`, `PremiumServicesClient.tsx`, `lucide-react`, `join-our-team/page.tsx`, `CallToAction`, `subadmin-workforce.ts`, `send-manual-payment-review-email.ts`, `ServiceDiscoveryShelf.tsx`, `dashboard/index.tsx`, `dashboard/SubscriptionsClient.tsx`, `CRMPipeline.tsx`, `dialogs.tsx`, `PricingClient.tsx`, `marketplace/index.tsx`, `admin/service-requests/page.tsx`, `FeedbackClient.tsx`, `useDashboardStore`, `admin/index.tsx`, `payments/index.tsx`, `DemoTimer.tsx`, `_shared.tsx`, `AdminServiceCategoriesClient.tsx`, `EmailCenterClient.tsx`, `PremiumServiceDetailClient.tsx`, `[id]/TicketDetailClient.tsx`, `EmailShell`, `[sessionId]/page.tsx`, `marketplace/page.tsx`, `Input`?**
-  _High betweenness centrality (0.109) - this node is a cross-community bridge._
+  _High betweenness centrality (0.105) - this node is a cross-community bridge._
 - **Why does `db` connect `next` to `email/service.ts`, `requireAdmin`, `Button`, `requireSuperAdmin`, `logger.ts`, `auditLog`, `autonomy/policy-store.ts`, `lifecycle.ts`, `Badge`, `agent-approvals/[ref]/page.tsx`, `zod`, `openai.ts`, `vendor/page.tsx`, `otp.ts`, `centers/[slug]/page.tsx`, `service-lifecycle-service.ts`, `CheckoutClient.tsx`, `compare-products/page.tsx`, `getRazorpay`, `emitEvent`, `cn`, `accounts/[id]/route.ts`, `ProductCard.tsx`, `authorization/policy-store.ts`, `recovery/service.ts`, `featureFlags.ts`, `CouponsClient.tsx`, `workers.ts`, `runtime.ts`, `ref_crypto`, `sendEmail`, `(public)/page.tsx`, `decision-service.ts`, `gate.ts`, `SubadminManagementClient`, `serializePrisma`, `marketplace/[slug]/page.tsx`, `(public)/layout.tsx`, `PaymentsInspectionClient.tsx`, `AgentExecutionContext`, `clerk-user-sync.ts`, `custom-service-portal.ts`, `audit-ledger/index.ts`, `react`, `product-service-profile.ts`, `CallToAction`, `subadmin-workforce.ts`, `service-discovery.ts`, `blog/page.tsx`, `ServiceDiscoveryShelf.tsx`, `governance/actions.ts`, `tasks/engine.ts`, `ai-quota-service.ts`, `CRMPipeline.tsx`, `triggers/service.ts`, `PricingClient.tsx`, `admin/service-requests/page.tsx`, `agent-gateway/config.ts`, `ai-agents/[slug]/page.tsx`, `connection-service.ts`, `_shared.tsx`, `AdminServiceCategoriesClient.tsx`, `queries.ts`, `subscription-guard.ts`, `governance/evidence.ts`, `blog/[slug]/page.tsx`, `approvals/index.ts`, `[sessionId]/page.tsx`, `marketplace/page.tsx`, `custom-service-portal/settings/route.ts`?**
-  _High betweenness centrality (0.106) - this node is a cross-community bridge._
+  _High betweenness centrality (0.098) - this node is a cross-community bridge._
 - **Are the 7 inferred relationships involving `auth()` (e.g. with `Auth helper functions (exact call chains)` and `Identity layers (current, human-facing)`) actually correct?**
   _`auth()` has 7 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 28 inferred relationships involving `requireAdmin()` (e.g. with `3. Authorization Architecture (current)` and `5. Known Architectural Inconsistencies (documented, not fixed — see BUG-BASELINE.md)`) actually correct?**
