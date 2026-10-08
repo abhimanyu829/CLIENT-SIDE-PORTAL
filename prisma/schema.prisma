@@ -356,6 +356,7 @@ model User {
 
     permissions     UserPermission[]
     subscriptions   Subscription[]
+    entitlementGrants EntitlementGrant[] @relation("EntitlementGrantUser")
     payments        Payment[]
     serviceOrders   ServiceOrder[]
     clientProjects  Project[]             @relation("ClientProjects")
@@ -1942,6 +1943,8 @@ model Team {
   members      TeamMember[]
   // Abhibhi Agent Gateway (Phase 2) — machine identity back-relation.
   agentConnections AgentConnection[] @relation("AgentConnectionTeam")
+  // Phase 3 entitlement engine — team-held grants.
+  entitlementGrants EntitlementGrant[] @relation("EntitlementGrantTeam")
 
   @@index([ownerId])
 }
@@ -3171,6 +3174,117 @@ model PlanItem {
   @@unique([planVersionId, itemType, itemRefKey])
   @@index([planVersionId])
   @@index([itemType, itemRefId])
+}
+
+// ── Phase 3: Entitlement Engine ──────────────────────────────────────────────
+
+/// What a plan/grant can promise. Kept intentionally small (only types the
+/// current architecture needs).
+enum EntitlementType {
+  PRODUCT
+  SERVICE
+  FEATURE
+  AI_CAPABILITY
+  STORAGE
+  USER_LIMIT
+  ADMIN_LIMIT
+  RESOURCE_LIMIT
+  SUPPORT
+}
+
+/// Where a customer's grant came from. Source separation lets a subscription
+/// expire without touching a standalone purchase (and vice versa).
+enum EntitlementSourceType {
+  STANDALONE_PURCHASE
+  SUBSCRIPTION
+  ADMIN_GRANT
+  PROMOTIONAL
+}
+
+/// Scope controls where a grant applies.
+enum EntitlementScope {
+  GLOBAL
+  OWNER
+  TEAM
+  RESOURCE
+}
+
+/// Explicit grant lifecycle. Only ACTIVE grants resolve to access.
+enum GrantStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  REVOKED
+}
+
+/// Who holds a grant. Users are the primary commercial owner; teams where offered.
+enum EntitlementSubjectType {
+  USER
+  TEAM
+}
+
+/// Stable catalogue of entitlement definitions (semantic machine key).
+model EntitlementDefinition {
+  id            String           @id @default(cuid())
+  /// Stable business key, e.g. "product.school_management", "limit.storage".
+  key           String           @unique
+  name          String
+  description   String?          @db.Text
+  type          EntitlementType
+  /// Application resource type this key refers to, when referential.
+  resourceType  String?
+  configuration Json             @default("{}")
+  isActive      Boolean          @default(true)
+  metadata      Json             @default("{}")
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  grants        EntitlementGrant[]
+
+  @@index([type, isActive])
+  @@index([resourceType])
+}
+
+/// A concrete grant held by a subject (user or team).
+model EntitlementGrant {
+  id                    String                @id @default(cuid())
+  entitlementDefinitionId String
+  /// Denormalized stable key for fast indexed resolution.
+  entitlementKey        String
+  subjectType           EntitlementSubjectType
+  subjectUserId         String?
+  subjectTeamId         String?
+  sourceType            EntitlementSourceType
+  /// Stable reference inside the source (orderId, subscriptionId, admin ref).
+  sourceReference       String
+  scope                 EntitlementScope      @default(OWNER)
+  resourceType          String?
+  resourceId            String?
+  quantity              Int?
+  limitValue            Decimal?              @db.Decimal(18, 4)
+  limitUnit             String?
+  status                GrantStatus           @default(ACTIVE)
+  startsAt              DateTime              @default(now())
+  expiresAt             DateTime?
+  configuration         Json                  @default("{}")
+  /// Deterministic idempotency key derived server-side from all grant axes.
+  dedupeKey             String                @unique
+  metadata              Json                  @default("{}")
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  entitlementDefinition EntitlementDefinition @relation(fields: [entitlementDefinitionId], references: [id], onDelete: Restrict)
+  subjectUser           User?                 @relation("EntitlementGrantUser", fields: [subjectUserId], references: [id], onDelete: Cascade)
+  subjectTeam           Team?                 @relation("EntitlementGrantTeam", fields: [subjectTeamId], references: [id], onDelete: Cascade)
+
+  @@index([entitlementKey, subjectUserId, status])
+  @@index([entitlementKey, subjectTeamId, status])
+  @@index([subjectUserId, status])
+  @@index([subjectTeamId, status])
+  @@index([sourceType, sourceReference])
+  @@index([resourceType, resourceId])
+  @@index([expiresAt])
 }
 
 /// Granular features and benefit entitlements associated with a SubscriptionPlan
