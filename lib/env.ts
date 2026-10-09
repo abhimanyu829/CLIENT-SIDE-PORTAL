@@ -36,6 +36,9 @@ const envSchema = z.object({
   NEXT_PUBLIC_RAZORPAY_KEY_ID: optStr,
   RAZORPAY_KEY_SECRET: optStr,
   RAZORPAY_WEBHOOK_SECRET: optStr,
+  // Dedicated webhook secret for recurring SUBSCRIPTION events. Falls back to
+  // RAZORPAY_WEBHOOK_SECRET when unset (keeps the one-time flow unchanged).
+  RAZORPAY_SUBSCRIPTIONS_WEBHOOK_SECRET: optStr,
   PAYTM_MERCHANT_ID: optStr,
   PAYTM_MERCHANT_KEY: optStr,
   PHONEPE_MERCHANT_ID: optStr,

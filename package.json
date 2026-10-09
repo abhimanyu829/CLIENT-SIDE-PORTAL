@@ -16,6 +16,7 @@
     "test:subscriptions": "vitest run --config vitest.subscriptions.config.ts",
     "test:plans": "vitest run --config vitest.plans.config.ts",
     "test:entitlements": "vitest run --config vitest.entitlements.config.ts",
+    "test:razorpay": "vitest run --config vitest.razorpay.config.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",

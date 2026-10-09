@@ -3137,6 +3137,7 @@ model PlanVersion {
 
   plan                  SubscriptionPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
   items                 PlanItem[]
+  razorpayPlanMappings  RazorpayPlanMapping[]
 
   @@unique([planId, version])
   @@index([planId, status])
@@ -3287,6 +3288,77 @@ model EntitlementGrant {
   @@index([expiresAt])
 }
 
+// ── Phase 4: Razorpay recurring billing ──────────────────────────────────────
+
+/// Lifecycle of an internal → Razorpay Plan mapping.
+enum PlanMappingStatus {
+  ACTIVE
+  NEEDS_RECONCILIATION
+  INACTIVE
+}
+
+/// Recorded state of one recurring charge (payment) event.
+enum SubscriptionChargeStatus {
+  SUCCEEDED
+  FAILED
+  PENDING
+  REFUNDED
+}
+
+/// Mapping from a published internal PlanVersion to a Razorpay Plan.
+/// Provider-neutral catalog remains the commercial source of truth; this is
+/// only the external reference needed to bill.
+model RazorpayPlanMapping {
+  id               String             @id @default(cuid())
+  planVersionId    String
+  environment      String
+  provider         String             @default("RAZORPAY")
+  razorpayPlanId   String             @unique
+  currency         String
+  amountSubunits   Int
+  billingPeriod    String
+  billingInterval  Int
+  /// Finite billing cycles when the internal contract has one; NULL = renew
+  /// until cancelled (indefinite).
+  totalCount       Int?
+  mappingStatus    PlanMappingStatus  @default(ACTIVE)
+  metadata         Json               @default("{}")
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  planVersion      PlanVersion        @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([planVersionId, environment])
+  @@index([mappingStatus])
+  @@index([environment])
+  @@index([razorpayPlanId])
+}
+
+/// One recurring charge (payment) on a subscription. Distinct from the
+/// standalone Order/Payment system — recurring charges never create Orders.
+model SubscriptionCharge {
+  id                    String                   @id @default(cuid())
+  subscriptionId        String
+  razorpaySubscriptionId String
+  razorpayPaymentId     String?                  @unique
+  razorpayInvoiceId     String?
+  amountSubunits        Int
+  currency              String
+  chargeStatus          SubscriptionChargeStatus @default(PENDING)
+  providerEventId       String?                  @unique
+  billingPeriodStart    DateTime?
+  billingPeriodEnd      DateTime?
+  metadata              Json                     @default("{}")
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  subscription          UserSubscription         @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId, chargeStatus])
+  @@index([razorpaySubscriptionId])
+  @@index([chargeStatus])
+}
+
 /// Granular features and benefit entitlements associated with a SubscriptionPlan
 model PlanBenefit {
   id           String           @id @default(cuid())
@@ -3388,6 +3460,9 @@ model UserSubscription {
   paymentMethodId        String?
   stripeSubscriptionId   String?                 @unique
   razorpaySubscriptionId String?                 @unique
+  /// Immutable plan version this subscription was purchased against.
+  planVersionId          String?
+  environment            String?
   metadata               Json?                   @default("{}")
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
@@ -3397,10 +3472,12 @@ model UserSubscription {
   addons                 UserSubscriptionAddon[]
   invoices               SubscriptionInvoice[]
   payments               SubscriptionPayment[]
+  charges                SubscriptionCharge[]
 
   @@index([userId, status])
   @@index([planId])
   @@index([status, currentPeriodEnd])
+  @@index([planVersionId])
 }
 
 /// Junction table connecting active user subscriptions with selected addon services
