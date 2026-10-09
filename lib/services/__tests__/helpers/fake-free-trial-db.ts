@@ -9,6 +9,7 @@ import { EntitlementSourceType } from "@prisma/client"
 export interface FakeUserRow { id: string; isBanned: boolean; isVerified: boolean }
 export interface FakePlanRow {
   id: string
+  name: string
   planType: string | null
   status: string
   currentVersionId: string | null
@@ -86,7 +87,21 @@ export function createFakeFreeTrialDb() {
   const grants = new Map<string, FakeGrantRow>()
   const trials = new Map<string, FakeTrialRow>()
   const frees = new Map<string, FakeFreeRow>()
-  const usubs: Array<{ id: string; userId: string; planVersionId: string | null; status: string }> = []
+  const usubs: Array<{
+    id: string
+    userId: string
+    planId?: string
+    planVersionId: string | null
+    status: string
+    environment?: string
+    currency?: string
+    cancelAtPeriodEnd?: boolean
+    currentPeriodStart?: Date
+    currentPeriodEnd?: Date
+    razorpaySubscriptionId?: string | null
+    totalAmount?: unknown
+    metadata?: Record<string, unknown>
+  }> = []
   const auditLogs: Record<string, unknown>[] = []
 
   const failures: FakeFreeTrialFailures = {}
@@ -113,6 +128,7 @@ export function createFakeFreeTrialDb() {
       : [defaultFreeVersion]
     const currentVersionId = versionRows.find((v) => v.status === "PUBLISHED")?.id ?? null
     plans.set(row.id, {
+      name: row.name ?? row.id,
       planType: "MONTHLY",
       status: "PUBLISHED",
       currentVersionId,
@@ -187,6 +203,11 @@ export function createFakeFreeTrialDb() {
           (!args.where.status || p.status === args.where.status),
       )
       return row ? { ...row, versions: row.versions.map((v) => ({ ...v })) } : null
+    },
+    async findMany(args?: { where?: { id?: { in?: string[] } }; select?: unknown }) {
+      let rows = [...plans.values()]
+      if (args?.where?.id?.in) rows = rows.filter((p) => args.where!.id!.in!.includes(p.id))
+      return rows.map((p) => ({ ...p, versions: p.versions.map((v) => ({ ...v })) }))
     },
   }
 
@@ -364,6 +385,12 @@ export function createFakeFreeTrialDb() {
       Object.assign(row, args.data)
       return { ...row }
     },
+    async findMany(args?: { where?: { userId?: string; status?: string } }) {
+      let rows = [...frees.values()]
+      if (args?.where?.userId) rows = rows.filter((f) => f.userId === args.where!.userId)
+      if (args?.where?.status) rows = rows.filter((f) => f.status === args.where!.status)
+      return rows.map((r) => ({ ...r }))
+    },
   }
 
   const userSubscriptionDelegate = {
@@ -377,6 +404,26 @@ export function createFakeFreeTrialDb() {
           return true
         }) ?? null
       )
+    },
+    async findMany(args: {
+      where?: { userId?: string; status?: { in?: string[] } }
+      include?: Record<string, unknown>
+      orderBy?: unknown
+    }) {
+      const w = args.where ?? {}
+      const rows = usubs.filter((s) => {
+        if (w.userId && s.userId !== w.userId) return false
+        if (w.status?.in && !w.status.in.includes(s.status)) return false
+        return true
+      })
+      const inc = args.include ?? {}
+      return rows.map((s) => ({
+        ...s,
+        ...(inc.plan ? { plan: s.planId ? (plans.get(s.planId) ?? null) : null } : {}),
+        ...(inc.charges ? { charges: [] as never[] } : {}),
+        ...(inc.invoices ? { invoices: [] as never[] } : {}),
+        ...(inc.payments ? { payments: [] as never[] } : {}),
+      }))
     },
   }
 

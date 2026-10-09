@@ -13,6 +13,7 @@ const NAV = [
   { name: "Overview",          path: "/dashboard",                   icon: "◈", color: "text-violet-400" },
   { name: "My Products",       path: "/dashboard/my-products",       icon: "◆", color: "text-green-400" },
   { name: "Subscriptions",     path: "/dashboard/subscriptions",     icon: "⬡", color: "text-blue-400" },
+  { name: "Plans & Subscription", path: "/dashboard/subscription",   icon: "⬢", color: "text-sky-400" },
   { name: "Premium Services",  path: "/dashboard/premium-services",  icon: "✦", color: "text-violet-400" },
   { name: "Projects",          path: "/dashboard/projects",          icon: "◻", color: "text-emerald-400" },
   { name: "Vendor Studio",     path: "/dashboard/vendor",            icon: "Store", color: "text-fuchsia-400" },
@@ -91,7 +92,7 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
                 </button>
               ))}
               <p className="text-[10px] text-muted-foreground px-3 py-2 uppercase tracking-widest border-t border-border mt-1">Quick Actions</p>
-              {[["✦ Open AI Chat", "/dashboard/chat"],["◎ New Ticket", "/dashboard/tickets"],["⬡ Browse Plans", "/dashboard/subscriptions"],["↗ Marketplace", "/marketplace"],["◐ Service Request", "/request-service"]].map(([l,h])=>(
+              {[["✦ Open AI Chat", "/dashboard/chat"],["◎ New Ticket", "/dashboard/tickets"],["⬢ Browse Plans", "/dashboard/subscription/plans"],["↗ Marketplace", "/marketplace"],["◐ Service Request", "/request-service"]].map(([l,h])=>(
                 <button key={h} onClick={() => go(h)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-accent/5 text-left">
                   <span className="text-sm text-muted-foreground">{l}</span>
                 </button>

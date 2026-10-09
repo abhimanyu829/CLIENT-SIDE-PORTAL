@@ -8,7 +8,10 @@ import path from "path"
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["lib/services/__tests__/provisioning-*.test.ts"],
+    include: [
+      "lib/services/__tests__/provisioning-*.test.ts",
+      "lib/services/__tests__/customer-subscription-view.test.ts",
+    ],
     testTimeout: 15_000,
     hookTimeout: 15_000,
   },

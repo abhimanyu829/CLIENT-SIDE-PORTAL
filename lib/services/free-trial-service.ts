@@ -29,6 +29,7 @@ import { grantEntitlement, expireEntitlementGrant } from "@/lib/services/entitle
 import { describePlanItemEntitlement } from "@/lib/services/entitlement-lifecycle"
 import {
   FreeTrialError,
+  TRIAL_DURATION_DAYS,
   buildFreeEnrollmentKey,
   buildTrialScopeKey,
   evaluateTrialEligibility,
@@ -217,6 +218,63 @@ export interface TrialResult {
   existing: boolean
 }
 
+export interface TrialEligibilityInfo {
+  eligible: boolean
+  code: string | null
+  reason: string | null
+  planId: string | null
+  planName: string | null
+  planVersionId: string | null
+  trialDays: number
+}
+
+/**
+ * Server-computed trial eligibility (read-only; no enrollment side effects).
+ * The UI uses this to decide CTA state — it never computes eligibility itself.
+ */
+export async function getTrialEligibility(userId: string, planId: string): Promise<TrialEligibilityInfo> {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, isBanned: true, isVerified: true } })
+  if (!user || user.isBanned) {
+    return { eligible: false, code: "TRIAL_NOT_ELIGIBLE", reason: "Account unavailable", planId, planName: null, planVersionId: null, trialDays: TRIAL_DURATION_DAYS }
+  }
+  const plan = await db.subscriptionPlan.findUnique({
+    where: { id: planId },
+    include: { versions: { orderBy: { version: "desc" } } },
+  })
+  if (!plan || !isBillablePlanType(plan.planType) || plan.status !== PlanStatus.PUBLISHED) {
+    return { eligible: false, code: "TRIAL_NOT_ELIGIBLE", reason: "Plan is not available for trial", planId, planName: plan?.name ?? null, planVersionId: null, trialDays: TRIAL_DURATION_DAYS }
+  }
+  const version =
+    (plan.currentVersionId ? plan.versions.find((v) => v.id === plan.currentVersionId) : null) ??
+    plan.versions.find((v) => v.status === PlanVersionStatus.PUBLISHED)
+  if (!version || version.status !== PlanVersionStatus.PUBLISHED) {
+    return { eligible: false, code: "INVALID_PLAN_VERSION", reason: "Plan has no published version", planId, planName: plan.name, planVersionId: null, trialDays: TRIAL_DURATION_DAYS }
+  }
+  const scopeKey = buildTrialScopeKey(userId, version.id)
+  const [trials, paid] = await Promise.all([
+    db.trialEnrollment.findMany({ where: { userId, trialScopeKey: scopeKey }, orderBy: { createdAt: "desc" } }),
+    db.userSubscription.findFirst({
+      where: { userId, status: { in: ["TRIALING", "ACTIVE", "UNPAID", "PAST_DUE", "PAUSED"] } },
+    }),
+  ])
+  const latest = trials[0]
+  const eligibility = evaluateTrialEligibility({
+    hasVerifiedAccount: user.isVerified,
+    hasActiveOrPendingTrial: trials.some((t) => t.status === "PENDING" || t.status === "ACTIVE"),
+    hasConsumedTrial: !!latest && ["EXPIRED", "CANCELLED", "CONVERTED"].includes(latest.status),
+    hasActivePaidSubscription: !!paid,
+  })
+  return {
+    eligible: eligibility.eligible,
+    code: eligibility.code,
+    reason: eligibility.eligible ? null : eligibility.code === "TRIAL_ALREADY_ACTIVE" ? "Trial already active for this scope" : "Customer is not eligible for a trial",
+    planId,
+    planName: plan.name,
+    planVersionId: version.id,
+    trialDays: TRIAL_DURATION_DAYS,
+  }
+}
+
 /**
  * Starts (or returns) a 14-day trial for an eligible customer. One trial per
  * customer per plan version (scope-key unique). Server-derived timing only.
@@ -363,16 +421,22 @@ export async function startTrial(input: StartTrialInput, actorId: string = "syst
 // ── Expiration / cancellation / conversion ────────────────────────────────────
 
 async function expireTrialGrants(userId: string, trialId: string, actorId: string): Promise<number> {
-  const rows = await db.entitlementGrant.findMany({
-    where: {
-      sourceType: EntitlementSourceType.TRIAL,
-      sourceReference: trialId,
-    },
-  })
+  const all = (await db.entitlementGrant.findMany({})) as Array<{
+    id: string
+    status?: string
+    subjectUserId?: string | null
+    sourceType?: string
+    sourceReference?: string
+  }>
+  const rows = all.filter(
+    (g) =>
+      g.sourceType === EntitlementSourceType.TRIAL &&
+      g.sourceReference === trialId &&
+      g.subjectUserId === userId &&
+      g.status === "ACTIVE",
+  )
   let expired = 0
   for (const g of rows) {
-    if ((g as { status?: string }).status !== "ACTIVE") continue
-    if (g.subjectUserId !== userId) continue
     await expireEntitlementGrant(g.id, actorId, "TRIAL_ENDED")
     expired += 1
   }
@@ -446,16 +510,19 @@ export async function confirmTrialConversion(trialId: string, actorId: string = 
   }
 
   // Paid grants must already exist (Phase 5) before the trial grant is removed.
-  const paidGrants = await db.entitlementGrant.findMany({
-    where: {
-      sourceType: EntitlementSourceType.SUBSCRIPTION,
-      sourceReference: paid.id,
-    },
-  })
-  const paidGrant = paidGrants.find(
+  const allGrants = (await db.entitlementGrant.findMany({})) as Array<{
+    id: string
+    status?: string
+    subjectUserId?: string | null
+    sourceType?: string
+    sourceReference?: string
+  }>
+  const paidGrant = allGrants.find(
     (g) =>
+      g.sourceType === EntitlementSourceType.SUBSCRIPTION &&
+      g.sourceReference === paid.id &&
       g.subjectUserId === trial.userId &&
-      (g as { status?: string }).status === "ACTIVE",
+      g.status === "ACTIVE",
   )
   if (!paidGrant) {
     throw new FreeTrialError(
