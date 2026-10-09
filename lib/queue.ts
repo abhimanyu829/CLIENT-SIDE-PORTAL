@@ -166,4 +166,5 @@ export const SUBSCRIPTION_JOBS = {
   SEND_EXPIRY_WARNING: "subscription.send-expiry-warning",
   REVOKE_ENTITLEMENTS: "subscription.revoke-entitlements",
   FULFILL_ORDER:       "subscription.fulfill-order",
+  PROVISION_SUBSCRIPTION: "subscription.provision",
 } as const

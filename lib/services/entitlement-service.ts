@@ -334,6 +334,68 @@ export async function restoreEntitlement(grantId: string, actorId: string, reaso
 }
 
 /**
+ * Phase-5 integration: expires ONE grant (ACTIVE → EXPIRED) with the same CAS,
+ * audit and cache-invalidation guarantees as the other lifecycle operations.
+ * Used by the provisioning engine to terminate subscription-backed access at
+ * its verified paid-through boundary.
+ */
+export async function expireEntitlementGrant(grantId: string, actorId: string, reason: string) {
+  return transitionGrant(grantId, GrantStatus.EXPIRED, actorId, "ENTITLEMENT_EXPIRED", reason)
+}
+
+/**
+ * Phase-5 integration: extends an ACTIVE grant's paid-through window to a NEW,
+ * strictly-later UTC date. Used by successful-renewal provisioning. An equal
+ * or earlier date is refused (never silently shrink); renewal after expiry
+ * goes through the normal grant path instead.
+ */
+export async function extendEntitlementGrant(
+  grantId: string,
+  newPeriodEnd: Date,
+  actorId: string,
+  reason: string,
+) {
+  if (!(newPeriodEnd instanceof Date) || Number.isNaN(newPeriodEnd.getTime())) {
+    throw new EntitlementError("INVALID_ENTITLEMENT", "newPeriodEnd must be a valid Date")
+  }
+  const grant = await db.entitlementGrant.findUnique({ where: { id: grantId } })
+  if (!grant) throw new EntitlementError("ENTITLEMENT_NOT_FOUND", `Unknown grant: ${grantId}`)
+  if (grant.status !== GrantStatus.ACTIVE) {
+    throw new EntitlementError(
+      "ENTITLEMENT_INACTIVE",
+      `Cannot extend a ${grant.status} grant; renew through the grant path`,
+    )
+  }
+  const currentEnd = grant.expiresAt ? grant.expiresAt.getTime() : Date.now()
+  if (newPeriodEnd.getTime() <= currentEnd) {
+    throw new EntitlementError(
+      "CONFLICT",
+      "New period end must be strictly later than the current paid-through",
+    )
+  }
+
+  const result = await db.entitlementGrant.updateMany({
+    where: { id: grantId, status: GrantStatus.ACTIVE },
+    data: { expiresAt: newPeriodEnd },
+  })
+  if (result.count !== 1) {
+    throw new EntitlementError("CONFLICT", `Grant ${grantId} state changed concurrently`)
+  }
+
+  const subject: EntitlementSubject =
+    grant.subjectType === "TEAM"
+      ? { type: "TEAM", teamId: grant.subjectTeamId as string }
+      : { type: "USER", userId: grant.subjectUserId as string }
+  await audit(actorId, "ENTITLEMENT_EXTENDED", grantId, {
+    from: grant.expiresAt?.toISOString() ?? null,
+    to: newPeriodEnd.toISOString(),
+    reason,
+  })
+  await invalidateEntitlementCache(subject)
+  return { status: GrantStatus.ACTIVE, expiresAt: newPeriodEnd }
+}
+
+/**
  * Worker helper: marks ACTIVE grants whose window has passed as EXPIRED.
  * Access checks do NOT depend on this — it is cleanup only.
  */

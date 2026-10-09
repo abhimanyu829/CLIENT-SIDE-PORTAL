@@ -28,6 +28,42 @@ import {
   invalidateAdminBillingCaches,
   mapProviderStatus,
 } from "@/lib/services/razorpay-billing"
+import {
+  ProvisioningOperation,
+  scheduleProvisioning,
+} from "@/lib/services/subscription-provisioning"
+
+/** Phase-5 integration contract: which provisioning operation each verified
+ *  billing state change maps to. The provisioning engine consumes ONLY this
+ *  trusted signal — raw webhook payloads never reach it. */
+function provisioningOperationFor(event: SubscriptionWebhookEvent): ProvisioningOperation | null {
+  switch (event.event) {
+    case "subscription.activated":
+      return ProvisioningOperation.INITIAL_ACTIVATION
+    case "subscription.charged": {
+      const paymentStatus = event.payload.payment?.entity?.status
+      return paymentStatus === "captured"
+        ? ProvisioningOperation.SUCCESSFUL_RENEWAL
+        : paymentStatus === "failed"
+          ? ProvisioningOperation.PAYMENT_HALT_UPDATE
+          : ProvisioningOperation.PAYMENT_HALT_UPDATE
+    }
+    case "subscription.pending":
+    case "subscription.halted":
+      return ProvisioningOperation.PAYMENT_HALT_UPDATE
+    case "subscription.paused":
+      return ProvisioningOperation.PAUSE_UPDATE
+    case "subscription.resumed":
+      return ProvisioningOperation.RESUME_UPDATE
+    case "subscription.cancelled":
+      return ProvisioningOperation.CANCELLATION_UPDATE
+    case "subscription.completed":
+    case "subscription.expired":
+      return ProvisioningOperation.EXPIRATION
+    default:
+      return null
+  }
+}
 
 // ── Signature verification (raw body, constant-time) ─────────────────────────
 
@@ -226,6 +262,18 @@ async function processEvent(event: SubscriptionWebhookEvent): Promise<void> {
       await emitEvent({ type: EVENTS.SUBSCRIPTION_STATE_CHANGED, timestamp: new Date().toISOString(), actorId: "razorpay", payload: { subscriptionId, razorpaySubscriptionId, status: providerStatus } })
       break
     }
+  }
+
+  // Phase 5 hook: only trusted, already-applied billing state drives
+  // provisioning. Idempotent per (subscription, operation, event id).
+  const provisioningOp = provisioningOperationFor(event)
+  if (provisioningOp) {
+    await scheduleProvisioning({
+      subscriptionId,
+      operation: provisioningOp,
+      periodRef: event.id,
+      actorId: "razorpay",
+    })
   }
 }
 

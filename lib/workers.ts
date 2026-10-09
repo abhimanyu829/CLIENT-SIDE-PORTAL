@@ -11,6 +11,7 @@ import { createAgentTaskWorker, getTaskEngineConfig } from "@/lib/agent-gateway/
 import { createTriggerRuntime, getTriggerConfig } from "@/lib/agent-gateway/triggers"
 import { emitEvent, EVENTS } from "@/lib/services/event-bus"
 import { expireOverdueSubscriptions, markSubscriptionPastDue } from "@/lib/services/subscription-service"
+import { processProvisioningJob } from "@/lib/services/subscription-provisioning"
 import { generateInvoiceArtifact, sendInvoiceEmail } from "@/lib/services/invoice-service"
 import { createNotification } from "@/lib/notifications"
 import { sendEmail } from "@/lib/resend"
@@ -114,6 +115,10 @@ export function startWorkers() {
         if (attempt < 3) {
           await subscriptionQueue.add(SUBSCRIPTION_JOBS.DUNNING_STEP, { subscriptionId, userId, attempt: attempt + 1 }, { delay: attempt * 24 * 60 * 60 * 1000 })
         }
+      }
+
+      if (job.name === SUBSCRIPTION_JOBS.PROVISION_SUBSCRIPTION) {
+        return processProvisioningJob(job.data as never)
       }
     }, 3),
 

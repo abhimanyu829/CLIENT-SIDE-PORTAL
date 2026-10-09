@@ -3359,6 +3359,60 @@ model SubscriptionCharge {
   @@index([chargeStatus])
 }
 
+// ── Phase 5: subscription-to-entitlement provisioning ────────────────────────
+
+/// Provisioning operation type driven by the VERIFIED billing lifecycle.
+enum ProvisioningOperation {
+  INITIAL_ACTIVATION
+  SUCCESSFUL_RENEWAL
+  PERIOD_EXTENSION
+  CANCELLATION_UPDATE
+  PAUSE_UPDATE
+  RESUME_UPDATE
+  PAYMENT_HALT_UPDATE
+  EXPIRATION
+  ACCESS_REVOCATION
+}
+
+/// Operational state of one provisioning attempt (idempotent per operation).
+enum ProvisioningStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED_RETRYABLE
+  FAILED_PERMANENT
+}
+
+/// Durable, idempotent record of one subscription provisioning operation.
+model SubscriptionProvisioning {
+  id             String                @id @default(cuid())
+  subscriptionId String
+  operation      ProvisioningOperation
+  status         ProvisioningStatus    @default(PENDING)
+  /// Deterministic operation identity (subscription + operation + period ref).
+  dedupeKey      String                @unique
+  planVersionId  String?
+  periodRef      String?
+  /// Verified paid-through window the operation acted on (UTC).
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  grantCount     Int                   @default(0)
+  errorCode      String?
+  errorMessage   String?
+  attemptCount   Int                   @default(0)
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  metadata       Json                  @default("{}")
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  subscription   UserSubscription      @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId, status])
+  @@index([status, attemptCount])
+  @@index([operation])
+}
+
 /// Granular features and benefit entitlements associated with a SubscriptionPlan
 model PlanBenefit {
   id           String           @id @default(cuid())
@@ -3473,6 +3527,7 @@ model UserSubscription {
   invoices               SubscriptionInvoice[]
   payments               SubscriptionPayment[]
   charges                SubscriptionCharge[]
+  provisionings          SubscriptionProvisioning[]
 
   @@index([userId, status])
   @@index([planId])
