@@ -11,6 +11,7 @@ export default defineConfig({
     include: [
       "lib/services/__tests__/provisioning-*.test.ts",
       "lib/services/__tests__/customer-subscription-view.test.ts",
+      "lib/services/__tests__/admin-subscription-*.test.ts",
     ],
     testTimeout: 15_000,
     hookTimeout: 15_000,

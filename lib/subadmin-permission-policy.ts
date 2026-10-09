@@ -1,6 +1,7 @@
 export const SUBADMIN_RESOURCES = [
   "Products",
   "Services",
+  "SubscriptionGovernance",
   "Users",
   "Orders",
   "Payments",
@@ -66,6 +67,7 @@ const ROUTE_POLICIES: RoutePolicy[] = [
   { prefix: "/admin/users", resource: "Users" },
   { prefix: "/admin/credential-requests", resource: "Users" },
   { prefix: "/admin/subscriptions", resource: "Orders" },
+  { prefix: "/admin/subscription-admin", resource: "SubscriptionGovernance" },
   { prefix: "/admin/orders", resource: "Orders" },
   { prefix: "/admin/payments", resource: "Payments" },
   { prefix: "/admin/products", resource: "Products" },
@@ -87,6 +89,7 @@ const API_RESOURCE_PREFIXES: Array<{ prefix: string; resource: SubadminResource 
   { prefix: "/api/admin/users", resource: "Users" },
   { prefix: "/api/admin/credential-requests", resource: "Users" },
   { prefix: "/api/admin/subscriptions", resource: "Orders" },
+  { prefix: "/api/admin/subscriptions-governance", resource: "SubscriptionGovernance" },
   { prefix: "/api/admin/orders", resource: "Orders" },
   { prefix: "/api/admin/payments", resource: "Payments" },
   { prefix: "/api/admin/refunds", resource: "Refunds" },

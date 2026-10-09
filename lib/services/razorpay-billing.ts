@@ -562,13 +562,17 @@ interface InternalSubRow {
   razorpaySubscriptionId: string | null
 }
 
-async function loadOwnedInternalSubscription(internalId: string, actorId: string): Promise<InternalSubRow> {
+async function loadOwnedInternalSubscription(
+  internalId: string,
+  actorId: string,
+  opts?: { byAdmin?: boolean },
+): Promise<InternalSubRow> {
   const sub = await db.userSubscription.findUnique({
     where: { id: internalId },
     select: { id: true, userId: true, status: true, razorpaySubscriptionId: true },
   })
   if (!sub) throw new RazorpayBillingError("SUBSCRIPTION_NOT_FOUND", `Unknown subscription: ${internalId}`)
-  if (sub.userId !== actorId) {
+  if (!opts?.byAdmin && sub.userId !== actorId) {
     throw new RazorpayBillingError("SUBSCRIPTION_NOT_OWNED", "Subscription belongs to another customer")
   }
   if (!sub.razorpaySubscriptionId) {
@@ -581,8 +585,9 @@ export async function cancelRecurringSubscription(
   internalId: string,
   actorId: string,
   cancelAtCycleEnd: boolean = false,
+  opts?: { byAdmin?: boolean },
 ): Promise<{ status: SubscriptionStatus }> {
-  const sub = await loadOwnedInternalSubscription(internalId, actorId)
+  const sub = await loadOwnedInternalSubscription(internalId, actorId, opts)
   if (sub.status === SubscriptionStatus.CANCELED || sub.status === SubscriptionStatus.EXPIRED) {
     return { status: sub.status } // idempotent terminal
   }
@@ -612,8 +617,9 @@ export async function cancelRecurringSubscription(
 export async function pauseRecurringSubscription(
   internalId: string,
   actorId: string,
+  opts?: { byAdmin?: boolean },
 ): Promise<{ status: SubscriptionStatus }> {
-  const sub = await loadOwnedInternalSubscription(internalId, actorId)
+  const sub = await loadOwnedInternalSubscription(internalId, actorId, opts)
   if (sub.status === SubscriptionStatus.PAUSED) return { status: sub.status }
   if (!canUserSubscriptionTransition(sub.status, SubscriptionStatus.PAUSED)) {
     throw new RazorpayBillingError("SUBSCRIPTION_STATE_CONFLICT", `Cannot pause a ${sub.status} subscription`)
@@ -639,8 +645,9 @@ export async function pauseRecurringSubscription(
 export async function resumeRecurringSubscription(
   internalId: string,
   actorId: string,
+  opts?: { byAdmin?: boolean },
 ): Promise<{ status: SubscriptionStatus }> {
-  const sub = await loadOwnedInternalSubscription(internalId, actorId)
+  const sub = await loadOwnedInternalSubscription(internalId, actorId, opts)
   if (sub.status === SubscriptionStatus.ACTIVE) return { status: sub.status }
   if (sub.status === SubscriptionStatus.CANCELED || sub.status === SubscriptionStatus.EXPIRED) {
     throw new RazorpayBillingError("SUBSCRIPTION_RESUME_FAILED", "A cancelled or completed subscription cannot be resumed")
