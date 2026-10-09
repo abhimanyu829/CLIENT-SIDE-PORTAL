@@ -29,7 +29,7 @@
 | 23 | Typecheck | ✅ Phase-3 errors 0 (3 pre-existing only) |
 | 24 | Lint | ✅ clean |
 | 25 | Build | ✅ PASS, 241 pages |
-| 26 | DB verification | ⚠️ **PENDING** — migration written + `prisma validate` PASS, apply blocked by Supabase `P1001`. Re-run `prisma migrate deploy` + live test when reachable |
+| 26 | DB verification | ✅ **PASS** — migration applied 2026-10-09; drift zero (only pre-existing `Catalog*`); live flow verified |
 | 27 | Git diff scoped | ✅ reviewed (below) |
 | 28 | Documentation complete | ✅ 01–12 |
 | 29 | Protected systems verified | ✅ below |
@@ -51,7 +51,6 @@ catalog — **preserved** (schema + suites verify).
 
 ## Final Phase-3 status
 
-**IMPLEMENTED_WITH_MINOR_FOLLOWUPS** — the single follow-up is environmental:
-apply `20261008020000_entitlement_engine` and run the live DB verification when
-Supabase is reachable (blocked by `P1001`, not by code). Every other acceptance
-criterion passed and actually ran.
+**COMPLETE** — the one-time environmental follow-up (Supabase outage `P1001`) was
+resolved: the migration is applied and the live DB verification passed. Every
+acceptance criterion has now actually run and passed.

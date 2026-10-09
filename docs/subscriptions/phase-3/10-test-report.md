@@ -10,7 +10,7 @@
 | Typecheck | `npm run type-check` | Phase-3 errors **0**; 3 pre-existing gateway errors |
 | Lint (Phase-3 files) | `npx eslint …` | **clean** |
 | Build | `npm run build` | **PASS** (241 pages) |
-| Live DB apply/verify | `prisma migrate deploy` / live test | **BLOCKED — Supabase unreachable** (`P1001`, 4 attempts over ~30 min). SQL written from `migrate diff`; unit + structural DB tests pass in-memory |
+| Live DB apply/verify | `prisma migrate deploy` / `entitlement-live-db.test.ts` | **PASS** — migration applied 2026-10-09; drift check shows only the pre-existing `Catalog*` delta; live flow (definition → grant → resolve → suspend → restore → revoke → expiry) verified against Supabase |
 
 ## Phase-3 breakdown (88 tests)
 
@@ -27,11 +27,13 @@
 | entitlement-security-concurrency.test.ts | J+K | forged ids/sources/status/expiry/quantity, cross-tenant/team/resource denial, commerce traps; simultaneous identical grants → 1 row, distinct refs coexist, revoke race, revoke+check race, suspend/revoke race |
 | entitlement-failure-regression.test.ts | L+M | create/revoke/source-read failures, malformed input pre-DB, no partial state, schema/migration additivity, no commerce/plan/provider code, Phase-1+2 preservation, tenant/resource isolation |
 
-## Migration & DB status (honest)
+## Migration & DB status
 
-- `prisma validate` PASS (offline).
-- Migration SQL generated via `prisma migrate diff` from the live schema (same
-  method proven in Phase 2 where the DB was reachable).
-- APPLY + live verification INCOMPLETE: Supabase at `db.czqjvrlzlpldmdtlnngk.supabase.co`
-  is unreachable (`Error: P1001 Can't reach database server`). Re-run
-  `npx prisma migrate deploy` when the DB is back.
+- `prisma validate` PASS; migration `20261008020000_entitlement_engine` applied
+  via `migrate deploy` (2026-10-09, DB recovered from the earlier outage).
+- Post-apply drift check: only the pre-existing legacy `Catalog*` tables delta —
+  zero Phase-3 drift.
+- Live verification `entitlement-live-db.test.ts` (opt-in, `LIVE_DB=1`) PASSED:
+  definition → grant → effective resolve ALLOW → suspend DENY → restore ALLOW →
+  revoke DENY (history preserved) → dated grant expiry DENY → `expireStaleGrants`
+  marks EXPIRED. Commerce counts untouched.
