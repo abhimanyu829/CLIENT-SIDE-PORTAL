@@ -120,6 +120,8 @@ export const ENTITLEMENT_SOURCE_TYPES: readonly EntitlementSourceType[] = Object
   EntitlementSourceType.SUBSCRIPTION,
   EntitlementSourceType.ADMIN_GRANT,
   EntitlementSourceType.PROMOTIONAL,
+  EntitlementSourceType.FREE_PLAN,
+  EntitlementSourceType.TRIAL,
 ])
 
 export const ENTITLEMENT_SCOPES: readonly EntitlementScope[] = Object.freeze([

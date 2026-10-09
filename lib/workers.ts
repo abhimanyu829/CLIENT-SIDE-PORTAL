@@ -12,6 +12,7 @@ import { createTriggerRuntime, getTriggerConfig } from "@/lib/agent-gateway/trig
 import { emitEvent, EVENTS } from "@/lib/services/event-bus"
 import { expireOverdueSubscriptions, markSubscriptionPastDue } from "@/lib/services/subscription-service"
 import { processProvisioningJob } from "@/lib/services/subscription-provisioning"
+import { expireExpiredTrials } from "@/lib/services/free-trial-service"
 import { generateInvoiceArtifact, sendInvoiceEmail } from "@/lib/services/invoice-service"
 import { createNotification } from "@/lib/notifications"
 import { sendEmail } from "@/lib/resend"
@@ -68,6 +69,10 @@ export async function scheduleRecurringJobs() {
     jobId: "subscription-reconcile-hourly",
     repeat: { pattern: "0 * * * *" },
   })
+  await subscriptionQueue.add(SUBSCRIPTION_JOBS.TRIAL_EXPIRE, {}, {
+    jobId: "trial-expiry-15m",
+    repeat: { pattern: "*/15 * * * *" },
+  })
   await paymentQueue.add(PAYMENT_JOBS.RECONCILE, {}, {
     jobId: "payment-reconcile-hourly",
     repeat: { pattern: "5 * * * *" },
@@ -119,6 +124,10 @@ export function startWorkers() {
 
       if (job.name === SUBSCRIPTION_JOBS.PROVISION_SUBSCRIPTION) {
         return processProvisioningJob(job.data as never)
+      }
+
+      if (job.name === SUBSCRIPTION_JOBS.TRIAL_EXPIRE) {
+        return expireExpiredTrials()
       }
     }, 3),
 

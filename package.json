@@ -18,6 +18,7 @@
     "test:entitlements": "vitest run --config vitest.entitlements.config.ts",
     "test:razorpay": "vitest run --config vitest.razorpay.config.ts",
     "test:provisioning": "vitest run --config vitest.provisioning.config.ts",
+    "test:freetrial": "vitest run --config vitest.freetrial.config.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",

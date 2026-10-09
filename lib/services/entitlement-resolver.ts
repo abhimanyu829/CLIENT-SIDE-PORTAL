@@ -324,6 +324,8 @@ function pickWinner(grants: EffectiveEntitlement[]): EffectiveEntitlement {
     STANDALONE_PURCHASE: 1,
     ADMIN_GRANT: 2,
     PROMOTIONAL: 3,
+    FREE_PLAN: 4,
+    TRIAL: 5,
   }
   return [...grants].sort((a, b) => {
     const ae = a.expiresAt ? a.expiresAt.getTime() : Number.POSITIVE_INFINITY

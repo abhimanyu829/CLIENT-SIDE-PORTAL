@@ -167,4 +167,5 @@ export const SUBSCRIPTION_JOBS = {
   REVOKE_ENTITLEMENTS: "subscription.revoke-entitlements",
   FULFILL_ORDER:       "subscription.fulfill-order",
   PROVISION_SUBSCRIPTION: "subscription.provision",
+  TRIAL_EXPIRE:        "subscription.trial-expire",
 } as const

@@ -357,6 +357,8 @@ model User {
     permissions     UserPermission[]
     subscriptions   Subscription[]
     entitlementGrants EntitlementGrant[] @relation("EntitlementGrantUser")
+    trialEnrollments  TrialEnrollment[]  @relation("TrialEnrollmentUser")
+    freeEnrollments   FreeEnrollment[]   @relation("FreeEnrollmentUser")
     payments        Payment[]
     serviceOrders   ServiceOrder[]
     clientProjects  Project[]             @relation("ClientProjects")
@@ -3200,6 +3202,72 @@ enum EntitlementSourceType {
   SUBSCRIPTION
   ADMIN_GRANT
   PROMOTIONAL
+  /// Phase 6 — Free Forever plan enrollment grants.
+  FREE_PLAN
+  /// Phase 6 — 14-day trial enrollment grants.
+  TRIAL
+}
+
+// ── Phase 6: Free Forever + 14-day trial ─────────────────────────────────────
+
+/// Trial commercial lifecycle. Entitlement availability is additionally
+/// enforced by grant expiry at read time — never by this status alone.
+enum TrialStatus {
+  PENDING
+  ACTIVE
+  CONVERTED
+  EXPIRED
+  CANCELLED
+}
+
+/// Minimal free-assignment lifecycle state.
+enum FreeEnrollmentStatus {
+  ACTIVE
+  CANCELLED
+}
+
+/// Account-bound 14-day trial enrollment (distinct from public DemoSession).
+model TrialEnrollment {
+  id                String      @id @default(cuid())
+  userId            String
+  planId            String
+  planVersionId     String
+  /// Deterministic eligibility-scope identity (one trial per customer+version).
+  trialScopeKey     String      @unique
+  status            TrialStatus @default(PENDING)
+  startedAt         DateTime?
+  expiresAt         DateTime?
+  convertedAt       DateTime?
+  cancelledAt       DateTime?
+  provisioningError String?
+  environment       String
+  metadata          Json        @default("{}")
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  user              User        @relation("TrialEnrollmentUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([planVersionId])
+  @@index([status, expiresAt])
+}
+
+/// Persistent Free Forever assignment. Grants come from the published FREE plan.
+model FreeEnrollment {
+  id            String                @id @default(cuid())
+  userId        String
+  planId        String
+  planVersionId String
+  status        FreeEnrollmentStatus  @default(ACTIVE)
+  environment   String
+  dedupeKey     String                @unique
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  user          User                  @relation("FreeEnrollmentUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([planVersionId])
 }
 
 /// Scope controls where a grant applies.
