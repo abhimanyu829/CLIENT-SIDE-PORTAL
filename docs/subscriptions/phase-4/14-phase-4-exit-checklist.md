@@ -51,7 +51,11 @@ PhonePe, Paytm, orders, invoices, products, product admin, marketplace — all
 UNCHANGED (route/structure tests + zero diff). Phase 1 subscription domain,
 Phase 2 plan catalog, Phase 3 entitlement engine — PRESERVED (suites green).
 
-## Manual TEST-MODE checklist (requires merchant TEST keys; not run here)
+## Manual TEST-MODE checklist (blocked on credentials as of 2026-10-09)
+
+The live round-trip was attempted (`LIVE_RZP=1`, `razorpay-live-db.test.ts`) but
+Razorpay rejects the configured TEST keys (`401 Unauthorized`, 3 attempts incl.
+direct REST Basic auth). Procedure once a CURRENT TEST pair is set in `.env`:
 
 1. Point Razorpay TEST dashboard subscriptions webhook at
    `/api/webhooks/razorpay/subscriptions` with
@@ -65,6 +69,8 @@ Phase 2 plan catalog, Phase 3 entitlement engine — PRESERVED (suites green).
 
 ## Final Phase-4 status
 
-**IMPLEMENTED_WITH_MINOR_FOLLOWUPS** — the only follow-up is the live
-TEST-MODE merchant round-trip above, which cannot run without TEST-MODE
-Razorpay keys. Everything else passed and actually ran. No Phase 5-10 code.
+**IMPLEMENTED_WITH_MINOR_FOLLOWUPS** — the single follow-up is the live
+TEST-MODE merchant round-trip, blocked on credential acceptance by Razorpay
+(`401 Unauthorized` with the current `.env` pair). Re-run
+`$env:LIVE_RZP="1"; npm run test:razorpay -- razorpay-live-db` after updating
+the keys. Everything else passed and actually ran. No Phase 5-10 code.

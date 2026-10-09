@@ -12,7 +12,7 @@
 | Lint (Phase-4 files) | `npx eslint …` | **clean** |
 | Build | `npm run build` | **PASS** (242 pages) |
 | DB apply/verify | `migrate deploy` + live query | **PASS** (2026-10-09; drift zero beyond legacy Catalog) |
-| Razorpay LIVE TEST-MODE round-trip | — | **Not run**: requires merchant TEST-MODE keys + a configured test endpoint; not available in this environment. All provider interaction is covered by mocked TEST-MODE-safe tests and offline signature verification against the documented formula |
+| Razorpay LIVE TEST-MODE round-trip | `LIVE_RZP=1` (razorpay-live-db.test.ts) | **BLOCKED on credentials**: TEST keys present (`rzp_test_…`) but Razorpay returns `401 Unauthorized` on `plans.create` and direct REST Basic auth (probed 2026-10-09, 3 attempts). Key format valid; the key/secret pair is not accepted (mismatched pair or secret regenerated after rotation). Re-run once a current TEST pair is in `.env`. All provider interaction in the automated suite is mocked; offline signature verification runs against the documented formula |
 
 ## Coverage (87 tests by prompt group)
 
