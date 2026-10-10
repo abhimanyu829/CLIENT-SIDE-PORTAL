@@ -3270,6 +3270,114 @@ model FreeEnrollment {
   @@index([planVersionId])
 }
 
+// ── Phase 10: Billing reconciliation & production hardening ──────────────────
+
+enum ReconciliationMode {
+  DETECT_ONLY
+  DRY_RUN
+  SAFE_AUTO_REPAIR
+  APPROVED_REPAIR
+  MANUAL_INVESTIGATION
+}
+
+enum ReconciliationRunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum ReconciliationFindingStatus {
+  NEW
+  ACTION_PROPOSED
+  REPAIR_IN_PROGRESS
+  RESOLVED
+  NOT_REPAIRED
+  FAILED
+  ESCALATED
+}
+
+enum ReconciliationSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ReconciliationCategory {
+  UNPROCESSED_EVENT
+  MISSING_PROVIDER_EVIDENCE
+  AMOUNT_OR_CURRENCY_MISMATCH
+  DUPLICATE_RECORD
+  STALE_SUBSCRIPTION_STATE
+  FAILED_PROVISIONING
+  ENTITLEMENT_MISMATCH
+  INVOICE_MISMATCH
+  INSUFFICIENT_EVIDENCE
+  EXTERNAL_PROVIDER_UNAVAILABLE
+  UNEXPECTED_INTERNAL_STATE
+}
+
+/// One bounded reconciliation execution (never mutates history; repairs only
+/// through existing domain services, and only when the mode allows it).
+model ReconciliationRun {
+  id            String                  @id @default(cuid())
+  mode          ReconciliationMode
+  status        ReconciliationRunStatus @default(RUNNING)
+  scope         String?
+  actorId       String
+  correlationId String?
+  scanned       Int                     @default(0)
+  findingsCount Int                     @default(0)
+  repairedCount Int                     @default(0)
+  skippedCount  Int                     @default(0)
+  errorCount    Int                     @default(0)
+  config        Json                    @default("{}")
+  errorCode     String?
+  errorMessage  String?
+  startedAt     DateTime                @default(now())
+  finishedAt    DateTime?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  findings      ReconciliationFinding[]
+
+  @@index([status, startedAt])
+  @@index([mode])
+}
+
+/// Durable discrepancy record. findingKey is a deterministic identity
+/// (category + entity + signal) so repeated runs update instead of duplicating.
+model ReconciliationFinding {
+  id                 String                      @id @default(cuid())
+  runId              String
+  findingKey         String                      @unique
+  category           ReconciliationCategory
+  severity           ReconciliationSeverity
+  entityType         String
+  entityId           String
+  expectedValue      Json?
+  observedValue      Json?
+  evidence           Json                        @default("{}")
+  proposedAction     String?
+  actionStatus       String?
+  status             ReconciliationFindingStatus @default(NEW)
+  resolutionNote     String?
+  repairOperationRef String?
+  attempts           Int                         @default(0)
+  firstObservedAt    DateTime                    @default(now())
+  lastObservedAt     DateTime                    @default(now())
+  resolvedAt         DateTime?
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
+
+  run                ReconciliationRun           @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([status, severity])
+  @@index([category, status])
+  @@index([entityType, entityId])
+  @@index([lastObservedAt])
+}
+
 /// Scope controls where a grant applies.
 enum EntitlementScope {
   GLOBAL

@@ -13,6 +13,8 @@ import { emitEvent, EVENTS } from "@/lib/services/event-bus"
 import { expireOverdueSubscriptions, markSubscriptionPastDue } from "@/lib/services/subscription-service"
 import { processProvisioningJob } from "@/lib/services/subscription-provisioning"
 import { expireExpiredTrials } from "@/lib/services/free-trial-service"
+import { runReconciliation } from "@/lib/services/reconciliation/engine"
+import { ReconciliationMode } from "@prisma/client"
 import { generateInvoiceArtifact, sendInvoiceEmail } from "@/lib/services/invoice-service"
 import { createNotification } from "@/lib/notifications"
 import { sendEmail } from "@/lib/resend"
@@ -73,6 +75,10 @@ export async function scheduleRecurringJobs() {
     jobId: "trial-expiry-15m",
     repeat: { pattern: "*/15 * * * *" },
   })
+  await subscriptionQueue.add(SUBSCRIPTION_JOBS.BILLING_RECONCILE, {}, {
+    jobId: "billing-reconcile-6h",
+    repeat: { pattern: "0 */6 * * *" },
+  })
   await paymentQueue.add(PAYMENT_JOBS.RECONCILE, {}, {
     jobId: "payment-reconcile-hourly",
     repeat: { pattern: "5 * * * *" },
@@ -128,6 +134,12 @@ export function startWorkers() {
 
       if (job.name === SUBSCRIPTION_JOBS.TRIAL_EXPIRE) {
         return expireExpiredTrials()
+      }
+
+      if (job.name === SUBSCRIPTION_JOBS.BILLING_RECONCILE) {
+        // Phase 10: scheduled reconciliation always starts DETECT_ONLY —
+        // automatic repair only runs when an authorized mode is requested.
+        return runReconciliation({ mode: ReconciliationMode.DETECT_ONLY, actorId: "system-worker", batchSize: 200 })
       }
     }, 3),
 

@@ -168,4 +168,5 @@ export const SUBSCRIPTION_JOBS = {
   FULFILL_ORDER:       "subscription.fulfill-order",
   PROVISION_SUBSCRIPTION: "subscription.provision",
   TRIAL_EXPIRE:        "subscription.trial-expire",
+  BILLING_RECONCILE:   "subscription.billing-reconcile",
 } as const

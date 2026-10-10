@@ -15,6 +15,7 @@ import {
   UserCheck,
   AlertTriangle,
   ScrollText,
+  Repeat2,
   Loader2,
   RefreshCw,
   CheckCircle2,
@@ -30,6 +31,7 @@ const TABS = [
   { id: "enrollments", label: "Free & Trial", icon: UserCheck },
   { id: "issues", label: "Operational Issues", icon: AlertTriangle },
   { id: "audit", label: "Audit History", icon: ScrollText },
+  { id: "reconciliation", label: "Reconciliation", icon: Repeat2 },
 ] as const
 
 type TabId = (typeof TABS)[number]["id"]
@@ -113,6 +115,7 @@ export default function GovernanceWorkspace({ isSuperAdmin, adminId }: { isSuper
   const [frees, setFrees] = useState<Array<Record<string, unknown>> | null>(null)
   const [issues, setIssues] = useState<Array<Record<string, unknown>> | null>(null)
   const [audit, setAudit] = useState<Array<Record<string, unknown>> | null>(null)
+  const [recon, setRecon] = useState<{ runs: Array<Record<string, unknown>>; findings: Array<Record<string, unknown>> } | null>(null)
   const [detail, setDetail] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
@@ -152,6 +155,7 @@ export default function GovernanceWorkspace({ isSuperAdmin, adminId }: { isSuper
         }
         if (target === "issues") setIssues((await get("/api/admin/subscriptions-governance/issues")).data as never)
         if (target === "audit") setAudit((await get("/api/admin/subscriptions-governance/audit")).data as never)
+        if (target === "reconciliation") setRecon((await get("/api/admin/subscriptions-governance/reconciliation")).data as never)
       } catch (e) {
         setError((e as Error).message ?? "Failed to load")
       }
@@ -208,6 +212,21 @@ export default function GovernanceWorkspace({ isSuperAdmin, adminId }: { isSuper
       } finally {
         setBusy(null)
         setConfirm(null)
+      }
+    },
+    [post, refresh],
+  )
+
+  const reconAction = useCallback(
+    async (action: string, extra?: Record<string, unknown>) => {
+      setBusy(`recon:${action}`)
+      try {
+        await post("/api/admin/subscriptions-governance/reconciliation", { action, ...extra })
+        await refresh("reconciliation")
+      } catch (e) {
+        setError((e as Error).message ?? "Reconciliation action failed")
+      } finally {
+        setBusy(null)
       }
     },
     [post, refresh],
@@ -442,6 +461,73 @@ export default function GovernanceWorkspace({ isSuperAdmin, adminId }: { isSuper
                 <p className="mt-1 text-xs text-muted-foreground">actor {(a.actorId as string) ?? "system"} · {(a.entity as string) ?? ""} {(a.entityId as string) ?? ""}</p>
               </div>
             ))
+          )}
+        </div>
+      )}
+
+      {tab === "reconciliation" && (
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" disabled={busy === "recon:run"} onClick={() => reconAction("run", { mode: "DETECT_ONLY" })}
+              className="rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-60">Run detection</button>
+            <button type="button" disabled={busy === "recon:run"} onClick={() => reconAction("run", { mode: "DRY_RUN" })}
+              className="rounded-xl border border-border px-3 py-1.5 text-xs hover:bg-accent/10 disabled:opacity-60">Dry run</button>
+            <button type="button" disabled={busy === "recon:run"} onClick={() => reconAction("run", { mode: "SAFE_AUTO_REPAIR" })}
+              className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-60">Safe auto-repair run</button>
+            <span className="text-[11px] text-muted-foreground">Detection is the default; auto-repair is limited to the verified allow-list (idempotent Phase 5/6/3 operations).</span>
+          </div>
+          {!recon ? (
+            <div className="flex items-center justify-center rounded-2xl border border-border bg-card p-10 text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading…</div>
+          ) : (
+            <>
+              <section>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Runs</h2>
+                <div className="mt-2 overflow-x-auto rounded-2xl border border-border bg-card">
+                  <table className="w-full min-w-[640px] text-left text-sm">
+                    <thead className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
+                      <tr><th className="px-4 py-3">Mode</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Scanned</th><th className="px-4 py-3">Findings</th><th className="px-4 py-3">Repaired</th><th className="px-4 py-3">Errors</th><th className="px-4 py-3">Started</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {(recon.runs ?? []).map((r) => (
+                        <tr key={r.id as string}>
+                          <td className="px-4 py-3 font-mono text-xs">{r.mode as string}</td>
+                          <td className="px-4 py-3"><StatusBadge status={r.status as string} /></td>
+                          <td className="px-4 py-3">{String(r.scanned ?? 0)}</td>
+                          <td className="px-4 py-3">{String(r.findings ?? 0)}</td>
+                          <td className="px-4 py-3 text-emerald-300">{String(r.repaired ?? 0)}</td>
+                          <td className="px-4 py-3 text-red-300">{String(r.errors ?? 0)}</td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDate(r.startedAt as string)}</td>
+                        </tr>
+                      ))}
+                      {(recon.runs ?? []).length === 0 && <tr><td colSpan={7} className="px-4 py-6 text-center text-xs text-muted-foreground">No runs yet.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+              <section>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Findings</h2>
+                <div className="mt-2 space-y-2">
+                  {(recon.findings ?? []).length === 0 && <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">No findings.</div>}
+                  {(recon.findings ?? []).map((f) => (
+                    <div key={f.id as string} className="rounded-xl border border-border bg-card p-4 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-medium">{String(f.category)} <span className="text-xs text-muted-foreground">({String(f.severity)})</span></span>
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={f.status as string} />
+                          {f.repairable && f.status !== "RESOLVED" ? (
+                            <button type="button" disabled={busy === "recon:repair"} onClick={() => reconAction("repair", { findingId: f.id })}
+                              className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-200 hover:bg-emerald-500/20">Repair</button>
+                          ) : null}
+                        </div>
+                      </div>
+                      <p className="mt-1 font-mono text-xs text-muted-foreground">{String(f.entityType)} / {String(f.entityId)}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">observed: {JSON.stringify(f.observedValue)} · expected: {JSON.stringify(f.expectedValue)}</p>
+                      {f.resolutionNote ? <p className="mt-1 text-xs text-amber-200/90">{String(f.resolutionNote)}</p> : null}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </>
           )}
         </div>
       )}
