@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ShoppingBag, ArrowRight } from "lucide-react"
+import { ShoppingBag, ArrowRight, Cpu, Sparkles, CreditCard, Zap, Network, Workflow, GitBranch, Cloud, Database, Mail, CheckSquare, Triangle } from "lucide-react"
 import { db } from "@/lib/db"
 import { ProductStatus, ProductType, SubStatus, CampaignStatus } from "@prisma/client"
 import { unstable_cache } from "next/cache"
@@ -504,62 +504,83 @@ export default async function HomePage() {
       </section>
 
       {/* ── SECTION 10: TRUST & SOCIAL PROOF ────────────────────────────────── */}
-      <section className="py-[80px] px-4 bg-background">
-        <div className="max-w-7xl mx-auto">
+      <section className="relative py-[90px] px-4 bg-background border-t border-border/80 overflow-hidden">
+        {/* Ambient background glow & engineering grid */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/[0.04] via-transparent to-primary/[0.02]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-gradient-to-r from-amber-500/10 via-primary/5 to-indigo-500/5 blur-3xl opacity-60"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
+          style={{
+            backgroundImage: `radial-gradient(currentColor 1px, transparent 1px)`,
+            backgroundSize: `24px 24px`,
+          }}
+        />
+
+        <div className="relative z-10 max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <p className="section-label mb-3">Platform</p>
-            <h2 className="text-4xl md:text-[48px] font-medium text-foreground tracking-tight">
+            <h2 className="text-4xl md:text-[48px] font-medium text-foreground tracking-tight font-display">
               Built on widely used technology
             </h2>
           </div>
 
-          {/* Technology stack wall — technologies commonly used in modern AI
-              stacks. This is illustrative of the ecosystem, not a claim of
-              partnership, sponsorship, or vendor certification. */}
+          {/* Technology stack wall — professional vector tech badges */}
           <div className="mb-16 space-y-6">
             <div className="flex flex-wrap items-center justify-center gap-3 max-w-5xl mx-auto">
               {[
-                { name: "OpenAI", tag: "LLM Provider", icon: "🧠" },
-                { name: "Anthropic", tag: "Claude 3.5", icon: "🤖" },
-                { name: "Stripe", tag: "Payments", icon: "💳" },
-                { name: "Vercel", tag: "Frontend Hosting", icon: "▲" },
-                { name: "Supabase", tag: "Database", icon: "⚡" },
-                { name: "Pinecone", tag: "Vector Index", icon: "🌲" },
-                { name: "LangChain", tag: "Agent Framework", icon: "🦜" },
-                { name: "GitHub", tag: "CI/CD Pipeline", icon: "🐙" },
-                { name: "AWS S3", tag: "Cloud Storage", icon: "☁️" },
-                { name: "Upstash", tag: "Redis Cache", icon: "🔥" },
-                { name: "Resend", tag: "Email Infra", icon: "✉️" },
-                { name: "Linear", tag: "Issue Tracking", icon: "🎯" },
-              ].map(item => (
-                <div 
-                  key={item.name} 
-                  className="group bg-card/80 hover:bg-card border border-border hover:border-primary/50 px-4 py-2.5 rounded-xl shadow-xs transition-all hover:scale-105 flex items-center gap-2.5 cursor-pointer"
-                >
-                  <span className="text-base">{item.icon}</span>
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-foreground leading-none group-hover:text-primary transition-colors">{item.name}</p>
-                    <p className="text-[10px] text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
+                { name: "OpenAI", tag: "LLM Provider", icon: Cpu, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                { name: "Anthropic", tag: "Claude 3.5", icon: Sparkles, iconColor: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+                { name: "Stripe", tag: "Payments", icon: CreditCard, iconColor: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
+                { name: "Vercel", tag: "Frontend Hosting", icon: Triangle, iconColor: "text-foreground fill-foreground", bg: "bg-foreground/5 border-foreground/15" },
+                { name: "Supabase", tag: "Database", icon: Zap, iconColor: "text-emerald-500 dark:text-emerald-400 fill-emerald-500/20", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                { name: "Pinecone", tag: "Vector Index", icon: Network, iconColor: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10 border-teal-500/20" },
+                { name: "LangChain", tag: "Agent Framework", icon: Workflow, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                { name: "GitHub", tag: "CI/CD Pipeline", icon: GitBranch, iconColor: "text-slate-800 dark:text-slate-200", bg: "bg-slate-500/10 border-slate-500/20" },
+                { name: "AWS S3", tag: "Cloud Storage", icon: Cloud, iconColor: "text-amber-600 dark:text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+                { name: "Upstash", tag: "Redis Cache", icon: Database, iconColor: "text-red-500 dark:text-red-400", bg: "bg-red-500/10 border-red-500/20" },
+                { name: "Resend", tag: "Email Infra", icon: Mail, iconColor: "text-sky-600 dark:text-sky-400", bg: "bg-sky-500/10 border-sky-500/20" },
+                { name: "Linear", tag: "Issue Tracking", icon: CheckSquare, iconColor: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
+              ].map(item => {
+                const IconComp = item.icon
+                return (
+                  <div 
+                    key={item.name} 
+                    className="group bg-card/90 hover:bg-card border border-border/80 hover:border-primary/50 px-4 py-2.5 rounded-none shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-2.5 cursor-pointer backdrop-blur-md"
+                  >
+                    <div className={`p-1.5 rounded-none border ${item.bg} flex items-center justify-center shrink-0`}>
+                      <IconComp className={`h-3.5 w-3.5 ${item.iconColor}`} />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-bold text-foreground leading-none group-hover:text-primary transition-colors">{item.name}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* Quick Metrics Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto pt-4 border-t border-border/40">
-              <div className="text-center p-3 rounded-xl bg-card/60 border border-border/40 shadow-xs">
+              <div className="text-center p-3 rounded-none bg-card/60 border border-border/40 shadow-xs">
                 <p className="text-xl font-bold text-foreground">{countLabel(stats.products)}</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">Published products</p>
               </div>
-              <div className="text-center p-3 rounded-xl bg-card/60 border border-border/40 shadow-xs">
+              <div className="text-center p-3 rounded-none bg-card/60 border border-border/40 shadow-xs">
                 <p className="text-xl font-bold text-foreground">{countLabel(stats.agents)}</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">AI agent products</p>
               </div>
-              <div className="text-center p-3 rounded-xl bg-card/60 border border-border/40 shadow-xs">
+              <div className="text-center p-3 rounded-none bg-card/60 border border-border/40 shadow-xs">
                 <p className="text-xl font-bold text-foreground">Verified</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">Provider payment checks</p>
               </div>
-              <div className="text-center p-3 rounded-xl bg-card/60 border border-border/40 shadow-xs">
+              <div className="text-center p-3 rounded-none bg-card/60 border border-border/40 shadow-xs">
                 <p className="text-xl font-bold text-foreground">Documented</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">Plans, limits & policies</p>
               </div>

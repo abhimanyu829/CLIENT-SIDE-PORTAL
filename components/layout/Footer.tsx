@@ -7,8 +7,6 @@ import {
   Facebook,
   Twitter,
   Instagram,
-  Linkedin,
-  Github,
   Youtube,
   Send,
   ShieldCheck,
@@ -16,6 +14,9 @@ import {
   Lock,
   Globe,
   CreditCard,
+  Rocket,
+  TrendingDown,
+  Sparkles,
 } from "lucide-react"
 
 const FOOTER_LINKS = [
@@ -78,12 +79,10 @@ const TRUST_BADGES = [
 ]
 
 const SOCIALS = [
-  { icon: Twitter, href: "https://twitter.com", label: "Twitter" },
-  { icon: Linkedin, href: "https://linkedin.com", label: "LinkedIn" },
-  { icon: Github, href: "https://github.com", label: "GitHub" },
-  { icon: Youtube, href: "https://youtube.com", label: "YouTube" },
-  { icon: Instagram, href: "https://instagram.com", label: "Instagram" },
-  { icon: Facebook, href: "https://facebook.com", label: "Facebook" },
+  { icon: Twitter, href: "https://x.com/Abhibhidevelop", label: "X (Twitter)" },
+  { icon: Youtube, href: "https://youtube.com/@abhibhideveloper?si=mTDCqn9uBcoiObu5", label: "YouTube" },
+  { icon: Instagram, href: "https://www.instagram.com/abhibhideveloper26?rpxt=enpmMzZiNHM0c3ph", label: "Instagram" },
+  { icon: Facebook, href: "https://www.facebook.com/share/1DYXHL2h1x/", label: "Facebook" },
 ]
 
 export default function Footer() {
@@ -117,24 +116,26 @@ export default function Footer() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             viewport={{ once: true }}
-            className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm shadow-xl rounded-2xl md:rounded-3xl border border-gray-100 dark:border-zinc-800/80 overflow-hidden"
+            className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm shadow-xl rounded-none border border-gray-100 dark:border-zinc-800/80 overflow-hidden"
           >
             {/* Stats bar inside card */}
             <div className="border-b border-gray-100 dark:border-zinc-800/80 bg-gray-50/50 dark:bg-zinc-900/40 px-6 py-6 sm:px-10">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  ["10x", "Faster Workflow", "🚀"],
-                  ["80%", "Cost Saved", "📉"],
-                  ["<50ms", "Average Latency", "⚡"],
-                  ["0", "Manual Steps", "🪄"],
-                ].map(([val, label, icon]) => (
+                  { val: "10x", label: "Faster Workflow", icon: Rocket, color: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+                  { val: "80%", label: "Cost Saved", icon: TrendingDown, color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                  { val: "<50ms", label: "Average Latency", icon: Zap, color: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
+                  { val: "0", label: "Manual Steps", icon: Sparkles, color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
+                ].map(({ val, label, icon: Icon, color, bg }) => (
                   <div
                     key={label}
-                    className="bg-white dark:bg-zinc-800/60 border border-gray-200/70 dark:border-zinc-700/60 rounded-2xl p-4 text-center shadow-xs transition-all duration-300 hover:shadow-md hover:border-orange-500/30"
+                    className="bg-white dark:bg-zinc-800/60 border border-gray-200/70 dark:border-zinc-700/60 rounded-none p-4 text-center shadow-xs transition-all duration-300 hover:shadow-md hover:border-primary/40 backdrop-blur-xs"
                   >
-                    <div className="flex items-center justify-center gap-1.5 mb-1">
-                      <span className="text-base">{icon}</span>
-                      <span className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                    <div className="flex items-center justify-center gap-2 mb-1.5">
+                      <div className={`p-1 rounded-none border ${bg} flex items-center justify-center shrink-0`}>
+                        <Icon className={`h-4 w-4 ${color}`} />
+                      </div>
+                      <span className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight font-display">
                         {val}
                       </span>
                     </div>

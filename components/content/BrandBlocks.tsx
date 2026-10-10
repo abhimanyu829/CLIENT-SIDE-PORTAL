@@ -4,6 +4,10 @@
  * fetching, no client state, no backend impact.
  */
 import type { BlockSection } from "@/lib/content/brand-blocks"
+import { HOME_BRAND } from "@/lib/content/brand-blocks"
+import { HomeBrandShowcase } from "./HomeBrandShowcase"
+
+export { HomeBrandShowcase }
 
 export function BrandSectionList({
   sections,
@@ -14,6 +18,10 @@ export function BrandSectionList({
   eyebrow?: string
   className?: string
 }) {
+  if (sections === HOME_BRAND) {
+    return <HomeBrandShowcase />
+  }
+
   return (
     <section className={`py-16 px-4 bg-background border-t border-border ${className ?? ""}`}>
       <div className="mx-auto max-w-4xl space-y-10">
