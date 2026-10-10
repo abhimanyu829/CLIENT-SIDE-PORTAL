@@ -5,7 +5,7 @@ import { randomUUID } from "crypto"
 
 export const metadata: Metadata = {
   title: "Live Demos — NexusAI Platform",
-  description: "Launch interactive 5-minute demos of CRM, AI Chatbot, Analytics, and Automation. No account required.",
+  description: "Interactive demonstrations of CRM, AI assistant, and analytics workflows using labelled sample data. No account required.",
 }
 
 const DEMOS = [
@@ -14,28 +14,28 @@ const DEMOS = [
     title: "Sales CRM",
     description: "Real-time sales pipeline with AI-powered lead scoring, deal tracking, and automated follow-ups.",
     icon: "🏢",
-    badge: "Live",
+    badge: "Interactive",
     badgeColor: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
     gradient: "from-emerald-900/40 to-teal-900/20",
     accentColor: "text-emerald-400",
     glowColor: "rgba(16,185,129,0.1)",
     features: ["Pipeline view","AI lead scoring","Email automation","Revenue forecasting"],
     time: "5 min demo",
-    users: "3,200+ tried",
+    users: "Synthetic demo data",
   },
   {
     id: "ai-agent",
     title: "AI Chatbot",
     description: "Conversational AI agent powered by GPT-4. Ask anything, automate tasks, generate content.",
     icon: "🤖",
-    badge: "Live",
+    badge: "Interactive",
     badgeColor: "text-purple-400 border-purple-500/30 bg-purple-500/10",
     gradient: "from-purple-900/40 to-indigo-900/20",
     accentColor: "text-purple-400",
     glowColor: "rgba(139,92,246,0.1)",
     features: ["GPT-4 powered","Streaming responses","Custom prompts","File analysis"],
     time: "5 min demo",
-    users: "8,500+ tried",
+    users: "Synthetic demo data",
   },
   {
     id: "analytics",
@@ -49,7 +49,7 @@ const DEMOS = [
     glowColor: "rgba(59,130,246,0.1)",
     features: ["Real-time data","Revenue charts","User funnels","AI insights"],
     time: "5 min demo",
-    users: "2,100+ tried",
+    users: "Synthetic demo data",
   },
   {
     id: "crm",
@@ -63,7 +63,7 @@ const DEMOS = [
     glowColor: "rgba(245,158,11,0.08)",
     features: ["Visual builder","100+ triggers","API connectors","Scheduling"],
     time: "5 min demo",
-    users: "1,400+ tried",
+    users: "Synthetic demo data",
   },
 ]
 

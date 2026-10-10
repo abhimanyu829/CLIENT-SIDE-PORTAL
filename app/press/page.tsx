@@ -1,86 +1,125 @@
-import React from "react"
-import { Metadata } from "next"
+import type { Metadata } from "next"
+import Link from "next/link"
+import { EnquiryForm } from "@/components/public/EnquiryForm"
 
 export const metadata: Metadata = {
-  title: "404 - Page Not Found",
-  description: "The path may be broken, but the journey isn't. Let's get you back.",
+  title: "Press & Media Information | Abhibhideveloper",
+  description:
+    "Official, factual company information about Abhibhideveloper for journalists and media: what the company is, what it offers, brand usage guidance, and how to submit a media enquiry.",
+  alternates: { canonical: "/press" },
 }
 
-export default function Press404Page() {
+export default function PressPage() {
   return (
-    <>
-      <style>{`
-        @font-face {
-          font-family: "Geist Mono:SemiBold";
-          font-style: normal;
-          font-weight: 600;
-          font-display: swap;
-          src: url("https://static.figma.com/font/GeistMono_wght__1") format("woff2");
-        }
-
-        .font-geist-mono {
-          font-family: "Geist Mono:SemiBold", monospace;
-        }
-
-        .heading-404-gradient {
-          background: linear-gradient(
-            247.3282658084845deg,
-            rgb(255, 255, 255) 2.5334%,
-            rgba(255, 255, 255, 0.4) 93.612%
-          );
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-      `}</style>
-
-      <main className="relative min-h-[100svh] w-full bg-black overflow-x-hidden select-none">
-        {/* Background Video */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover opacity-100 z-0 pointer-events-none"
-          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260801_001207_ec20d138-aa45-4b2b-ab8c-bdc71607f240.mp4"
-        />
-
-        {/* Header Logo */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-[32px] sm:top-[80px] z-20 transition-transform origin-center scale-75 sm:scale-100 flex items-center justify-center">
-          {/* Geometric Pixel Mark SVG */}
-          <svg
-            viewBox="0 0 54 40"
-            fill="none"
-            className="w-[54px] h-[40px] shrink-0"
-            aria-hidden="true"
-          >
-            <path d="M38 0H26V12H38V0Z" fill="white" />
-            <path d="M54 12H38V28H54V12Z" fill="white" />
-            <path d="M38 28H26V40H38V28Z" fill="white" />
-            <path d="M26 12H16V22H26V12Z" fill="white" />
-            <path d="M16 22H8V30H16V22Z" fill="white" />
-            <path d="M16 2H6V12H16V2Z" fill="white" />
-            <path d="M6 12H0V18H6V12Z" fill="white" />
-          </svg>
-        </div>
-
-        {/* Centered 404 Content */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center text-center w-[min(100%-40px,360px)] sm:w-[483px] gap-[28px] sm:gap-[44px]">
-          {/* 404 Heading */}
-          <h1 className="font-geist-mono font-600 leading-[1.1] text-center heading-404-gradient h-auto min-h-0 pb-4 overflow-visible text-[clamp(140px,52vw,200px)] sm:text-[295.751px] tracking-[-0.09em] sm:tracking-[-24.6459px]">
-            404
+    <div className="min-h-screen bg-background text-foreground">
+      <section className="px-4 pt-16 pb-6">
+        <div className="mx-auto max-w-4xl">
+          <p className="text-xs font-mono font-semibold uppercase tracking-widest text-primary">Press & Media</p>
+          <h1 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-balance">
+            Press and media information
           </h1>
-
-          {/* Divider */}
-          <div className="h-[1px] bg-white w-full sm:w-[425px] shrink-0" />
-
-          {/* Message */}
-          <p className="font-geist-mono font-600 leading-[1.1] text-white text-center w-full text-[clamp(16px,4.5vw,20px)] sm:text-[24px] tracking-[-1.3px] sm:tracking-[-2px]">
-            The path may be broken, but the journey isn't. Let's get you back.
+          <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+            This page provides accurate, citable information about Abhibhideveloper. It does not claim press
+            coverage, awards, funding, or recognition that the company does not have.
           </p>
         </div>
-      </main>
-    </>
+      </section>
+
+      <section className="px-4 py-8">
+        <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <h2 className="text-base font-semibold">Company description</h2>
+            <p className="mt-2 text-sm leading-7 text-muted-foreground">
+              Abhibhideveloper is an early-stage technology venture focused on software products, AI-powered
+              solutions, custom software development, websites, web applications, and automation services. It
+              operates a platform where customers can discover digital products, request custom development,
+              and manage purchased software and subscriptions through a customer dashboard.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <h2 className="text-base font-semibold">Mission</h2>
+            <p className="mt-2 text-sm leading-7 text-muted-foreground">
+              To make useful digital technology easier to discover, adopt, and manage by bringing software
+              products, AI-driven solutions, custom development, and lifecycle support together in one
+              accessible platform.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <h2 className="text-base font-semibold">Factual background</h2>
+            <p className="mt-2 text-sm leading-7 text-muted-foreground">
+              Abhibhideveloper is founder-led and builds toward AI-assisted operations. The exact legal entity
+              and registration details are published only once finalised — we do not invent a registered name,
+              registration number, or address for press use. Where a formal statement is required, request it
+              in writing through the media enquiry form.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <h2 className="text-base font-semibold">Products and services</h2>
+            <ul className="mt-2 space-y-1.5 text-sm leading-6 text-muted-foreground">
+              <li>AI agents, chatbots, and intelligent assistants</li>
+              <li>Workflow automation and integrations</li>
+              <li>SaaS products and software tools</li>
+              <li>Websites and web applications</li>
+              <li>Dashboards, CRM workflows, APIs, and integrations</li>
+              <li>Custom software development</li>
+              <li>Deployment, maintenance, and support where included in a plan or agreement</li>
+            </ul>
+            <p className="mt-3 text-xs text-muted-foreground">
+              These are the platform&apos;s focus categories. Availability at any time is what is actually
+              published in the marketplace or agreed in writing.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 py-8">
+        <div className="mx-auto max-w-4xl">
+          <h2 className="text-2xl font-semibold tracking-tight">Brand resources and usage</h2>
+          <div className="mt-4 space-y-3 text-sm leading-7 text-muted-foreground">
+            <p>
+              The brand name is <strong className="text-foreground">Abhibhideveloper</strong>. Logo asset
+              downloads are not currently published; if you need the wordmark or logo for a factual article,
+              request it through the media enquiry form and specify the intended use. Brand assets are
+              provided as general brand resources — they are not a statement of partnership, endorsement, or
+              an official announcement.
+            </p>
+            <p>
+              When referencing the company, use the brand name accurately, do not alter or recolour the logo
+              without permission, do not imply sponsorship or endorsement, and do not present draft material
+              as an official company statement.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-border px-4 py-14 bg-card/40">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">Media enquiry</h2>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            Journalists and media can submit a factual enquiry below. We do not publish a personal phone
+            number or private email address; enquiries are reviewed through this monitored channel.
+          </p>
+          <div className="mt-6 rounded-2xl border border-border bg-card p-6 sm:p-8">
+            <EnquiryForm categories={["press-media"]} defaultCategory="press-media" compact />
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-border px-4 py-10">
+        <div className="mx-auto max-w-4xl text-sm leading-7 text-muted-foreground">
+          <h2 className="text-base font-semibold text-foreground">Official links</h2>
+          <ul className="mt-3 space-y-2">
+            <li><Link href="/about" className="text-primary hover:underline underline-offset-4">About Abhibhideveloper</Link></li>
+            <li><Link href="/marketplace" className="text-primary hover:underline underline-offset-4">Product marketplace</Link></li>
+            <li><Link href="/services" className="text-primary hover:underline underline-offset-4">Services</Link></li>
+            <li><Link href="/contact" className="text-primary hover:underline underline-offset-4">General contact</Link></li>
+          </ul>
+          <p className="mt-4 text-xs">
+            No press releases, media mentions, awards, or funding announcements are listed because none exist
+            to report at this time.
+          </p>
+        </div>
+      </section>
+    </div>
   )
 }

@@ -9,7 +9,7 @@ import ProductCard from "@/components/marketplace/ProductCard"
 import { CtaVideoBackground } from "@/components/effects/CtaVideoBackground"
 import { MotionWrapper } from "@/components/ui/MotionWrapper"
 import { AuroraHero } from "@/components/ui/aurora-hero"
-import { BrandSectionList } from "@/components/content/BrandBlocks"
+import { BrandSectionList, HomeBrandShowcase } from "@/components/content/BrandBlocks"
 import { HOME_BRAND } from "@/lib/content/brand-blocks"
 
 export const revalidate = 60
@@ -39,11 +39,11 @@ const getPlatformStats = unstable_cache(async () => {
     db.productReview.count(),
   ])
   return {
-    products: products.status === "fulfilled" ? products.value : 500,
-    agents: agents.status === "fulfilled" ? agents.value : 120,
-    users: users.status === "fulfilled" ? users.value : 12000,
-    subscriptions: subscriptions.status === "fulfilled" ? subscriptions.value : 4800,
-    reviews: reviews.status === "fulfilled" ? reviews.value : 2400,
+    products: products.status === "fulfilled" ? products.value : 0,
+    agents: agents.status === "fulfilled" ? agents.value : 0,
+    users: users.status === "fulfilled" ? users.value : 0,
+    subscriptions: subscriptions.status === "fulfilled" ? subscriptions.value : 0,
+    reviews: reviews.status === "fulfilled" ? reviews.value : 0,
   }
 }, ["platform-stats"], { revalidate: 300, tags: ["products", "platform-stats"] })
 
@@ -213,7 +213,7 @@ export default async function HomePage() {
           <MotionWrapper delay={0}>
             <div className="inline-flex items-center gap-2.5 bg-card text-card-foreground border border-border rounded-full px-5 py-2.5 text-sm mb-10 shadow-sm">
               <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-              <span className="uppercase tracking-widest text-xs font-bold">🔥 The #1 AI SaaS Platform</span>
+              <span className="uppercase tracking-widest text-xs font-bold">AI · Automation · Software · SaaS</span>
             </div>
           </MotionWrapper>
 
@@ -227,8 +227,8 @@ export default async function HomePage() {
 
           <MotionWrapper delay={0.2}>
             <p className="text-lg md:text-xl text-neutral-700 max-w-2xl mx-auto mb-12 leading-relaxed text-pretty">
-              Generate highly realistic human audio instantly, replicating vocal signatures.
-              Deploy AI agents, SaaS tools, and intelligent software to our global edge infrastructure.
+              Explore digital products, AI-powered solutions, and custom software development.
+              Manage purchases, subscriptions, and support from your customer dashboard.
             </p>
           </MotionWrapper>
 
@@ -266,7 +266,7 @@ export default async function HomePage() {
 
           {/* Trust badges */}
           <div className="flex flex-wrap items-center justify-center gap-2.5 mb-14 slide-up" style={{ animationDelay: ".35s" }}>
-            {["No credit card required", "Cancel anytime", "99.9% SLA", "SOC 2 Certified"].map(b => (
+            {["No credit card required", "Cancel anytime", "Published plan pricing", "Documented limitations"].map(b => (
               <span key={b} className="stat-pill bg-white/70">
                 <span className="text-primary font-bold" aria-hidden="true">✓</span> {b}
               </span>
@@ -297,14 +297,14 @@ export default async function HomePage() {
           <div className="overflow-hidden flex-1 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">
             <div className="ticker-track">
               {[
-                "🛒 Developer purchased Sales CRM AI · Pro plan",
-                "🤖 Code Assistant v2 deployed by TechStartup",
-                "⭐ Marketing Automation Agent earned 5★ review",
-                "👋 143 new developers joined today",
-                "🔥 AI Analytics Pro trending — 890 views this hour",
-                "💰 Creator earned $2,400 in revenue this week",
-                "🚀 Enterprise Suite just launched — 3 plans available",
-                "⬆️ User upgraded from Pro to Enterprise plan",
+                "Marketplace catalog browsable without an account",
+                "Sandbox demos available for selected products",
+                "Plan inclusions and limits published per product",
+                "Customer dashboard for purchases and subscriptions",
+                "Support through your account support tickets",
+                "Payment status verified through the provider",
+                "Custom software and AI automation on enquiry",
+                "Documentation and FAQs available before you buy",
               ].map((item, i) => (
                 <span key={i} className="inline-flex items-center gap-2 text-[12px] font-mono text-muted-foreground whitespace-nowrap px-6">
                   {item} <span className="text-border">•</span>
@@ -507,13 +507,15 @@ export default async function HomePage() {
       <section className="py-[80px] px-4 bg-background">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <p className="section-label mb-3">Enterprise-Ready</p>
+            <p className="section-label mb-3">Platform</p>
             <h2 className="text-4xl md:text-[48px] font-medium text-foreground tracking-tight">
-              Loved by developers
+              Built on widely used technology
             </h2>
           </div>
 
-          {/* Ecosystem & Partner Stack Wall */}
+          {/* Technology stack wall — technologies commonly used in modern AI
+              stacks. This is illustrative of the ecosystem, not a claim of
+              partnership, sponsorship, or vendor certification. */}
           <div className="mb-16 space-y-6">
             <div className="flex flex-wrap items-center justify-center gap-3 max-w-5xl mx-auto">
               {[
@@ -546,20 +548,20 @@ export default async function HomePage() {
             {/* Quick Metrics Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto pt-4 border-t border-border/40">
               <div className="text-center p-3 rounded-xl bg-card/60 border border-border/40 shadow-xs">
-                <p className="text-xl font-bold text-foreground">1,200+</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Agents Deployed</p>
+                <p className="text-xl font-bold text-foreground">{countLabel(stats.products)}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Published products</p>
               </div>
               <div className="text-center p-3 rounded-xl bg-card/60 border border-border/40 shadow-xs">
-                <p className="text-xl font-bold text-foreground">&lt;45ms</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Global P99 Latency</p>
+                <p className="text-xl font-bold text-foreground">{countLabel(stats.agents)}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">AI agent products</p>
               </div>
               <div className="text-center p-3 rounded-xl bg-card/60 border border-border/40 shadow-xs">
-                <p className="text-xl font-bold text-foreground">99.99%</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Uptime SLA</p>
+                <p className="text-xl font-bold text-foreground">Verified</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Provider payment checks</p>
               </div>
               <div className="text-center p-3 rounded-xl bg-card/60 border border-border/40 shadow-xs">
-                <p className="text-xl font-bold text-foreground">SOC2 & GDPR</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Enterprise Ready</p>
+                <p className="text-xl font-bold text-foreground">Documented</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Plans, limits & policies</p>
               </div>
             </div>
           </div>
@@ -613,7 +615,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── SECTION 11.5: BRAND CONTENT (About the platform, what we do, how it works) ── */}
-      <BrandSectionList sections={HOME_BRAND} eyebrow="About Abhibhideveloper" />
+      <HomeBrandShowcase />
 
       {/* ── SECTION 12: FINAL CTA ───────────────────────────────────────────── */}
       <section className="py-[80px] px-4 bg-background border-t border-border">
@@ -622,43 +624,43 @@ export default async function HomePage() {
             <CtaVideoBackground />
             <div className="relative z-10">
               <h2 className="text-5xl md:text-[64px] font-medium mb-6 leading-[1.04] tracking-tight">
-                Seamless Streaming
+                Start with Abhibhideveloper
               </h2>
               <p className="text-muted-foreground text-xl mb-8 max-w-2xl mx-auto leading-relaxed">
-                Join {stats.users >= 10 ? `${stats.users.toLocaleString()}+ ` : ""}AI developers deploying agents and building products that matter.
-                Start free, scale unlimited.
+                Explore published products, request a custom solution, or manage an existing subscription from
+                your dashboard. Plan inclusions and limitations are stated before purchase.
               </p>
 
               {/* Key Features & Performance Highlights */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-10 text-left max-w-3xl mx-auto">
                 <div className="p-4 rounded-xl border border-border/60 bg-background/50 backdrop-blur-xs">
-                  <div className="text-2xl mb-1">⚡</div>
-                  <h4 className="font-semibold text-sm mb-1 text-foreground">Sub-50ms Latency</h4>
-                  <p className="text-xs text-muted-foreground leading-normal">Lightning-fast token streaming and direct WebSocket connections.</p>
+                  <div className="text-2xl mb-1">🧩</div>
+                  <h4 className="font-semibold text-sm mb-1 text-foreground">Product marketplace</h4>
+                  <p className="text-xs text-muted-foreground leading-normal">Published digital products with stated features, limits and pricing.</p>
                 </div>
                 <div className="p-4 rounded-xl border border-border/60 bg-background/50 backdrop-blur-xs">
                   <div className="text-2xl mb-1">🛡️</div>
-                  <h4 className="font-semibold text-sm mb-1 text-foreground">Enterprise Security</h4>
-                  <p className="text-xs text-muted-foreground leading-normal">AES-256 encryption, isolated sandboxes, and compliance controls.</p>
+                  <h4 className="font-semibold text-sm mb-1 text-foreground">Verified payments</h4>
+                  <p className="text-xs text-muted-foreground leading-normal">Payment status is confirmed through the provider, not the browser.</p>
                 </div>
                 <div className="p-4 rounded-xl border border-border/60 bg-background/50 backdrop-blur-xs">
                   <div className="text-2xl mb-1">🚀</div>
-                  <h4 className="font-semibold text-sm mb-1 text-foreground">1-Click Deployments</h4>
-                  <p className="text-xs text-muted-foreground leading-normal">Spin up AI agents, APIs, and workflows without infrastructure overhead.</p>
+                  <h4 className="font-semibold text-sm mb-1 text-foreground">Custom development</h4>
+                  <p className="text-xs text-muted-foreground leading-normal">Websites, web apps, dashboards and automation, scoped in writing.</p>
                 </div>
                 <div className="p-4 rounded-xl border border-border/60 bg-background/50 backdrop-blur-xs">
                   <div className="text-2xl mb-1">📊</div>
-                  <h4 className="font-semibold text-sm mb-1 text-foreground">Real-time Metrics</h4>
-                  <p className="text-xs text-muted-foreground leading-normal">Track token usage, cost breakdowns, and model telemetry live.</p>
+                  <h4 className="font-semibold text-sm mb-1 text-foreground">Customer dashboard</h4>
+                  <p className="text-xs text-muted-foreground leading-normal">Review purchases, subscription status, billing records and support.</p>
                 </div>
               </div>
 
               {/* Trust Badges */}
               <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-muted-foreground mb-10">
-                <span className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span> 99.9% Uptime SLA</span>
                 <span className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span> No Credit Card Required</span>
-                <span className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span> Instant API Keys</span>
-                <span className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span> 24/7 Developer Support</span>
+                <span className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span> Cancel Anytime</span>
+                <span className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span> Published Pricing</span>
+                <span className="flex items-center gap-1.5"><span className="text-emerald-500 font-bold">✓</span> Support via Your Dashboard</span>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
