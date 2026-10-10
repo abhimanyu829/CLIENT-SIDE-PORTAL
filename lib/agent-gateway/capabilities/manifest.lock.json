@@ -1,6 +1,6 @@
 {
   "summaryVersion": 1,
-  "fingerprint": "e9abf0b9e9e02054614c8bbeea6ada7bffa26a81825b2ee8d789c1cbb80a601c",
+  "fingerprint": "2b4482bda4b8f83a9483393a0333dd7c290a5f62751de27f3e19b2ffb4c5f6b1",
   "capabilities": [
     {
       "id": "analytics.productPerformance",
@@ -436,6 +436,77 @@
       }
     },
     {
+      "id": "products.archive",
+      "version": 1,
+      "domain": "products",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "LOW_RISK_WRITE",
+      "adapterKey": "products.archiveAdapter",
+      "permission": "write:products",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "Product",
+        "locator": "productId"
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": false,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": {
+        "class": "IRREVERSIBLE",
+        "capabilityId": null,
+        "capabilityVersion": null,
+        "inputMapping": null,
+        "manual": true
+      },
+      "contentTrust": "THIRD_PARTY_CONTENT",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "productId": {
+            "type": "string",
+            "checks": [
+              "min:1"
+            ]
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "changed": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "checks": []
+          },
+          "name": {
+            "type": "string",
+            "checks": []
+          },
+          "status": {
+            "type": "string",
+            "checks": []
+          }
+        }
+      }
+    },
+    {
       "id": "products.createDraft",
       "version": 1,
       "domain": "products",
@@ -831,6 +902,192 @@
       }
     },
     {
+      "id": "products.update",
+      "version": 1,
+      "domain": "products",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "LOW_RISK_WRITE",
+      "adapterKey": "products.updateAdapter",
+      "permission": "write:products",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "Product",
+        "locator": "productId"
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": false,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": {
+        "class": "IRREVERSIBLE",
+        "capabilityId": null,
+        "capabilityVersion": null,
+        "inputMapping": null,
+        "manual": true
+      },
+      "contentTrust": "THIRD_PARTY_CONTENT",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "category": {
+            "optional": {
+              "type": "string",
+              "checks": [
+                "max:100"
+              ]
+            }
+          },
+          "demoUrl": {
+            "optional": {
+              "type": "string",
+              "checks": [
+                "url"
+              ]
+            }
+          },
+          "description": {
+            "optional": {
+              "type": "string",
+              "checks": [
+                "max:5000",
+                "min:1"
+              ]
+            }
+          },
+          "documentationUrl": {
+            "optional": {
+              "type": "string",
+              "checks": [
+                "url"
+              ]
+            }
+          },
+          "iconUrl": {
+            "optional": {
+              "type": "string",
+              "checks": [
+                "url"
+              ]
+            }
+          },
+          "longDescription": {
+            "optional": {
+              "type": "string",
+              "checks": [
+                "max:20000"
+              ]
+            }
+          },
+          "name": {
+            "optional": {
+              "type": "string",
+              "checks": [
+                "max:200",
+                "min:1"
+              ]
+            }
+          },
+          "productId": {
+            "type": "string",
+            "checks": [
+              "min:1"
+            ]
+          },
+          "tagline": {
+            "optional": {
+              "type": "string",
+              "checks": [
+                "max:300",
+                "min:1"
+              ]
+            }
+          },
+          "tags": {
+            "optional": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "checks": [
+                  "max:50"
+                ]
+              },
+              "min": null,
+              "max": 20
+            }
+          },
+          "thumbnailUrl": {
+            "optional": {
+              "type": "string",
+              "checks": [
+                "url"
+              ]
+            }
+          },
+          "type": {
+            "optional": {
+              "type": "enum",
+              "values": [
+                "AI_AGENT",
+                "AI_TOOL",
+                "API",
+                "AUTOMATION",
+                "DIGITAL",
+                "PLUGIN",
+                "PROMPT",
+                "SAAS",
+                "SERVICE",
+                "TEMPLATE",
+                "WEBSITE",
+                "WORKFLOW"
+              ]
+            }
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "changed": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "checks": []
+          },
+          "name": {
+            "type": "string",
+            "checks": []
+          },
+          "slug": {
+            "type": "string",
+            "checks": []
+          },
+          "status": {
+            "type": "string",
+            "checks": []
+          },
+          "updatedAt": {
+            "type": "string",
+            "checks": []
+          }
+        }
+      }
+    },
+    {
       "id": "products.updatePricing",
       "version": 1,
       "domain": "products",
@@ -938,6 +1195,302 @@
       "contentTrust": "THIRD_PARTY_CONTENT",
       "input": null,
       "output": null
+    },
+    {
+      "id": "subscriptions.accessExplain",
+      "version": 1,
+      "domain": "subscriptions",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "READ",
+      "adapterKey": "subscriptions.accessExplain",
+      "permission": "read:entitlements",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "EntitlementGrant",
+        "locator": null
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": null,
+      "contentTrust": "SYSTEM_GENERATED",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {}
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "accessKeys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "checks": []
+            },
+            "min": null,
+            "max": 50
+          },
+          "adminLimit": {
+            "type": "object",
+            "unknownKeys": "strip",
+            "fields": {
+              "limitUnit": {
+                "nullable": {
+                  "type": "string",
+                  "checks": []
+                }
+              },
+              "limitValue": {
+                "nullable": {
+                  "type": "number",
+                  "checks": []
+                }
+              }
+            }
+          },
+          "storageLimit": {
+            "type": "object",
+            "unknownKeys": "strip",
+            "fields": {
+              "limitUnit": {
+                "nullable": {
+                  "type": "string",
+                  "checks": []
+                }
+              },
+              "limitValue": {
+                "nullable": {
+                  "type": "number",
+                  "checks": []
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "subscriptions.billingHistory",
+      "version": 1,
+      "domain": "subscriptions",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "READ",
+      "adapterKey": "subscriptions.billingHistory",
+      "permission": "read:billing",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "SubscriptionCharge",
+        "locator": null
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": null,
+      "contentTrust": "SYSTEM_GENERATED",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {}
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "billing": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "unknownKeys": "strip",
+              "fields": {
+                "amount": {
+                  "type": "object",
+                  "unknownKeys": "strip",
+                  "fields": {
+                    "amount": {
+                      "type": "string",
+                      "checks": []
+                    },
+                    "currency": {
+                      "type": "string",
+                      "checks": []
+                    }
+                  }
+                },
+                "createdAt": {
+                  "type": "string",
+                  "checks": []
+                },
+                "kind": {
+                  "type": "string",
+                  "checks": []
+                },
+                "reference": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                },
+                "status": {
+                  "type": "string",
+                  "checks": []
+                }
+              }
+            },
+            "min": null,
+            "max": 20
+          }
+        }
+      }
+    },
+    {
+      "id": "subscriptions.cancelRequest",
+      "version": 1,
+      "domain": "subscriptions",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "HIGH_RISK_MUTATION",
+      "adapterKey": "subscriptions.cancelRequest",
+      "permission": "write:billing",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "UserSubscription",
+        "locator": "subscriptionId"
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": false,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": {
+        "class": "IRREVERSIBLE",
+        "capabilityId": null,
+        "capabilityVersion": null,
+        "inputMapping": null,
+        "manual": true
+      },
+      "contentTrust": "SYSTEM_GENERATED",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "cancelAtCycleEnd": {
+            "optional": {
+              "type": "boolean"
+            }
+          },
+          "subscriptionId": {
+            "type": "string",
+            "checks": [
+              "max:64",
+              "min:1"
+            ]
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "status": {
+            "type": "string",
+            "checks": []
+          }
+        }
+      }
+    },
+    {
+      "id": "subscriptions.freeEnroll",
+      "version": 1,
+      "domain": "subscriptions",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "HIGH_RISK_MUTATION",
+      "adapterKey": "subscriptions.freeEnroll",
+      "permission": "write:billing",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "FreeEnrollment",
+        "locator": null
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": false,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": {
+        "class": "IRREVERSIBLE",
+        "capabilityId": null,
+        "capabilityVersion": null,
+        "inputMapping": null,
+        "manual": true
+      },
+      "contentTrust": "SYSTEM_GENERATED",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {}
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "enrollmentId": {
+            "type": "string",
+            "checks": []
+          },
+          "existing": {
+            "type": "boolean"
+          }
+        }
+      }
     },
     {
       "id": "subscriptions.get",
@@ -1098,6 +1651,441 @@
             },
             "min": null,
             "max": 50
+          }
+        }
+      }
+    },
+    {
+      "id": "subscriptions.plansList",
+      "version": 1,
+      "domain": "subscriptions",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "READ",
+      "adapterKey": "subscriptions.plansList",
+      "permission": "read:billing",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "SubscriptionPlan",
+        "locator": null
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": null,
+      "contentTrust": "SYSTEM_GENERATED",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {}
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "plans": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "unknownKeys": "strip",
+              "fields": {
+                "billingIntervalMonths": {
+                  "nullable": {
+                    "type": "number",
+                    "checks": []
+                  }
+                },
+                "currency": {
+                  "type": "string",
+                  "checks": []
+                },
+                "id": {
+                  "type": "string",
+                  "checks": []
+                },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "unknownKeys": "strip",
+                    "fields": {
+                      "itemRefKey": {
+                        "type": "string",
+                        "checks": []
+                      },
+                      "itemType": {
+                        "type": "string",
+                        "checks": []
+                      },
+                      "limitUnit": {
+                        "nullable": {
+                          "type": "string",
+                          "checks": []
+                        }
+                      },
+                      "limitValue": {
+                        "nullable": {
+                          "type": "number",
+                          "checks": []
+                        }
+                      }
+                    }
+                  },
+                  "min": null,
+                  "max": null
+                },
+                "name": {
+                  "type": "string",
+                  "checks": []
+                },
+                "planType": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                },
+                "price": {
+                  "type": "object",
+                  "unknownKeys": "strip",
+                  "fields": {
+                    "amount": {
+                      "type": "string",
+                      "checks": []
+                    },
+                    "currency": {
+                      "type": "string",
+                      "checks": []
+                    }
+                  }
+                },
+                "versionId": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                }
+              }
+            },
+            "min": null,
+            "max": 50
+          }
+        }
+      }
+    },
+    {
+      "id": "subscriptions.summary",
+      "version": 1,
+      "domain": "subscriptions",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "READ",
+      "adapterKey": "subscriptions.summaryAdapter",
+      "permission": "read:billing",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "UserSubscription",
+        "locator": null
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": null,
+      "contentTrust": "SYSTEM_GENERATED",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {}
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "accessKeys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "checks": []
+            },
+            "min": null,
+            "max": 50
+          },
+          "freeForeverActive": {
+            "type": "boolean"
+          },
+          "paidSubscriptions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "unknownKeys": "strip",
+              "fields": {
+                "billingIntervalMonths": {
+                  "nullable": {
+                    "type": "number",
+                    "checks": []
+                  }
+                },
+                "cancelAtPeriodEnd": {
+                  "type": "boolean"
+                },
+                "currentPeriodEnd": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                },
+                "id": {
+                  "type": "string",
+                  "checks": []
+                },
+                "planName": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                },
+                "planType": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                },
+                "price": {
+                  "type": "object",
+                  "unknownKeys": "strip",
+                  "fields": {
+                    "amount": {
+                      "type": "string",
+                      "checks": []
+                    },
+                    "currency": {
+                      "type": "string",
+                      "checks": []
+                    }
+                  }
+                },
+                "status": {
+                  "type": "string",
+                  "checks": []
+                }
+              }
+            },
+            "min": null,
+            "max": 10
+          },
+          "trials": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "unknownKeys": "strip",
+              "fields": {
+                "expiresAt": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                },
+                "id": {
+                  "type": "string",
+                  "checks": []
+                },
+                "planName": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                },
+                "status": {
+                  "type": "string",
+                  "checks": []
+                }
+              }
+            },
+            "min": null,
+            "max": 10
+          }
+        }
+      }
+    },
+    {
+      "id": "subscriptions.trialStart",
+      "version": 1,
+      "domain": "subscriptions",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "HIGH_RISK_MUTATION",
+      "adapterKey": "subscriptions.trialStart",
+      "permission": "write:billing",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "TrialEnrollment",
+        "locator": "planId"
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": false,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": {
+        "class": "IRREVERSIBLE",
+        "capabilityId": null,
+        "capabilityVersion": null,
+        "inputMapping": null,
+        "manual": true
+      },
+      "contentTrust": "SYSTEM_GENERATED",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "planId": {
+            "type": "string",
+            "checks": [
+              "max:64",
+              "min:1"
+            ]
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "enrollmentId": {
+            "type": "string",
+            "checks": []
+          },
+          "expiresAt": {
+            "type": "string",
+            "checks": []
+          },
+          "planVersionId": {
+            "type": "string",
+            "checks": []
+          },
+          "startsAt": {
+            "type": "string",
+            "checks": []
+          },
+          "status": {
+            "type": "string",
+            "checks": []
+          }
+        }
+      }
+    },
+    {
+      "id": "subscriptions.trialStatus",
+      "version": 1,
+      "domain": "subscriptions",
+      "status": "ACTIVE",
+      "exposure": "AGENT_AVAILABLE",
+      "operationType": "READ",
+      "adapterKey": "subscriptions.trialStatus",
+      "permission": "read:billing",
+      "requiredIdentityContext": [
+        "connectionId",
+        "ownerId"
+      ],
+      "resource": {
+        "type": "TrialEnrollment",
+        "locator": null
+      },
+      "idempotency": {
+        "requiresKey": false,
+        "retrySafe": true,
+        "class": "IDEMPOTENT",
+        "scope": null
+      },
+      "async": {
+        "mode": "SYNC",
+        "asyncSupported": true,
+        "cooperativeCancellation": false
+      },
+      "reversibility": "REVERSIBLE",
+      "recovery": null,
+      "contentTrust": "SYSTEM_GENERATED",
+      "input": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {}
+      },
+      "output": {
+        "type": "object",
+        "unknownKeys": "strict",
+        "fields": {
+          "freeForeverActive": {
+            "type": "boolean"
+          },
+          "trials": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "unknownKeys": "strip",
+              "fields": {
+                "expiresAt": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                },
+                "id": {
+                  "type": "string",
+                  "checks": []
+                },
+                "planName": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                },
+                "startedAt": {
+                  "nullable": {
+                    "type": "string",
+                    "checks": []
+                  }
+                },
+                "status": {
+                  "type": "string",
+                  "checks": []
+                }
+              }
+            },
+            "min": null,
+            "max": 10
           }
         }
       }

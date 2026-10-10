@@ -37,6 +37,20 @@ const BASES: Record<string, Record<string, unknown>> = {
   agent_task_submit: { capabilityId: "tickets.list", input: {} },
   agent_task_status: { taskRef: `atk_${"0".repeat(32)}` },
   agent_task_cancel: { taskRef: `atk_${"0".repeat(32)}` },
+  // Product mutation capabilities (registered since the product-mutation
+  // change; kept in sync with the live tool surface — see manifest.lock.json).
+  "products.createDraft": { name: "Fuzz draft product", category: "TEMPLATE", price: 100 },
+  "products.update": { productId: "sim_prod_pub", description: "Fuzz update text." },
+  "products.archive": { productId: "sim_prod_pub" },
+  // Phase 9 — subscription governance tools.
+  "subscriptions.plansList": {},
+  "subscriptions.summary": {},
+  "subscriptions.accessExplain": {},
+  "subscriptions.trialStatus": {},
+  "subscriptions.billingHistory": {},
+  "subscriptions.freeEnroll": {},
+  "subscriptions.trialStart": { planId: "sim_plan_alpha" },
+  "subscriptions.cancelRequest": { subscriptionId: "sim_sub_alpha" },
 }
 
 describe("Phase 14 D — seeded fuzzing of every tool", () => {

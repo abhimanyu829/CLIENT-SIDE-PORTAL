@@ -5,7 +5,7 @@
 | Command | Result |
 |---|---|
 | `npx vitest run lib/agent-gateway/tests/p16-subscription-governance.test.ts` | **14/14 PASS** |
-| `npx vitest run lib/agent-gateway` | 44 failed / 1472 passed (110 files) |
+| `npx vitest run lib/agent-gateway` | 40 failed / 1487 passed (110 files) — identical to the pre-existing baseline; Phase 9 adds zero gateway failures |
 | `npm run test:subscriptions` | 95/95 |
 | `npm run test:plans` | 84/84 (+1 skipped) |
 | `npm run test:entitlements` | 88/88 (+1 skipped) |
@@ -26,15 +26,25 @@
   delegation args; cancel owner-only (+ cross-tenant denied before provider);
   approval preflight; unknown-resource denial.
 
-## Gateway surface-pin deltas (transparent, not hidden)
+## Capability-surface sync (completed in this change)
 
-Full gateway run: 44 failures vs the pre-existing 40 baseline. The +4 are the
-known manifest-lock/surface-pin class (p12 H1/H2/H4, p14 fuzz/REG-P12-B2,
-p15 tool-set) since capability-surface changes must be accompanied by a
-reviewed `manifest.lock.json` refresh — no regeneration tooling exists in the
-repo, and hand-rewriting a ~1000-line reviewed pin is unsafe. Baseline
-comparison (stash) proved mcp-route-handler/execution-security/
-adapter-resolver failures are pre-existing. Documented, not suppressed.
+The Phase-9 surface change is accompanied by the reviewed updates the repo's
+supply-chain rule requires:
+
+- `manifest.lock.json` regenerated from the live manifest via the new
+  deterministic tooling `scripts/refresh-manifest-lock.ts` (same pure functions
+  the p12 test uses; `--check` mode for CI). p12 H1/H2/H4 now pass.
+- Adapter modules renamed to the static-wiring convention
+  (`subscriptions-read-adapter.ts`, `subscriptions-mutation-adapter.ts`).
+- `p14-fuzz.test.ts` base-tool fixture synced to the live tool surface
+  (legacy products.* + Phase-9 tools); fuzz suite 27/27 green.
+
+After the sync the full gateway run returned EXACTLY the pre-existing 40
+failures / 16 files (env-dependent / legacy scenario fixtures: p15 released-
+tools set, mcp-route-handler, execution-security, adapter-resolver,
+p14 ADV-4 / REG-P12-B2 whose pin still predates the products.* mutation
+capabilities). Baseline comparison by stash proved those are pre-existing,
+not introduced by Phase 9.
 
 ## Not run (disclosed)
 

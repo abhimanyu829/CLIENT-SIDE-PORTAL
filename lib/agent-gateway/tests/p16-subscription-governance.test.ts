@@ -68,12 +68,12 @@ import {
   SubscriptionAccessExplainAdapter,
   SubscriptionTrialStatusAdapter,
   SubscriptionBillingListAdapter,
-} from "@/lib/agent-gateway/execution/adapters/subscription-read-adapters"
+} from "@/lib/agent-gateway/execution/adapters/subscriptions-read-adapter"
 import {
   SubscriptionFreeEnrollAdapter,
   SubscriptionTrialStartAdapter,
   SubscriptionCancelRequestAdapter,
-} from "@/lib/agent-gateway/execution/adapters/subscription-mutation-adapters"
+} from "@/lib/agent-gateway/execution/adapters/subscriptions-mutation-adapter"
 import { ExecutionError } from "@/lib/agent-gateway/execution/contracts/execution-error"
 import { enrollFreePlan, startTrial } from "@/lib/services/free-trial-service"
 import { cancelRecurringSubscription } from "@/lib/services/razorpay-billing"

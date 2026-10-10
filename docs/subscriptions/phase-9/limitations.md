@@ -14,9 +14,12 @@
 ## Environment / infra
 
 - Full gateway suite still carries the pre-existing 40-failure baseline
-  (commit `125d2c5` product-mutation staleness) plus 4 surface-pin deltas from
-  the Phase-9 capability expansion; `manifest.lock.json` refresh tooling
-  absent — documented in testing.md.
+  (commit `125d2c5` product-mutation staleness) with ZERO added by Phase 9 —
+  the Phase-9 surface change was synced through `manifest.lock.json`
+  regeneration (`scripts/refresh-manifest-lock.ts`) and the p14 fuzz fixture.
+  The remaining failures are env-dependent (Redis/releases) or legacy scenario
+  fixtures whose pins predate the product-mutation capabilities
+  (p14 ADV-4 / REG-P12-B2, p15 released-tools set) — documented in testing.md.
 - Live agent↔Razorpay round-trip blocked on the Phase-4 TEST-credential `401`
   (deferred per user).
 - Browser/E2E harness absent; UI phases validated via typecheck/lint/build.

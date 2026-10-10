@@ -15,7 +15,7 @@ import type { ExecutionResult } from "../contracts/execution-result"
 import { ExecutionError } from "../contracts/execution-error"
 import { enrollFreePlan, startTrial } from "@/lib/services/free-trial-service"
 import { cancelRecurringSubscription } from "@/lib/services/razorpay-billing"
-import { assertOwnerSubscription } from "./subscription-read-adapters"
+import { assertOwnerSubscription } from "./subscriptions-read-adapter"
 
 // ── subscriptions.free.enroll ─────────────────────────────────────────────────
 

@@ -44,12 +44,12 @@ import {
   SubscriptionAccessExplainAdapter,
   SubscriptionTrialStatusAdapter,
   SubscriptionBillingListAdapter,
-} from "./subscription-read-adapters"
+} from "./subscriptions-read-adapter"
 import {
   SubscriptionFreeEnrollAdapter,
   SubscriptionTrialStartAdapter,
   SubscriptionCancelRequestAdapter,
-} from "./subscription-mutation-adapters"
+} from "./subscriptions-mutation-adapter"
 
 export function registerCoreAdapters(registry: AdapterRegistry): void {
   registry.register(new ProductsListAdapter())
