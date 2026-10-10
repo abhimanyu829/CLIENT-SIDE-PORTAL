@@ -697,6 +697,241 @@ const refundsProcess: CapabilityDefinition = {
   securityClassification: "HIGHLY_SENSITIVE / CRITICAL — never exposable per Phase 0 architectural exclusion.",
 }
 
+// ── Phase 9 — AI-agent subscription governance ───────────────────────────────
+// Capabilities call the Phase 1-8 subscription services only. READ tier is
+// directly admissible under the autonomy evaluator; HIGH_RISK_MUTATION tier
+// always requires the existing approval engine (mandatory approval gate).
+
+const subscriptionPlanSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  planType: z.string().nullable(),
+  currency: z.string(),
+  price: z.object({ amount: z.string(), currency: z.string() }),
+  billingIntervalMonths: z.number().nullable(),
+  versionId: z.string().nullable(),
+  items: z.array(
+    z.object({
+      itemType: z.string(),
+      itemRefKey: z.string(),
+      limitValue: z.number().nullable(),
+      limitUnit: z.string().nullable(),
+    }),
+  ),
+})
+
+const subscriptionsPlansList: CapabilityDefinition = {
+  id: "subscriptions.plansList",
+  version: 1,
+  domain: "subscriptions",
+  name: "List published subscription plans",
+  description: "List published plans with authoritative Phase-2 pricing, billing interval and bundle items. Read-only; catalog data only.",
+  status: "ACTIVE",
+  operationType: "READ",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({}).strict(),
+  outputSchema: z.object({ plans: z.array(subscriptionPlanSummarySchema).max(50) }).strict(),
+  errorContract: [{ code: "INVALID_INPUT", description: "Input failed validation." }],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "SubscriptionPlan" },
+  permission: { permission: "read:billing" },
+  sideEffects: { effects: [] },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
+  async: READ_ASYNC_SUPPORT,
+  rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
+  executionReference: { adapterKey: "subscriptions.plansList" },
+  securityClassification: "INTERNAL/CONFIDENTIAL — published commercial catalog; no customer data.",
+  contentTrust: "SYSTEM_GENERATED",
+}
+
+const subscriptionPaidSummarySchema = z.object({
+  id: z.string(),
+  status: z.string(),
+  planName: z.string().nullable(),
+  planType: z.string().nullable(),
+  billingIntervalMonths: z.number().nullable(),
+  price: z.object({ amount: z.string(), currency: z.string() }),
+  currentPeriodEnd: z.string().nullable(),
+  cancelAtPeriodEnd: z.boolean(),
+})
+
+const subscriptionsSummary: CapabilityDefinition = {
+  id: "subscriptions.summary",
+  version: 1,
+  domain: "subscriptions",
+  name: "Customer subscription summary",
+  description: "Owner-scoped summary of paid subscriptions, trials, free enrollment and effective access from the Phase 7 customer view service. Read-only.",
+  status: "ACTIVE",
+  operationType: "READ",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({}).strict(),
+  outputSchema: z
+    .object({
+      paidSubscriptions: z.array(subscriptionPaidSummarySchema).max(10),
+      trials: z.array(z.object({ id: z.string(), planName: z.string().nullable(), status: z.string(), expiresAt: z.string().nullable() })).max(10),
+      freeForeverActive: z.boolean(),
+      accessKeys: z.array(z.string()).max(50),
+    })
+    .strict(),
+  errorContract: [{ code: "INVALID_INPUT", description: "Input failed validation." }],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "UserSubscription" },
+  permission: { permission: "read:billing" },
+  sideEffects: { effects: [] },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
+  async: READ_ASYNC_SUPPORT,
+  rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
+  executionReference: { adapterKey: "subscriptions.summaryAdapter" },
+  securityClassification: "SENSITIVE — strictly owner-scoped; never bulk.",
+  contentTrust: "SYSTEM_GENERATED",
+}
+
+const subscriptionsAccessExplain: CapabilityDefinition = {
+  id: "subscriptions.accessExplain",
+  version: 1,
+  domain: "subscriptions",
+  name: "Explain effective access",
+  description: "Owner-scoped effective entitlement keys and limits via the Phase 3 resolver. Read-only.",
+  status: "ACTIVE",
+  operationType: "READ",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({}).strict(),
+  outputSchema: z.object({ accessKeys: z.array(z.string()).max(50), storageLimit: z.object({ limitValue: z.number().nullable(), limitUnit: z.string().nullable() }), adminLimit: z.object({ limitValue: z.number().nullable(), limitUnit: z.string().nullable() }) }).strict(),
+  errorContract: [{ code: "INVALID_INPUT", description: "Input failed validation." }],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "EntitlementGrant" },
+  permission: { permission: "read:entitlements" },
+  sideEffects: { effects: [] },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
+  async: READ_ASYNC_SUPPORT,
+  rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
+  executionReference: { adapterKey: "subscriptions.accessExplain" },
+  securityClassification: "SENSITIVE — strictly owner-scoped.",
+  contentTrust: "SYSTEM_GENERATED",
+}
+
+const subscriptionsTrialStatus: CapabilityDefinition = {
+  id: "subscriptions.trialStatus",
+  version: 1,
+  domain: "subscriptions",
+  name: "Trial and free enrollment status",
+  description: "Owner-scoped trial enrollments (with authoritative expiry) and Free Forever enrollment. Read-only.",
+  status: "ACTIVE",
+  operationType: "READ",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({}).strict(),
+  outputSchema: z.object({ trials: z.array(z.object({ id: z.string(), planName: z.string().nullable(), status: z.string(), startedAt: z.string().nullable(), expiresAt: z.string().nullable() })).max(10), freeForeverActive: z.boolean() }).strict(),
+  errorContract: [{ code: "INVALID_INPUT", description: "Input failed validation." }],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "TrialEnrollment" },
+  permission: { permission: "read:billing" },
+  sideEffects: { effects: [] },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
+  async: READ_ASYNC_SUPPORT,
+  rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
+  executionReference: { adapterKey: "subscriptions.trialStatus" },
+  securityClassification: "SENSITIVE — strictly owner-scoped; expiresAt is the authoritative timestamp.",
+  contentTrust: "SYSTEM_GENERATED",
+}
+
+const subscriptionsBillingList: CapabilityDefinition = {
+  id: "subscriptions.billingHistory",
+  version: 1,
+  domain: "subscriptions",
+  name: "List billing history",
+  description: "Owner-scoped recent billing records (charges/invoices/payments) from the Phase 7 view service. Read-only.",
+  status: "ACTIVE",
+  operationType: "READ",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({}).strict(),
+  outputSchema: z.object({ billing: z.array(z.object({ kind: z.string(), reference: z.string().nullable(), amount: z.object({ amount: z.string(), currency: z.string() }), status: z.string(), createdAt: z.string() })).max(20) }).strict(),
+  errorContract: [{ code: "INVALID_INPUT", description: "Input failed validation." }],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "SubscriptionCharge" },
+  permission: { permission: "read:billing" },
+  sideEffects: { effects: [] },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Safe to retry.", class: "IDEMPOTENT" },
+  async: READ_ASYNC_SUPPORT,
+  rollback: { reversibility: "REVERSIBLE", mechanism: "N/A — read-only." },
+  executionReference: { adapterKey: "subscriptions.billingHistory" },
+  securityClassification: "SENSITIVE — strictly owner-scoped billing history.",
+  contentTrust: "SYSTEM_GENERATED",
+}
+
+// ── Phase 9 mutation tier (HIGH_RISK_MUTATION → mandatory approval) ──────────
+
+const subscriptionsFreeEnroll: CapabilityDefinition = {
+  id: "subscriptions.freeEnroll",
+  version: 1,
+  domain: "subscriptions",
+  name: "Enroll in Free Forever",
+  description: "Enrolls the identity's owner in the published FREE plan (Phase 6 service). Zero-price, no payment, idempotent per owner+version. HIGH_RISK_MUTATION: mandatory human approval.",
+  status: "ACTIVE",
+  operationType: "HIGH_RISK_MUTATION",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({}).strict(),
+  outputSchema: z.object({ enrollmentId: z.string(), existing: z.boolean() }).strict(),
+  errorContract: [{ code: "RESOURCE_NOT_FOUND", description: "No published FREE plan configured." }, { code: "CONFLICT", description: "Enrollment refused by Phase 6 policy." }],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "FreeEnrollment" },
+  permission: { permission: "write:billing" },
+  sideEffects: { effects: ["creates Free Forever entitlement grants (Phase 3)"], triggersRevalidation: { tags: ["entitlements"] } },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Existing enrollment returned; no duplicate grants.", class: "IDEMPOTENT" },
+  async: { executionMode: "SYNC" },
+  rollback: { reversibility: "REVERSIBLE", mechanism: "Existing Phase-6 cancellation path (no UI exposed yet); grants are source-bound." },
+  executionReference: { adapterKey: "subscriptions.freeEnroll" },
+  securityClassification: "SENSITIVE — commercial enrollment; approval required.",
+  contentTrust: "SYSTEM_GENERATED",
+}
+
+const subscriptionsTrialStart: CapabilityDefinition = {
+  id: "subscriptions.trialStart",
+  version: 1,
+  domain: "subscriptions",
+  name: "Start a 14-day trial",
+  description: "Starts a 14-day trial on a published paid plan for the identity's owner (Phase 6 service, server-computed eligibility). Never charges. HIGH_RISK_MUTATION: mandatory human approval.",
+  status: "ACTIVE",
+  operationType: "HIGH_RISK_MUTATION",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({ planId: z.string().min(1).max(64) }).strict(),
+  outputSchema: z.object({ enrollmentId: z.string(), planVersionId: z.string(), status: z.string(), startsAt: z.string(), expiresAt: z.string() }).strict(),
+  errorContract: [{ code: "CONFLICT", description: "Phase-6 eligibility refused or trial already active." }, { code: "RESOURCE_NOT_FOUND", description: "Plan unavailable." }],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "TrialEnrollment", resourceLocator: "planId" },
+  permission: { permission: "write:billing" },
+  sideEffects: { effects: ["creates trial grants (Phase 3, tied to expiry)"], triggersRevalidation: { tags: ["entitlements"] } },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Scope-key unique; duplicates refused.", class: "IDEMPOTENT" },
+  async: { executionMode: "SYNC" },
+  rollback: { reversibility: "REVERSIBLE", mechanism: "Phase-6 expiry/cancellation paths; grants source-bound." },
+  executionReference: { adapterKey: "subscriptions.trialStart" },
+  securityClassification: "SENSITIVE — commercial enrollment; approval required.",
+  contentTrust: "SYSTEM_GENERATED",
+}
+
+const subscriptionsCancelRequest: CapabilityDefinition = {
+  id: "subscriptions.cancelRequest",
+  version: 1,
+  domain: "subscriptions",
+  name: "Request subscription cancellation",
+  description: "Requests cancellation of the identity's OWN paid subscription through the Phase-4 service (owner-scoped; admin flag never set). Cancellation is never fabricated from an agent claim — the provider operation and approval gate govern execution. HIGH_RISK_MUTATION: mandatory human approval.",
+  status: "ACTIVE",
+  operationType: "HIGH_RISK_MUTATION",
+  exposure: "AGENT_AVAILABLE",
+  inputSchema: z.object({ subscriptionId: z.string().min(1).max(64), cancelAtCycleEnd: z.boolean().optional() }).strict(),
+  outputSchema: z.object({ status: z.string() }).strict(),
+  errorContract: [{ code: "RESOURCE_NOT_FOUND", description: "No subscription for the given id, or not owned." }, { code: "CONFLICT", description: "State rejects the cancellation." }],
+  requiredIdentityContext: ["connectionId", "ownerId"],
+  resource: { resourceType: "UserSubscription", resourceLocator: "subscriptionId" },
+  permission: { permission: "write:billing" },
+  sideEffects: { effects: ["cancels the owner's own recurring subscription (Phase 4)"], triggersRevalidation: { tags: ["subscriptions", "entitlements"] } },
+  idempotency: { requiresIdempotencyKey: false, retrySafe: true, duplicateBehavior: "Repeated cancellation is idempotent (terminal state).", class: "IDEMPOTENT" },
+  async: { executionMode: "SYNC" },
+  rollback: { reversibility: "REVERSIBLE", mechanism: "Phase-4 provider resubscription flow (explicit customer action)." },
+  executionReference: { adapterKey: "subscriptions.cancelRequest" },
+  securityClassification: "SENSITIVE — financial lifecycle mutation; approval required.",
+  contentTrust: "SYSTEM_GENERATED",
+}
+
 export const CORE_CAPABILITY_MANIFEST: readonly CapabilityDefinition[] = [
   productsList,
   productsGet,
@@ -717,6 +952,15 @@ export const CORE_CAPABILITY_MANIFEST: readonly CapabilityDefinition[] = [
   couponsCreate,
   productsUpdatePricing,
   refundsProcess,
+  // Phase 9
+  subscriptionsPlansList,
+  subscriptionsSummary,
+  subscriptionsAccessExplain,
+  subscriptionsTrialStatus,
+  subscriptionsBillingList,
+  subscriptionsFreeEnroll,
+  subscriptionsTrialStart,
+  subscriptionsCancelRequest,
 ]
 
 /**

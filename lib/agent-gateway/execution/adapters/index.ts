@@ -37,6 +37,19 @@ import { AnalyticsProductPerformanceAdapter } from "./analytics-product-performa
 import { ProductsCreateDraftAdapter } from "./products-create-draft-adapter"
 import { ProductsUpdateAdapter } from "./products-update-adapter"
 import { ProductsArchiveAdapter } from "./products-archive-adapter"
+// Phase 9 — subscription governance (AI-agent).
+import {
+  SubscriptionPlansListAdapter,
+  SubscriptionSummaryAdapter,
+  SubscriptionAccessExplainAdapter,
+  SubscriptionTrialStatusAdapter,
+  SubscriptionBillingListAdapter,
+} from "./subscription-read-adapters"
+import {
+  SubscriptionFreeEnrollAdapter,
+  SubscriptionTrialStartAdapter,
+  SubscriptionCancelRequestAdapter,
+} from "./subscription-mutation-adapters"
 
 export function registerCoreAdapters(registry: AdapterRegistry): void {
   registry.register(new ProductsListAdapter())
@@ -55,4 +68,13 @@ export function registerCoreAdapters(registry: AdapterRegistry): void {
   registry.register(new ProductsCreateDraftAdapter())
   registry.register(new ProductsUpdateAdapter())
   registry.register(new ProductsArchiveAdapter())
+  // Phase 9
+  registry.register(new SubscriptionPlansListAdapter())
+  registry.register(new SubscriptionSummaryAdapter())
+  registry.register(new SubscriptionAccessExplainAdapter())
+  registry.register(new SubscriptionTrialStatusAdapter())
+  registry.register(new SubscriptionBillingListAdapter())
+  registry.register(new SubscriptionFreeEnrollAdapter())
+  registry.register(new SubscriptionTrialStartAdapter())
+  registry.register(new SubscriptionCancelRequestAdapter())
 }
