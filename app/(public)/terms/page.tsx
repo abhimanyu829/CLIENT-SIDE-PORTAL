@@ -2,6 +2,8 @@ import React from "react"
 import { Metadata } from "next"
 import Link from "next/link"
 import { FileText, ShieldCheck, CreditCard, Scale, AlertCircle, ArrowRight, Lock, ExternalLink, BookOpen, CheckCircle2 } from "lucide-react"
+import { BrandSectionList } from "@/components/content/BrandBlocks"
+import { TERMS_ADDENDUM } from "@/lib/content/legal-blocks"
 
 export const metadata: Metadata = {
   title: "Terms of Service — NexusAI",
@@ -113,7 +115,7 @@ export default function TermsPage() {
                 <h2 className="text-2xl font-extrabold text-zinc-900">1. Acceptance of Terms</h2>
               </div>
               <p className="text-zinc-600 text-sm leading-relaxed font-medium">
-                By accessing, registering for, or using the NexusAI platform, APIs, developer SDKs, or hosted AI workflows (collectively, the "Service"), you agree to be bound by these Terms of Service. If you are entering into this agreement on behalf of a company or other legal entity, you represent that you have authority to bind such entity.
+                By accessing, registering for, or using the NexusAI platform, APIs, developer SDKs, or hosted AI workflows (collectively, the &ldquo;Service&rdquo;), you agree to be bound by these Terms of Service. If you are entering into this agreement on behalf of a company or other legal entity, you represent that you have authority to bind such entity.
               </p>
               
               <div className="bg-amber-50/80 border border-amber-200/90 rounded-xl p-4 text-xs font-semibold text-amber-900 flex items-start gap-3">
@@ -258,7 +260,8 @@ export default function TermsPage() {
         </div>
 
       </div>
+
+      <BrandSectionList sections={TERMS_ADDENDUM} eyebrow="Platform terms" />
     </div>
   )
 }
-

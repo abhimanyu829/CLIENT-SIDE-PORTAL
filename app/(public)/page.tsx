@@ -9,6 +9,8 @@ import ProductCard from "@/components/marketplace/ProductCard"
 import { CtaVideoBackground } from "@/components/effects/CtaVideoBackground"
 import { MotionWrapper } from "@/components/ui/MotionWrapper"
 import { AuroraHero } from "@/components/ui/aurora-hero"
+import { BrandSectionList } from "@/components/content/BrandBlocks"
+import { HOME_BRAND } from "@/lib/content/brand-blocks"
 
 export const revalidate = 60
 
@@ -16,11 +18,11 @@ export const revalidate = 60
 export async function generateMetadata() {
   const count = await db.product.count({ where: { status: ProductStatus.AVAILABLE } }).catch(() => 0)
   return {
-    title: "NexusAI — The World's Best AI SaaS Marketplace",
-    description: `Deploy ${count}+ AI agents, SaaS tools, automation workflows, and APIs. The most advanced AI marketplace platform, trusted by developers and enterprises worldwide.`,
+    title: "Abhibhideveloper | AI Solutions, Software & Web Development",
+    description: `Explore AI agents, workflow automation, website development, custom software, SaaS products and digital solutions with Abhibhideveloper. ${count} live products in the marketplace.`,
     openGraph: {
-      title: "NexusAI — AI SaaS Marketplace",
-      description: `${count}+ AI products ready to deploy. Start free today.`,
+      title: "Abhibhideveloper — Technology That Moves Your Ideas Forward",
+      description: "Build, automate, launch, and manage digital solutions with Abhibhideveloper.",
     },
   }
 }
@@ -609,6 +611,9 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── SECTION 11.5: BRAND CONTENT (About the platform, what we do, how it works) ── */}
+      <BrandSectionList sections={HOME_BRAND} eyebrow="About Abhibhideveloper" />
 
       {/* ── SECTION 12: FINAL CTA ───────────────────────────────────────────── */}
       <section className="py-[80px] px-4 bg-background border-t border-border">

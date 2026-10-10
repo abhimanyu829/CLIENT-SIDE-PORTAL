@@ -37,6 +37,9 @@ const FOOTER_LINKS = [
       ["Documentation", "/docs"],
       ["API Reference", "/docs/api"],
       ["Live Demos", "/demo"],
+      ["Guides", "/blog/guides"],
+      ["How It Works", "/how-it-works"],
+      ["FAQs", "/faq"],
       ["Compare Products", "/compare"],
       ["Feedback & Ratings", "/feedback"],
       ["Status Page", "https://status.nexusai.app"],
@@ -62,6 +65,7 @@ const FOOTER_LINKS = [
       ["GDPR", "/gdpr"],
       ["Security", "/security"],
       ["Refund Policy", "/refund-policy"],
+      ["Acceptable Use", "/acceptable-use-policy"],
     ],
   },
 ]
@@ -269,5 +273,3 @@ export default function Footer() {
     </footer>
   )
 }
-
-

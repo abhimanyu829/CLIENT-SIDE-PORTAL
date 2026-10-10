@@ -1,5 +1,7 @@
 import React from "react"
 import { Metadata } from "next"
+import { BrandSectionList } from "@/components/content/BrandBlocks"
+import { COOKIE_ADDENDUM } from "@/lib/content/legal-blocks"
 
 export const metadata: Metadata = {
   title: "Cookie Policy — NexusAI",
@@ -33,6 +35,8 @@ export default function CookiesPage() {
           </p>
         </div>
       </div>
+
+      <BrandSectionList sections={COOKIE_ADDENDUM} eyebrow="Cookies" />
     </div>
   )
 }

@@ -2,6 +2,8 @@ import React from "react"
 import { Metadata } from "next"
 import Link from "next/link"
 import { ShieldCheck, Lock, Database, Layers, Share2, UserCheck, ArrowRight, ExternalLink, BookOpen, AlertCircle, FileText, CheckCircle2 } from "lucide-react"
+import { BrandSectionList } from "@/components/content/BrandBlocks"
+import { PRIVACY_ADDENDUM } from "@/lib/content/legal-blocks"
 
 export const metadata: Metadata = {
   title: "Privacy Policy — ABHIBHIDEVELOPERS",
@@ -246,7 +248,8 @@ export default function PrivacyPage() {
         </div>
 
       </div>
+
+      <BrandSectionList sections={PRIVACY_ADDENDUM} eyebrow="Platform privacy" />
     </div>
   )
 }
-

@@ -2,6 +2,8 @@ import React from "react"
 import Link from "next/link"
 import { Metadata } from "next"
 import { Globe, Users, Target, Code, Heart, Zap, Shield, Rocket, Sparkles, ArrowRight, CheckCircle2, Cpu, Layers, Award } from "lucide-react"
+import { BrandSectionList } from "@/components/content/BrandBlocks"
+import { ABOUT_BRAND } from "@/lib/content/brand-blocks"
 
 export const metadata: Metadata = {
   title: "About Us — ABHIBHIDEVELOPERS Platform",
@@ -83,7 +85,7 @@ export default function AboutPage() {
                 href="/careers"
                 className="px-6 py-3.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-bold text-sm transition-all border border-zinc-200 cursor-pointer"
               >
-                View Careers (We're Hiring!)
+                View Careers (We&apos;re Hiring!)
               </Link>
             </div>
           </div>
@@ -194,7 +196,8 @@ export default function AboutPage() {
         </div>
 
       </div>
+
+      <BrandSectionList sections={ABOUT_BRAND} eyebrow="Our story" />
     </div>
   )
 }
-

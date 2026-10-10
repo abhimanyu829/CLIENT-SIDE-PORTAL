@@ -1,6 +1,8 @@
 import React from "react"
 import { Metadata } from "next"
 import Link from "next/link"
+import { BrandSectionList } from "@/components/content/BrandBlocks"
+import { REFUND_ADDENDUM } from "@/lib/content/legal-blocks"
 import {
   ShieldCheck,
   Clock,
@@ -513,6 +515,8 @@ export default function RefundPolicyPage() {
         secondaryCtaText="Contact Support"
         secondaryCtaHref="/dashboard/tickets"
       />
+
+      <BrandSectionList sections={REFUND_ADDENDUM} eyebrow="Delivery, cancellation & refunds" />
     </div>
   )
 }

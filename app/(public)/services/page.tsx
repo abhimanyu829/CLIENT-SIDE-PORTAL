@@ -2,6 +2,8 @@ import { db } from "@/lib/db"
 import Link from "next/link"
 import { ArrowRight, Briefcase, Layers3, Sparkles } from "lucide-react"
 import { ServiceDiscoveryShelf } from "@/components/services/ServiceDiscoveryShelf"
+import { BrandSectionList } from "@/components/content/BrandBlocks"
+import { SERVICES_BRAND } from "@/lib/content/brand-blocks"
 
 type Props = {
   searchParams: Promise<{ category?: string }>
@@ -194,6 +196,8 @@ export default async function ServicesDirectoryPage({ searchParams }: Props) {
           </div>
         </section>
       </div>
+
+      <BrandSectionList sections={SERVICES_BRAND} eyebrow="Services" />
     </div>
   )
 }
