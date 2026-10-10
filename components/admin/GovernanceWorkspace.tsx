@@ -146,7 +146,8 @@ export default function GovernanceWorkspace({ isSuperAdmin, adminId }: { isSuper
           if (filters.status) q.set("status", filters.status)
           if (filters.planType) q.set("planType", filters.planType)
           if (filters.search) q.set("search", filters.search)
-          setSubs((await get(`/api/admin/subscriptions-governance/subscriptions?${q.toString()}`)).data as never)
+          const page = (await get(`/api/admin/subscriptions-governance/subscriptions?${q.toString()}`)).data as { items?: unknown[] }
+          setSubs((Array.isArray(page?.items) ? page.items : []) as never)
         }
         if (target === "plans") setPlans((await get("/api/admin/subscriptions-governance/plans")).data as never)
         if (target === "enrollments") {
@@ -154,7 +155,10 @@ export default function GovernanceWorkspace({ isSuperAdmin, adminId }: { isSuper
           setFrees((await get("/api/admin/subscriptions-governance/enrollments?type=free")).data as never)
         }
         if (target === "issues") setIssues((await get("/api/admin/subscriptions-governance/issues")).data as never)
-        if (target === "audit") setAudit((await get("/api/admin/subscriptions-governance/audit")).data as never)
+        if (target === "audit") {
+          const page = (await get("/api/admin/subscriptions-governance/audit")).data as { items?: unknown[] }
+          setAudit((Array.isArray(page?.items) ? page.items : []) as never)
+        }
         if (target === "reconciliation") setRecon((await get("/api/admin/subscriptions-governance/reconciliation")).data as never)
       } catch (e) {
         setError((e as Error).message ?? "Failed to load")
