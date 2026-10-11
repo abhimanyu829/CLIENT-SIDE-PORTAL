@@ -219,18 +219,6 @@ function GridCard(p: ProductCardProps) {
           <h3 className="font-bold text-white text-sm mb-1 group-hover:text-purple-300 transition-colors line-clamp-1">{p.name}</h3>
           <p className="text-zinc-500 text-xs mb-2 line-clamp-2">{p.tagline}</p>
 
-          {/* Price */}
-          <div className={cn("inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold mb-2", hasFlash ? "bg-red-500/15 text-red-400 border border-red-500/30" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30")}>
-            <PriceDisplay
-              price={p.startingPrice}
-              discount={p.discountPrice}
-              flash={p.flashSalePrice}
-              flashEnd={p.flashSaleEndsAt}
-              currency={p.currency}
-              interval={p.interval}
-            />
-          </div>
-
           {/* Flash countdown */}
           {hasFlash && p.flashSaleEndsAt && (
             <div className="mb-2 flex items-center gap-1.5 text-xs text-red-400">
@@ -239,11 +227,23 @@ function GridCard(p: ProductCardProps) {
             </div>
           )}
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <Stars rating={p.averageRating} count={p.reviewCount} />
             {p.activeUsers !== undefined && p.activeUsers > 0 && (
               <span className="text-[10px] text-zinc-600">{p.activeUsers.toLocaleString()} users</span>
             )}
+          </div>
+
+          {/* Price — above action buttons */}
+          <div className={cn("flex items-center px-3 py-1.5 rounded-xl text-sm font-bold mb-3", hasFlash ? "bg-red-500/15 text-red-400 border border-red-500/30" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30")}>
+            <PriceDisplay
+              price={p.startingPrice}
+              discount={p.discountPrice}
+              flash={p.flashSalePrice}
+              flashEnd={p.flashSaleEndsAt}
+              currency={p.currency}
+              interval={p.interval}
+            />
           </div>
           <ActionButtons p={p} layout="grid" />
         </div>
@@ -288,7 +288,6 @@ function FeaturedCard(p: ProductCardProps) {
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <Stars rating={p.averageRating} count={p.reviewCount} />
-            <PriceDisplay price={p.startingPrice} discount={p.discountPrice} flash={p.flashSalePrice} flashEnd={p.flashSaleEndsAt} currency={p.currency} interval={p.interval} />
           </div>
           {hasFlash && p.flashSaleEndsAt && (
             <div className="flex items-center gap-2 mb-3 text-xs text-red-400 font-medium">
@@ -296,6 +295,10 @@ function FeaturedCard(p: ProductCardProps) {
               <CountdownTimer endDate={p.flashSaleEndsAt} variant="compact" />
             </div>
           )}
+          {/* Price — above action buttons */}
+          <div className={cn("flex items-center px-3 py-1.5 rounded-xl text-sm font-bold mb-3", hasFlash ? "bg-red-500/15 text-red-400 border border-red-500/30" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30")}>
+            <PriceDisplay price={p.startingPrice} discount={p.discountPrice} flash={p.flashSalePrice} flashEnd={p.flashSaleEndsAt} currency={p.currency} interval={p.interval} />
+          </div>
           <ActionButtons p={p} layout="row" />
         </div>
         </div>
@@ -337,9 +340,8 @@ function SpotlightCard(p: ProductCardProps) {
             )}
           </div>
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <Stars rating={p.averageRating} count={p.reviewCount} />
-              <PriceDisplay price={p.startingPrice} discount={p.discountPrice} flash={p.flashSalePrice} flashEnd={p.flashSaleEndsAt} currency={p.currency} interval={p.interval} />
             </div>
             {hasFlash && p.flashSaleEndsAt && (
               <div className="flex items-center gap-2 mb-3 text-xs text-red-400">
@@ -347,6 +349,10 @@ function SpotlightCard(p: ProductCardProps) {
                 <CountdownTimer endDate={p.flashSaleEndsAt} variant="compact" />
               </div>
             )}
+            {/* Price — above action buttons */}
+            <div className={cn("flex items-center px-3 py-1.5 rounded-xl text-sm font-bold mb-3", hasFlash ? "bg-red-500/15 text-red-400 border border-red-500/30" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30")}>
+              <PriceDisplay price={p.startingPrice} discount={p.discountPrice} flash={p.flashSalePrice} flashEnd={p.flashSaleEndsAt} currency={p.currency} interval={p.interval} />
+            </div>
             <ActionButtons p={p} layout="row" />
           </div>
         </div>
