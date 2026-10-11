@@ -74,7 +74,34 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const { addItem } = useCart()
   const router = useRouter()
 
-  const features: string[] = Array.isArray(product.features) ? product.features as string[] : []
+  const features: string[] = Array.isArray(product.features)
+    ? (product.features as unknown[])
+        .map((feature): string => {
+          if (typeof feature === "string") {
+            return feature;
+          }
+
+          if (feature && typeof feature === "object") {
+            const item = feature as {
+              title?: unknown;
+              description?: unknown;
+            };
+
+            const title =
+              typeof item.title === "string" ? item.title.trim() : "";
+
+            const description =
+              typeof item.description === "string"
+                ? item.description.trim()
+                : "";
+
+            return [title, description].filter(Boolean).join(" — ");
+          }
+
+          return "";
+        })
+        .filter((feature) => feature.length > 0)
+    : [];
   const integrations = Array.isArray(product.integrationCatalog) ? product.integrationCatalog as any[] : []
   const supportPlans = Array.isArray(product.supportPlans) ? product.supportPlans as any[] : []
   const faqs = Array.isArray(product.faqs) ? product.faqs as any[] : []
