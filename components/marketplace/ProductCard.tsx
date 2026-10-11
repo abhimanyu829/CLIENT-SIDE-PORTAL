@@ -211,25 +211,25 @@ function GridCard(p: ProductCardProps) {
             {p.isPremium && <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-[10px] font-bold px-2 py-0.5 rounded-full text-white">👑 PRO</span>}
           </div>
 
-          {/* Price badge */}
-          <div className="absolute bottom-2.5 right-2.5">
-            <span className={cn("backdrop-blur text-[10px] font-bold px-2 py-1 rounded-full", hasFlash ? "bg-red-500/90 text-white" : "bg-emerald-500/90 text-white")}>
-              <PriceDisplay
-                price={p.startingPrice}
-                discount={p.discountPrice}
-                flash={p.flashSalePrice}
-                flashEnd={p.flashSaleEndsAt}
-                currency={p.currency}
-                interval={p.interval}
-              />
-            </span>
-          </div>
+
         </div>
 
         {/* Content */}
         <div className="p-4">
           <h3 className="font-bold text-white text-sm mb-1 group-hover:text-purple-300 transition-colors line-clamp-1">{p.name}</h3>
-          <p className="text-zinc-500 text-xs mb-3 line-clamp-2">{p.tagline}</p>
+          <p className="text-zinc-500 text-xs mb-2 line-clamp-2">{p.tagline}</p>
+
+          {/* Price */}
+          <div className={cn("inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold mb-2", hasFlash ? "bg-red-500/15 text-red-400 border border-red-500/30" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30")}>
+            <PriceDisplay
+              price={p.startingPrice}
+              discount={p.discountPrice}
+              flash={p.flashSalePrice}
+              flashEnd={p.flashSaleEndsAt}
+              currency={p.currency}
+              interval={p.interval}
+            />
+          </div>
 
           {/* Flash countdown */}
           {hasFlash && p.flashSaleEndsAt && (
