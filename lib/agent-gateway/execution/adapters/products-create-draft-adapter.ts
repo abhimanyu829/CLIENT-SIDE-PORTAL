@@ -75,6 +75,24 @@ export class ProductsCreateDraftAdapter implements AgentCapabilityAdapter<Produc
       throw new ExecutionError("CONFLICT", `A product with slug "${slug}" already exists.`)
     }
 
+    // Resolve the vendor profile belonging to the authenticated user.
+    const vendorProfiles = await db.vendorProfile.findMany({
+      where: { userId: context.ownerId },
+      select: { id: true },
+      take: 2,
+    });
+
+    if (vendorProfiles.length !== 1) {
+      throw new ExecutionError(
+        "INVALID_INPUT",
+        vendorProfiles.length === 0
+          ? "No vendor profile is linked to this account. Complete vendor onboarding before creating a product."
+          : "Multiple vendor profiles are linked to this account. Select the intended vendor before creating a product."
+      );
+    }
+
+    const vendorId = vendorProfiles[0]!.id;
+
     // Create product with transaction
     const product = await db.$transaction(async (tx) => {
       const newProduct = await tx.product.create({
@@ -87,7 +105,7 @@ export class ProductsCreateDraftAdapter implements AgentCapabilityAdapter<Produc
           type: input.type as ProductType,
           category: input.category || null,
           status: "DRAFT", // Always DRAFT for agent-created products
-          vendorId: context.ownerId, // Vendor-scoped
+          vendorId, // Actual VendorProfile primary key
           isPremium: false,
           proPoints: 0,
           tags: input.tags ?? [],
