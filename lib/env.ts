@@ -95,6 +95,13 @@ const envSchema = z.object({
 
   // Encryption (64 hex chars = 32 bytes)
   ENCRYPTION_KEY: z.string().length(64).optional().or(z.literal('').transform(() => undefined)),
+
+  // AI Support Chatbot
+  AI_SUPPORT_EMBEDDING_MODEL: optStr.default("text-embedding-3-small"),
+  AI_SUPPORT_CHAT_MODEL: optStr.default("gpt-4o"),
+  AI_SUPPORT_EMBEDDING_DIM: z.coerce.number().int().positive().optional().default(1536),
+  AI_SUPPORT_TOP_K: z.coerce.number().int().positive().optional().default(5),
+  AI_SUPPORT_CHUNK_SIZE: z.coerce.number().int().positive().optional().default(800),
 })
 
 let parsedEnv: z.infer<typeof envSchema>

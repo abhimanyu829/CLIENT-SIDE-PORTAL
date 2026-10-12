@@ -3,6 +3,7 @@ import "./globals.css"
 import { Providers } from "@/components/layout/Providers"
 import { ClerkProvider } from "@clerk/nextjs"
 import { clerkAppearance } from "@/lib/clerk"
+import { AiSupportWidget } from "@/components/ai-support/AiSupportWidget"
 
 export const metadata: Metadata = {
   title: {
@@ -31,6 +32,7 @@ export default function RootLayout({
       <html lang="en" suppressHydrationWarning>
         <body className="light-theme font-sans antialiased">
           <Providers>{children}</Providers>
+          <AiSupportWidget />
         </body>
       </html>
     </ClerkProvider>

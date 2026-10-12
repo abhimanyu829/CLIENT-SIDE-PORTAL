@@ -63,5 +63,10 @@ upgraded_efficient_architecture.md
 # Turborepo
 .turbo/
 
+# Graphify generated caches (do not commit)
+graphify-out/cache/
+graphify-out/.rebuild.lock
+graphify-out/2026-*/
+
 # Sentry Config File
 .env.sentry-build-plugin

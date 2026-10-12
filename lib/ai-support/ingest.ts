@@ -1,0 +1,85 @@
+import { db } from "@/lib/db"
+import { chunkText, hashContent } from "@/lib/ai-support/chunking"
+import { embedTexts } from "@/lib/ai-support/provider"
+import { env } from "@/lib/env"
+
+function stripBoilerplate(html: string): string {
+  // Remove scripts/styles/nav/footer
+  let t = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "")
+  t = t.replace(/<[^>]+>/g, " ")
+  return t.replace(/\s+/g, " ").trim()
+}
+
+export async function ingestSource(sourceId: string): Promise<{ chunks: number }> {
+  const source = await db.knowledgeSource.findUnique({ where: { id: sourceId } })
+  if (!source) throw new Error("Source not found")
+  const raw = source.canonicalUrl ? await fetch(source.canonicalUrl).then((r) => r.text()).catch(() => "") : ""
+  if (!raw) {
+    await db.knowledgeSource.update({ where: { id: sourceId }, data: { errorDetails: "Fetch failed", lastIngestedAt: new Date() } })
+    return { chunks: 0 }
+  }
+  const text = stripBoilerplate(raw)
+  const hash = hashContent(text)
+  if (source.sourceHash === hash) return { chunks: 0 }
+
+  // Upsert document
+  const doc = await db.knowledgeDocument.upsert({
+    where: { id: `${sourceId}-doc` },
+    create: { id: `${sourceId}-doc`, sourceId, title: source.title, canonicalUrl: source.canonicalUrl, contentHash: hash },
+    update: { contentHash: hash, isActive: true },
+  })
+
+  await db.knowledgeChunk.deleteMany({ where: { documentId: doc.id } })
+  const chunks = chunkText(text, env.AI_SUPPORT_CHUNK_SIZE, 100)
+  if (chunks.length === 0) {
+    await db.knowledgeSource.update({ where: { id: sourceId }, data: { sourceHash: hash, lastIngestedAt: new Date() } })
+    return { chunks: 0 }
+  }
+
+  // Embed in batches of 20
+  const embeddings: number[][] = []
+  for (let i = 0; i < chunks.length; i += 20) {
+    const batch = chunks.slice(i, i + 20)
+    try {
+      const embs = await embedTexts(batch)
+      embeddings.push(...embs)
+    } catch {
+      // Fallback: store without embedding (lexical only)
+      for (let j = 0; j < batch.length; j++) embeddings.push([])
+    }
+  }
+
+  for (let i = 0; i < chunks.length; i++) {
+    const emb = embeddings[i]
+    await db.$executeRawUnsafe(
+      emb.length > 0
+        ? `INSERT INTO "KnowledgeChunk" (id, "documentId", "sourceId", "chunkIndex", content, embedding, "createdAt") VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5::vector, NOW())`
+        : `INSERT INTO "KnowledgeChunk" (id, "documentId", "sourceId", "chunkIndex", content, "createdAt") VALUES (gen_random_uuid()::text, $1, $2, $3, $4, NOW())`,
+      doc.id,
+      sourceId,
+      i,
+      chunks[i],
+      emb.length > 0 ? `[${emb.join(",")}]` : undefined,
+    )
+  }
+
+  await db.knowledgeSource.update({ where: { id: sourceId }, data: { sourceHash: hash, lastIngestedAt: new Date(), errorDetails: null } })
+  return { chunks: chunks.length }
+}
+
+export async function seedDefaultSources(): Promise<void> {
+  const defaults = [
+    { sourceType: "page", canonicalUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/pricing`, title: "Pricing" },
+    { sourceType: "page", canonicalUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/faq`, title: "FAQ" },
+    { sourceType: "page", canonicalUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/docs`, title: "Docs" },
+    { sourceType: "page", canonicalUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/refund-policy`, title: "Refund Policy" },
+    { sourceType: "page", canonicalUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/privacy`, title: "Privacy" },
+  ]
+  for (const d of defaults) {
+    await db.knowledgeSource.upsert({
+      where: { canonicalUrl: d.canonicalUrl },
+      create: d,
+      update: {},
+    })
+  }
+}
