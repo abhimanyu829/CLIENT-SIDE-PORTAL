@@ -38,18 +38,29 @@ export async function retrieve(query: string, topK?: number): Promise<RetrievedC
     // fall through to lexical
   }
 
-  // Lexical fallback: ILIKE
-  const words = normalized.split(/\s+/).slice(0, 8).join(" & ")
+  // Lexical fallback: any-significant-keyword ILIKE (OR) so conversational
+  // queries match individual terms; ranked by crude word-count overlap.
+  const words = normalized
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-z0-9]/gi, ""))
+    .filter((w) => w.length > 2)
+    .slice(0, 5)
   try {
+    if (words.length === 0) return []
+    const placeholders = words.map((_, i) => `c.content ILIKE '%' || $${i + 2} || '%'`).join(" OR ")
     const rows = (await db.$queryRawUnsafe(
-      `SELECT c.id, c.content, c."documentId", c."sourceId", d.title, d."canonicalUrl", 0.5 as score
+      `SELECT c.id, c.content, c."documentId", c."sourceId", d.title, d."canonicalUrl",
+                0.5 + (
+                  (${words.map((_, i) => `CASE WHEN c.content ILIKE '%' || $${i + 2} || '%' THEN 1 ELSE 0 END`).join(" + ")})::numeric / 10
+                ) as score
        FROM "KnowledgeChunk" c
        JOIN "KnowledgeDocument" d ON d.id = c."documentId"
        JOIN "KnowledgeSource" s ON s.id = c."sourceId"
-       WHERE s.status='ACTIVE' AND d."isActive"=true AND c.content ILIKE '%' || $1 || '%'
-       LIMIT $2`,
-      normalized.slice(0, 80),
+       WHERE s.status='ACTIVE' AND d."isActive"=true AND (${placeholders})
+       ORDER BY score DESC
+       LIMIT $1`,
       k,
+      ...words,
     )) as RetrievedChunk[]
     return rows
   } catch {

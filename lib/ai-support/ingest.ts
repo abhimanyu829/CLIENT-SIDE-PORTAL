@@ -51,15 +51,14 @@ export async function ingestSource(sourceId: string): Promise<{ chunks: number }
 
   for (let i = 0; i < chunks.length; i++) {
     const emb = embeddings[i]
+    const validEmbedding = Array.isArray(emb) && emb.length > 0 && emb.every((n) => typeof n === "number" && Number.isFinite(n))
+    const vectorLiteral = validEmbedding ? `'[${emb.map((n) => Number(n.toFixed(6))).join(",")}]'::vector` : "NULL"
     await db.$executeRawUnsafe(
-      emb.length > 0
-        ? `INSERT INTO "KnowledgeChunk" (id, "documentId", "sourceId", "chunkIndex", content, embedding, "createdAt") VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5::vector, NOW())`
-        : `INSERT INTO "KnowledgeChunk" (id, "documentId", "sourceId", "chunkIndex", content, "createdAt") VALUES (gen_random_uuid()::text, $1, $2, $3, $4, NOW())`,
+      `INSERT INTO "KnowledgeChunk" (id, "documentId", "sourceId", "chunkIndex", content, embedding, "createdAt") VALUES (gen_random_uuid()::text, $1, $2, $3, $4, ${vectorLiteral}, NOW())`,
       doc.id,
       sourceId,
       i,
       chunks[i],
-      emb.length > 0 ? `[${emb.join(",")}]` : undefined,
     )
   }
 
