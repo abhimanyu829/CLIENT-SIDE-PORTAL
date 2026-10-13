@@ -42,6 +42,15 @@ function detectToolIntent(msg: string): string | null {
 }
 
 export async function POST(req: Request) {
+  try {
+    return await handlePost(req)
+  } catch (err) {
+    console.error("[ai-support-chat] unhandled:", (err as Error).stack)
+    return NextResponse.json({ error: "Internal error" }, { status: 500 })
+  }
+}
+
+async function handlePost(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown"
   if (!(await checkRate(`ai-chat:${ip}`))) return NextResponse.json({ error: "Rate limited" }, { status: 429 })
 

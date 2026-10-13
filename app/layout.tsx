@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 import { Providers } from "@/components/layout/Providers"
 import { ClerkProvider } from "@clerk/nextjs"
+import { ui } from "@clerk/ui"
 import { clerkAppearance } from "@/lib/clerk"
 import { AiSupportWidget } from "@/components/ai-support/AiSupportWidget"
 
@@ -28,6 +29,7 @@ export default function RootLayout({
       signUpUrl="/register"
       afterSignOutUrl="/"
       appearance={clerkAppearance}
+      ui={ui}
     >
       <html lang="en" suppressHydrationWarning>
         <body className="light-theme font-sans antialiased">

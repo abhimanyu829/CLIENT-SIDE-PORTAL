@@ -50,9 +50,13 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   productionBrowserSourceMaps: true,
-  middlewareClientMaxBodySize: '100mb',
   typescript: {
     ignoreBuildErrors: true,
+  },
+  // Pin workspace root so Next stops guessing from stray home-dir lockfiles
+  // (C:\Users\Abhimanyu\pnpm-lock.yaml) and no longer mis-infers the root.
+  turbopack: {
+    root: __dirname,
   },
   async headers() {
     return [
