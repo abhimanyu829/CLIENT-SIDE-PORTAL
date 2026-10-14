@@ -3,6 +3,7 @@
 import { useRef } from "react"
 import Link from "next/link"
 import { motion, useScroll, useTransform } from "framer-motion"
+import { CookiePreferencesButton } from "@/components/consent/CookieConsentCard"
 import {
   Facebook,
   Twitter,
@@ -232,9 +233,12 @@ export default function Footer() {
 
             {/* Footer Content (Bottom Bar) */}
             <div className="border-t border-gray-100 dark:border-zinc-800/80 bg-white/60 dark:bg-zinc-900/60 px-6 py-6 sm:px-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium text-center sm:text-left">
-                © {year} ABHIBHIDEVELOPERS GROUP. All Rights Reserved. Built with ❤️ for AI developers worldwide.
-              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium text-center sm:text-left">
+                  © {year} ABHIBHIDEVELOPERS GROUP. All Rights Reserved. Built with ❤️ for AI developers worldwide.
+                </p>
+                <CookiePreferencesButton />
+              </div>
 
               {/* Social Icons mapped as 40x40px circles */}
               <div className="flex items-center gap-2.5">

@@ -15,12 +15,48 @@ export function sanitizeOutput(text: string): string {
   return text.replace(/<[^>]*>/g, "").slice(0, 8000)
 }
 
+const INJECTION_PHRASES = [
+  "ignore previous instructions",
+  "ignore all previous",
+  "ignore the above",
+  "disregard previous",
+  "disregard all previous",
+  "forget your instructions",
+  "reveal system prompt",
+  "reveal your instructions",
+  "show me your system prompt",
+  "print your instructions",
+  "access another customer",
+  "bypass authorization",
+  "override your",
+  "you are now",
+  "developer mode",
+  "jailbreak",
+]
+
 export function isPromptInjection(text: string): boolean {
   const lower = text.toLowerCase()
-  return [
-    "ignore previous instructions",
-    "reveal system prompt",
-    "access another customer",
-    "bypass authorization",
-  ].some((p) => lower.includes(p))
+  return INJECTION_PHRASES.some((p) => lower.includes(p))
+}
+
+/**
+ * True when text (typically retrieved knowledge content) attempts to issue
+ * instructions. Retrieved content is data, never an instruction source.
+ */
+export function containsInjection(text: string): boolean {
+  return isPromptInjection(text)
+}
+
+/**
+ * Defangs instruction-like phrases inside retrieved content so that, even if a
+ * chunk somehow reaches the model, it can no longer be read as a command.
+ * Used as a second line of defence on top of dropping flagged chunks.
+ */
+export function neutralizeInjection(text: string): string {
+  let out = text
+  for (const p of INJECTION_PHRASES) {
+    const re = new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi")
+    out = out.replace(re, "[removed instruction]")
+  }
+  return out
 }

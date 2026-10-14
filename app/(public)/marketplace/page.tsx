@@ -1,6 +1,9 @@
+import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { ProductStatus, ProductType, CampaignStatus } from "@prisma/client"
 import { unstable_cache } from "next/cache"
+import { auth } from "@/lib/auth"
+import { hasAcceptedCurrentLegal } from "@/lib/legal-consent"
 import OfferBanner from "@/components/marketplace/OfferBanner"
 import MarketplaceClient from "./MarketplaceClient"
 import { PageHero } from "@/components/public/PageHero"
@@ -125,6 +128,9 @@ function serialize(products: any[]) {
 import { MarketplaceHero } from "@/components/marketplace/MarketplaceHero"
 
 export default async function MarketplacePage() {
+  const session = await auth()
+  if (!session?.user?.id) redirect(`/login?callbackUrl=${encodeURIComponent("/marketplace")}`)
+  if (!(await hasAcceptedCurrentLegal(session.user.id).catch(() => false))) redirect(`/consent?returnTo=${encodeURIComponent("/marketplace")}`)
   const { featured, trending, flashSale, bestSellers, allProducts, campaign, totalCount } = await getMarketplaceData()
 
   const campaignData = campaign ? {

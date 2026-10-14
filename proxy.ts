@@ -198,6 +198,34 @@ export default clerkMiddleware(
       }
     }
 
+    const isMarketplacePage =
+      path === "/marketplace" ||
+      path.startsWith("/marketplace/") ||
+      path.startsWith("/ai-agents") ||
+      path.startsWith("/services") ||
+      path.startsWith("/compare")
+    if (isMarketplacePage) {
+      if (!isAuthenticated) {
+        const url = new URL("/login", req.url)
+        url.searchParams.set("callbackUrl", req.nextUrl.pathname + req.nextUrl.search)
+        return NextResponse.redirect(url)
+      }
+    }
+
+    const isMarketplaceApi =
+      path.startsWith("/api/products") ||
+      path.startsWith("/api/public/services") ||
+      path.startsWith("/api/public/pricing") ||
+      path.startsWith("/api/search") ||
+      path.startsWith("/api/service-discovery") ||
+      path.startsWith("/api/products/validate-purchase") ||
+      path.startsWith("/api/cart/validate")
+    if (isMarketplaceApi) {
+      if (!isAuthenticated) {
+        return NextResponse.json({ success: false, error: { code: "UNAUTHORIZED", message: "Authentication required." } }, { status: 401 })
+      }
+    }
+
     return withAdminPermissionContext()
   },
   { clockSkewInMs: 60000 }
@@ -210,6 +238,13 @@ export const config = {
     "/admin-access",
     "/checkout/:path*",
     "/cart/:path*",
+    "/marketplace/:path*",
+    "/marketplace",
+    "/ai-agents/:path*",
+    "/ai-agents",
+    "/services/:path*",
+    "/services",
+    "/compare/:path*",
     "/login(.*)",
     "/register(.*)",
     "/sso-callback",
@@ -219,5 +254,6 @@ export const config = {
     "/request-service/:path*",
     "/custom-service",
     "/custom-service/:path*",
+    "/consent",
   ],
 }

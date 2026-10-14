@@ -408,7 +408,7 @@ export default function DocsPage() {
                   { icon: Ticket, color: "text-violet-400 bg-violet-500/10", title: "Raise a Ticket", desc: "For account issues, billing disputes, or product moderation queries, open a ticket from Dashboard → Support Tickets. We respond within 24 hours on business days." },
                   { icon: MessageSquare, color: "text-blue-400 bg-blue-500/10", title: "Live Chat", id: "chat", desc: "Use the chat icon in the bottom-right corner of any page to talk to our support team in real time during business hours (Mon–Sat, 9 AM – 7 PM IST)." },
                   { icon: Star, color: "text-amber-400 bg-amber-500/10", title: "Priority Support", desc: "Pro and Scale plan subscribers get priority queue access and a dedicated point of contact for onboarding and technical questions." },
-                  { icon: Megaphone, color: "text-rose-400 bg-rose-500/10", title: "Contact Us", id: "contact", desc: "Email us at support@abhibhideveloper.com or use the Contact page for partnership and media enquiries." },
+                  { icon: Megaphone, color: "text-rose-400 bg-rose-500/10", title: "Contact Us", id: "contact", desc: "Business Support: support@abhibhideveloper.tech · Direct Contact: luckypal5002@gmail.com — or use the Contact page for partnership and media enquiries. Both emails open via mailto: from the Contact page." },
                 ].map(({ icon: Icon, color, title, desc, id }) => (
                   <div key={title} id={id} className="flex items-start gap-4 bg-white/[0.02] border border-white/8 rounded-xl p-5 hover:border-white/15 transition-colors">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>

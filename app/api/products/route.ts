@@ -4,8 +4,12 @@ import { db } from "@/lib/db"
 import { sanitizeProductsForPublic } from "@/lib/sanitize-product"
 
 
-// GET /api/products — list published products with filters (non-public fields stripped)
+// GET /api/products — list published products with filters (auth + legal consent required)
 export async function GET(req: Request) {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ success: false, error: { code: "UNAUTHORIZED", message: "Authentication required." } }, { status: 401 })
+  const { hasAcceptedCurrentLegal } = await import("@/lib/legal-consent")
+  if (!(await hasAcceptedCurrentLegal(session.user.id).catch(() => false))) return NextResponse.json({ success: false, error: { code: "CONSENT_REQUIRED", message: "Terms and Privacy acceptance required." } }, { status: 403 })
   try {
     const { searchParams } = new URL(req.url)
     const type = searchParams.get("type") ?? undefined

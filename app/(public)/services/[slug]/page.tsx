@@ -1,5 +1,7 @@
 import { db } from "@/lib/db"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
+import { auth } from "@/lib/auth"
+import { hasAcceptedCurrentLegal } from "@/lib/legal-consent"
 import ServiceLeadForm from "./ServiceLeadForm"
 import ServiceRequestForm from "./ServiceRequestForm"
 import { CheckCircle2, ChevronRight, Briefcase, Layers3, Sparkles, ExternalLink } from "lucide-react"
@@ -18,7 +20,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function ServiceDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const session = await auth()
   const { slug } = await params;
+  if (!session?.user?.id) redirect(`/login?callbackUrl=${encodeURIComponent(`/services/${slug}`)}`)
+  if (!(await hasAcceptedCurrentLegal(session.user.id).catch(() => false))) redirect(`/consent?returnTo=${encodeURIComponent(`/services/${slug}`)}`)
   const service = await db.servicePage.findUnique({
     where: { slug: slug },
     include: {

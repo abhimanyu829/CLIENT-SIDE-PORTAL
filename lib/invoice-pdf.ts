@@ -299,7 +299,7 @@ function drawFooter(c: PdfCanvas, input: InvoicePdfInput) {
   c.line(MARGIN, y + 24, A4.width - MARGIN, y + 24, 0.88)
   if (input.transactionRef) c.text(MARGIN, y + 8, 8.5, `Transaction: ${input.transactionRef}`, { gray: 0.45 })
   c.text(MARGIN, y - 6, 8.5, "Thank you for building with NexusAI.", { gray: 0.45 })
-  c.text(A4.width - MARGIN, y - 6, 8.5, "nexusai.com · support@abhibhideveloper.com", { gray: 0.45, align: "right" })
+  c.text(A4.width - MARGIN, y - 6, 8.5, "nexusai.com · support@abhibhideveloper.tech", { gray: 0.45, align: "right" })
   c.text(MARGIN, y - 18, 7.5, "This document was generated electronically and is valid without signature.", { gray: 0.6 })
 }
 

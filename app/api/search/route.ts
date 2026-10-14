@@ -7,6 +7,8 @@ export async function GET(req: Request) {
   try {
     const session = await auth()
     if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const { hasAcceptedCurrentLegal } = await import("@/lib/legal-consent")
+    if (!(await hasAcceptedCurrentLegal(session.user.id).catch(() => false))) return NextResponse.json({ error: "Consent required", code: "CONSENT_REQUIRED" }, { status: 403 })
     const userId = session.user.id
 
     const { searchParams } = new URL(req.url)

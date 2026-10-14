@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireApiAuth, UnauthorizedError } from "@/lib/api-auth"
+import { hasAcceptedCurrentLegal } from "@/lib/legal-consent"
 import { db } from "@/lib/db"
 
 /**
@@ -15,6 +16,10 @@ export async function POST(req: NextRequest) {
     userId = await requireApiAuth()
   } catch {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 })
+  }
+
+  if (!(await hasAcceptedCurrentLegal(userId).catch(() => false))) {
+    return NextResponse.json({ error: "CONSENT_REQUIRED" }, { status: 403 })
   }
 
   const cart = await db.cart.findFirst({

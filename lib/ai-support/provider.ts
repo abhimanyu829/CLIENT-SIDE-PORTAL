@@ -27,7 +27,7 @@ export async function chatCompletion(messages: ChatMessage[], opts?: { timeoutMs
     const res = await fetch(`${base}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model, messages, temperature: 0.2 }),
+      body: JSON.stringify({ model, messages, temperature: 0, top_p: 1 }),
       signal: controller.signal,
     })
     if (!res.ok) throw new Error(`OpenAI chat failed: ${res.status}`)

@@ -24,7 +24,7 @@ export const VerificationEmail = ({
   name = "there",
   verificationUrl,
   expiryMinutes = 15,
-  supportEmail = "support@abhibhideveloper.com",
+  supportEmail = "support@abhibhideveloper.tech",
   ipAddress,
   deviceName,
 }: VerificationEmailProps) => (

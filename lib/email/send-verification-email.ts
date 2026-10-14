@@ -37,7 +37,7 @@ export async function sendVerificationEmail(params: SendVerificationEmailParams)
         name,
         verificationUrl,
         expiryMinutes,
-        supportEmail: "support@abhibhideveloper.com",
+        supportEmail: "support@abhibhideveloper.tech",
       }),
       tags: [{ name: "type", value: "verification" }],
     })

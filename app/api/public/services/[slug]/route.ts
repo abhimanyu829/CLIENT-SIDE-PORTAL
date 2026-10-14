@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { logger } from "@/lib/logger"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ success: false, error: { code: "UNAUTHORIZED", message: "Authentication required." } }, { status: 401 })
+  const { hasAcceptedCurrentLegal } = await import("@/lib/legal-consent")
+  if (!(await hasAcceptedCurrentLegal(session.user.id).catch(() => false))) return NextResponse.json({ success: false, error: { code: "CONSENT_REQUIRED", message: "Terms and Privacy acceptance required." } }, { status: 403 })
   try {
     const { slug } = await params;
     const service = await db.servicePage.findUnique({

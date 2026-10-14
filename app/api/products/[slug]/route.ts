@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { ProductStatus } from "@prisma/client"
+import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { sanitizeProductForPublic } from "@/lib/sanitize-product"
 
@@ -13,6 +14,10 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const { hasAcceptedCurrentLegal } = await import("@/lib/legal-consent")
+  if (!(await hasAcceptedCurrentLegal(session.user.id).catch(() => false))) return NextResponse.json({ error: "Consent required", code: "CONSENT_REQUIRED" }, { status: 403 })
   try {
     const { slug } = await params
     const product = await db.product.findFirst({

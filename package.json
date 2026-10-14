@@ -13,6 +13,7 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:consent": "vitest run --config vitest.consent.config.ts",
     "test:subscriptions": "vitest run --config vitest.subscriptions.config.ts",
     "test:plans": "vitest run --config vitest.plans.config.ts",
     "test:entitlements": "vitest run --config vitest.entitlements.config.ts",

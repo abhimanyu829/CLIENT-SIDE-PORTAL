@@ -1,4 +1,6 @@
 import { NeuralBackground } from "@/components/effects/NeuralBackground"
+import { CookieConsentCard } from "@/components/consent/CookieConsentCard"
+import { AuthConsentGate } from "@/components/consent/AuthConsentGate"
 
 export default function AuthLayout({
   children,
@@ -24,12 +26,26 @@ export default function AuthLayout({
           </p>
         </div>
 
-        {/* Card Container with Increased Margins & Soft Shadow */}
-        <div className="relative group my-4">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-amber-600 rounded-3xl opacity-20 group-hover:opacity-40 blur transition duration-500" />
-          <div className="relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-border/80 rounded-2xl p-6 sm:p-8 md:p-10 shadow-2xl transition-all duration-300">
-            {children}
+        {/* Card Container with Increased Margins & Soft Shadow.
+            Wrapped in AuthConsentGate so the legal acknowledgment (rendered
+            below the card) must be checked before the Clerk form can submit. */}
+        <AuthConsentGate>
+          <div className="relative group my-4">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-amber-600 rounded-3xl opacity-20 group-hover:opacity-40 blur transition duration-500" />
+            <div className="relative bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-border/80 rounded-2xl p-6 sm:p-8 md:p-10 shadow-2xl transition-all duration-300">
+              {children}
+            </div>
           </div>
+        </AuthConsentGate>
+
+        {/* Cookie notice (independent of the legal gate) */}
+        <div className="mt-6 space-y-4">
+          <div className="flex justify-center">
+            <CookieConsentCard compact />
+          </div>
+          <p className="text-center text-xs text-muted-foreground">
+            By continuing you confirm review of <a href="/terms" className="underline underline-offset-4">Terms</a>, <a href="/privacy" className="underline underline-offset-4">Privacy</a>, <a href="/cookies" className="underline underline-offset-4">Cookies</a>.
+          </p>
         </div>
 
         {/* Footer Branding with Generous Bottom Spacing */}
@@ -40,6 +56,7 @@ export default function AuthLayout({
           </p>
         </div>
       </div>
+      <CookieConsentCard />
     </main>
   )
 }

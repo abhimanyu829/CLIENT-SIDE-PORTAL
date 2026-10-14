@@ -1,7 +1,10 @@
 import { Metadata } from "next"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { ProductStatus, CampaignStatus } from "@prisma/client"
+import { auth } from "@/lib/auth"
+import { hasAcceptedCurrentLegal } from "@/lib/legal-consent"
 import ProductDetailClient from "./ProductDetailClient"
 import { serializePrisma } from "@/lib/serialize-prisma"
 
@@ -123,6 +126,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params
+  const session = await auth()
+  if (!session?.user?.id) redirect(`/login?callbackUrl=${encodeURIComponent(`/marketplace/${slug}`)}`)
+  if (!(await hasAcceptedCurrentLegal(session.user.id).catch(() => false))) redirect(`/consent?returnTo=${encodeURIComponent(`/marketplace/${slug}`)}`)
   const product = await getProduct(slug)
 
   // getProduct returns null both when the product doesn't exist AND on DB cold-start.

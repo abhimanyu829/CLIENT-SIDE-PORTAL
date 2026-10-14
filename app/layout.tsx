@@ -34,6 +34,7 @@ export default function RootLayout({
       <html lang="en" suppressHydrationWarning>
         <body className="light-theme font-sans antialiased">
           <Providers>{children}</Providers>
+          {/* Global support chat — fixed viewport layer, z-[10000] to sit above campaign modal (z-[9999]) */}
           <AiSupportWidget />
         </body>
       </html>

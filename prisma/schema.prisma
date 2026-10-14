@@ -314,17 +314,17 @@ enum WebhookStatus {
 }
 
 model User {
-  id               String                       @id @default(cuid())
-  email            String                       @unique
-  clerkUserId      String?                      @unique
-  name             String
-  passwordHash     String?
-  role             Role                         @default(CLIENT)
-  department       Department?
-  avatarUrl        String?
-  phone            String?
-  emailVerified    DateTime?
-  phoneVerified    DateTime?
+  id                   String                       @id @default(cuid())
+  email                String                       @unique
+  clerkUserId          String?                      @unique
+  name                 String
+  passwordHash         String?
+  role                 Role                         @default(CLIENT)
+  department           Department?
+  avatarUrl            String?
+  phone                String?
+  emailVerified        DateTime?
+  phoneVerified        DateTime?
   verificationToken    String?                      @unique
   verificationTokenExp DateTime?
   resetToken           String?                      @unique
@@ -336,99 +336,101 @@ model User {
   otpPhone             String?
   otpAttempts          Int                          @default(0)
   otpLastSentAt        DateTime?
-  timezone         String                       @default("Asia/Kolkata")
-  isVerified       Boolean                      @default(false)
-  twoFactorEnabled Boolean                      @default(false)
-  twoFactorSecret  String?
-  stripeCustomerId String?                      @unique
-  lastLoginAt      DateTime?
-  notifPrefs       Json                         @default("{}")
-  embedding        Unsupported("vector(1536)")?
-  isBanned         Boolean                      @default(false)
-  bannedAt         DateTime?
-  banReason        String?
+  timezone             String                       @default("Asia/Kolkata")
+  isVerified           Boolean                      @default(false)
+  twoFactorEnabled     Boolean                      @default(false)
+  twoFactorSecret      String?
+  stripeCustomerId     String?                      @unique
+  lastLoginAt          DateTime?
+  notifPrefs           Json                         @default("{}")
+  embedding            Unsupported("vector(1536)")?
+  isBanned             Boolean                      @default(false)
+  bannedAt             DateTime?
+  banReason            String?
   // Preview abuse tracking
-  previewCount     Int                          @default(0)
-  suspiciousScore  Int                          @default(0)
-  lastPreviewAt    DateTime?
-  createdAt        DateTime                     @default(now())
-  updatedAt        DateTime                     @updatedAt
+  previewCount         Int                          @default(0)
+  suspiciousScore      Int                          @default(0)
+  lastPreviewAt        DateTime?
+  legalConsent         LegalConsent?
+  cookiePreference     CookiePreference?            @relation("UserCookiePreference")
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
 
-    permissions     UserPermission[]
-    subscriptions   Subscription[]
-    entitlementGrants EntitlementGrant[] @relation("EntitlementGrantUser")
-    trialEnrollments  TrialEnrollment[]  @relation("TrialEnrollmentUser")
-    freeEnrollments   FreeEnrollment[]   @relation("FreeEnrollmentUser")
-    payments        Payment[]
-    serviceOrders   ServiceOrder[]
-    clientProjects  Project[]             @relation("ClientProjects")
-  managedProjects Project[]             @relation("ManagerProjects")
-  clientTickets   Ticket[]              @relation("ClientTickets")
-  assignedTickets Ticket[]              @relation("AssignedTickets")
-  invoices        Invoice[]
-  notifications   Notification[]
-  reviews         ProductReview[]
-  auditLogs       AuditLog[]
-  leads           Lead[]                @relation("AssignedLeads")
-  apiKeys         ApiKey[]
-  sessions        UserSession[]
-  chatMessages    ChatMessage[]
-  posts           BlogPost[]
-  teamMemberships TeamMember[]
-  accounts        Account[]
-  aiUsageLogs     AIUsageLog[]
-  couponUsages    CouponUsage[]
-  vendorProfiles  VendorProfile[]
-  carts           Cart[]
-  orders          Order[]
-  entitlements    CustomerEntitlement[]
-  refundRequests  RefundRequest[]
-  demoSessions    DemoSession[]
-  serviceRequests ServiceEngagement[]   @relation("ClientServiceEngagements")
-  metricEvents    PlatformMetricEvent[]
-  previewSessions PreviewSession[]
-    paymentVerifications PaymentVerification[]
-    emailCampaigns   EmailCampaign[]
-    serviceSubscriptions ServiceSubscription[]
-    serviceOwnerships    ServiceOwnership[]
-    serviceEntitlements  ServiceEntitlement[]
-    credentialRequests   CredentialRequest[]
-    subadminAccount      SubadminAccount?
-    createdSubadmins     SubadminAccount[]        @relation("SubadminCreatedBy")
-    updatedSubadmins     SubadminAccount[]        @relation("SubadminUpdatedBy")
-    reviewedSubadminApplications SubadminApplication[] @relation("SubadminApplicationReviewedBy")
-    subadminPermissionGrants SubadminPermission[] @relation("SubadminPermissionGrantedBy")
-    subadminActivityLogs SubadminActivityLog[]    @relation("SubadminActivityActor")
-    requestedAdminApprovals SubadminApprovalRequest[] @relation("AdminApprovalRequestedBy")
-    reviewedAdminApprovals  SubadminApprovalRequest[] @relation("AdminApprovalReviewedBy")
-    adminPortalSettingUpdates AdminPortalSetting[] @relation("AdminPortalSettingUpdatedBy")
-    serviceDiscoveryEvents ServiceDiscoveryEvent[]
-    serviceInterestProfile ServiceInterestProfile?
-    serviceCampaignEvents ServiceCampaignEvent[]
-    customServiceRequests CustomServiceRequest[] @relation("CustomServiceRequestClient")
-    customServiceMessages CustomServiceDiscussionMessage[] @relation("CustomServiceMessageSender")
-    customServicePortalSettingUpdates CustomServicePortalSetting[] @relation("CustomServicePortalSettingUpdatedBy")
-    userSubscriptions    UserSubscription[]
-    subscriptionInvoices SubscriptionInvoice[]
-    subscriptionPayments SubscriptionPayment[]
-    purchasedServices    PurchasedService[]
-    serviceUpgrades      ServiceUpgrade[]
-    // Abhibhi Agent Gateway (Phase 2) — machine identity back-relations.
-    // Additive only; does not affect any existing User behavior.
-    agentConnectionsOwned        AgentConnection[] @relation("AgentConnectionOwner")
-    agentConnectionsCreated      AgentConnection[] @relation("AgentConnectionCreatedBy")
-    agentConnectionsUpdated      AgentConnection[] @relation("AgentConnectionUpdatedBy")
-    agentCredentialsCreated      AgentCredential[] @relation("AgentCredentialCreatedBy")
-    // Abhibhi Agent Gateway (Phase 6) — policy administration back-relations.
-    // A human admin authoring/versioning an agent policy is a HUMAN
-    // authorization event (see docs/agent-gateway/phase-6/06-rbac-separation.md)
-    // — additive only, does not affect any existing User behavior.
-    agentPoliciesCreated         AgentPolicy[]        @relation("AgentPolicyCreatedBy")
-    agentPolicyVersionsCreated   AgentPolicyVersion[]  @relation("AgentPolicyVersionCreatedBy")
-    // Abhibhi Agent Gateway (Phase 7) — autonomy policy authorship and
-    // human approval decisions. Additive only.
-    agentAutonomyPoliciesCreated AgentAutonomyPolicy[]   @relation("AgentAutonomyPolicyCreatedBy")
-    agentApprovalDecisions       AgentApprovalDecision[] @relation("AgentApprovalDecisionApprover")
+  permissions                       UserPermission[]
+  subscriptions                     Subscription[]
+  entitlementGrants                 EntitlementGrant[]               @relation("EntitlementGrantUser")
+  trialEnrollments                  TrialEnrollment[]                @relation("TrialEnrollmentUser")
+  freeEnrollments                   FreeEnrollment[]                 @relation("FreeEnrollmentUser")
+  payments                          Payment[]
+  serviceOrders                     ServiceOrder[]
+  clientProjects                    Project[]                        @relation("ClientProjects")
+  managedProjects                   Project[]                        @relation("ManagerProjects")
+  clientTickets                     Ticket[]                         @relation("ClientTickets")
+  assignedTickets                   Ticket[]                         @relation("AssignedTickets")
+  invoices                          Invoice[]
+  notifications                     Notification[]
+  reviews                           ProductReview[]
+  auditLogs                         AuditLog[]
+  leads                             Lead[]                           @relation("AssignedLeads")
+  apiKeys                           ApiKey[]
+  sessions                          UserSession[]
+  chatMessages                      ChatMessage[]
+  posts                             BlogPost[]
+  teamMemberships                   TeamMember[]
+  accounts                          Account[]
+  aiUsageLogs                       AIUsageLog[]
+  couponUsages                      CouponUsage[]
+  vendorProfiles                    VendorProfile[]
+  carts                             Cart[]
+  orders                            Order[]
+  entitlements                      CustomerEntitlement[]
+  refundRequests                    RefundRequest[]
+  demoSessions                      DemoSession[]
+  serviceRequests                   ServiceEngagement[]              @relation("ClientServiceEngagements")
+  metricEvents                      PlatformMetricEvent[]
+  previewSessions                   PreviewSession[]
+  paymentVerifications              PaymentVerification[]
+  emailCampaigns                    EmailCampaign[]
+  serviceSubscriptions              ServiceSubscription[]
+  serviceOwnerships                 ServiceOwnership[]
+  serviceEntitlements               ServiceEntitlement[]
+  credentialRequests                CredentialRequest[]
+  subadminAccount                   SubadminAccount?
+  createdSubadmins                  SubadminAccount[]                @relation("SubadminCreatedBy")
+  updatedSubadmins                  SubadminAccount[]                @relation("SubadminUpdatedBy")
+  reviewedSubadminApplications      SubadminApplication[]            @relation("SubadminApplicationReviewedBy")
+  subadminPermissionGrants          SubadminPermission[]             @relation("SubadminPermissionGrantedBy")
+  subadminActivityLogs              SubadminActivityLog[]            @relation("SubadminActivityActor")
+  requestedAdminApprovals           SubadminApprovalRequest[]        @relation("AdminApprovalRequestedBy")
+  reviewedAdminApprovals            SubadminApprovalRequest[]        @relation("AdminApprovalReviewedBy")
+  adminPortalSettingUpdates         AdminPortalSetting[]             @relation("AdminPortalSettingUpdatedBy")
+  serviceDiscoveryEvents            ServiceDiscoveryEvent[]
+  serviceInterestProfile            ServiceInterestProfile?
+  serviceCampaignEvents             ServiceCampaignEvent[]
+  customServiceRequests             CustomServiceRequest[]           @relation("CustomServiceRequestClient")
+  customServiceMessages             CustomServiceDiscussionMessage[] @relation("CustomServiceMessageSender")
+  customServicePortalSettingUpdates CustomServicePortalSetting[]     @relation("CustomServicePortalSettingUpdatedBy")
+  userSubscriptions                 UserSubscription[]
+  subscriptionInvoices              SubscriptionInvoice[]
+  subscriptionPayments              SubscriptionPayment[]
+  purchasedServices                 PurchasedService[]
+  serviceUpgrades                   ServiceUpgrade[]
+  // Abhibhi Agent Gateway (Phase 2) — machine identity back-relations.
+  // Additive only; does not affect any existing User behavior.
+  agentConnectionsOwned             AgentConnection[]                @relation("AgentConnectionOwner")
+  agentConnectionsCreated           AgentConnection[]                @relation("AgentConnectionCreatedBy")
+  agentConnectionsUpdated           AgentConnection[]                @relation("AgentConnectionUpdatedBy")
+  agentCredentialsCreated           AgentCredential[]                @relation("AgentCredentialCreatedBy")
+  // Abhibhi Agent Gateway (Phase 6) — policy administration back-relations.
+  // A human admin authoring/versioning an agent policy is a HUMAN
+  // authorization event (see docs/agent-gateway/phase-6/06-rbac-separation.md)
+  // — additive only, does not affect any existing User behavior.
+  agentPoliciesCreated              AgentPolicy[]                    @relation("AgentPolicyCreatedBy")
+  agentPolicyVersionsCreated        AgentPolicyVersion[]             @relation("AgentPolicyVersionCreatedBy")
+  // Abhibhi Agent Gateway (Phase 7) — autonomy policy authorship and
+  // human approval decisions. Additive only.
+  agentAutonomyPoliciesCreated      AgentAutonomyPolicy[]            @relation("AgentAutonomyPolicyCreatedBy")
+  agentApprovalDecisions            AgentApprovalDecision[]          @relation("AgentApprovalDecisionApprover")
 
   @@index([email])
   @@index([role])
@@ -568,48 +570,48 @@ model VendorProfile {
 }
 
 model Product {
-  id                 String                       @id @default(cuid())
-  vendorId           String?
-  slug               String                       @unique
-  name               String
-  tagline            String
-  description        String
-  longDescription    String?                      @db.Text
-  type               ProductType
-  category           String?
-  subcategory        String?
-  isPremium          Boolean                      @default(false)
-  proPoints          Int                          @default(0)
-  status             ProductStatus                @default(DRAFT)
-  scheduledAt        DateTime?
-  thumbnailUrl       String?
-  iconUrl            String?
-  bannerUrl          String?
-  screenshotUrls     String[]
-  videoUrls          String[]
-  demoUrl            String?
-  documentationUrl   String?
-  mediaMetadata      Json                         @default("{}")
-  demoTemplateId     String?
-  features           Json
-  faqs               Json                         @default("[]")
-  documentation      Json                         @default("{}")
-  setupGuide         Json                         @default("{}")
-  integrationCatalog Json                         @default("[]")
-  roadmap            Json                         @default("[]")
-  changelog          Json                         @default("[]")
-  supportPlans       Json                         @default("[]")
-  bundleOffers       Json                         @default("[]")
-  commerceConfig     Json                         @default("{}")
-  aiConfig           Json                         @default("{}")
+  id                  String                       @id @default(cuid())
+  vendorId            String?
+  slug                String                       @unique
+  name                String
+  tagline             String
+  description         String
+  longDescription     String?                      @db.Text
+  type                ProductType
+  category            String?
+  subcategory         String?
+  isPremium           Boolean                      @default(false)
+  proPoints           Int                          @default(0)
+  status              ProductStatus                @default(DRAFT)
+  scheduledAt         DateTime?
+  thumbnailUrl        String?
+  iconUrl             String?
+  bannerUrl           String?
+  screenshotUrls      String[]
+  videoUrls           String[]
+  demoUrl             String?
+  documentationUrl    String?
+  mediaMetadata       Json                         @default("{}")
+  demoTemplateId      String?
+  features            Json
+  faqs                Json                         @default("[]")
+  documentation       Json                         @default("{}")
+  setupGuide          Json                         @default("{}")
+  integrationCatalog  Json                         @default("[]")
+  roadmap             Json                         @default("[]")
+  changelog           Json                         @default("[]")
+  supportPlans        Json                         @default("[]")
+  bundleOffers        Json                         @default("[]")
+  commerceConfig      Json                         @default("{}")
+  aiConfig            Json                         @default("{}")
   // Preview configuration (admin-controlled per product)
-  previewEnabled     Boolean                      @default(false)
-  previewConfig      Json                         @default("{}")
+  previewEnabled      Boolean                      @default(false)
+  previewConfig       Json                         @default("{}")
   // previewConfig shape: { url, domain, durationMinutes, maxPreviewsPerUser,
   //   sessionQuota, ipRestrictions, allowedDevices, rateLimit,
   //   analyticsEnabled, requireLogin }
   // Delivery config (ALL sensitive values AES-256-GCM encrypted — never returned to frontend)
-  deliveryConfig     Json                         @default("{}")
+  deliveryConfig      Json                         @default("{}")
   // deliveryConfig shape: { saasUrl_enc, deploymentUrl_enc, aiDashboardUrl_enc,
   //   cloudInstanceUrl_enc, username_enc, password_enc, apiKeys_enc,
   //   trialCredentials_enc, onboardingInstructions, accessDocUrl, renewalBehavior }
@@ -619,47 +621,47 @@ model Product {
   productDashboardUrl String?
   productAccessNotes  String?                      @db.Text
   // Inventory control
-  inventoryEnabled   Boolean                      @default(false)
-  inventoryCount     Int?
-  inventoryHoldCount Int                          @default(0)
-  soldOutBehavior    String                       @default("HIDE")
+  inventoryEnabled    Boolean                      @default(false)
+  inventoryCount      Int?
+  inventoryHoldCount  Int                          @default(0)
+  soldOutBehavior     String                       @default("HIDE")
   // HIDE | SHOW_SOLDOUT | SHOW_WAITLIST
-  techStack          String[]
-  tags               String[]
+  techStack           String[]
+  tags                String[]
   // Reservation Lifecycle
-  assignedUserId     String?
-  assignedEmail      String?
-  reservedUntil      DateTime?
+  assignedUserId      String?
+  assignedEmail       String?
+  reservedUntil       DateTime?
   // SEO
-  seoTitle           String?
-  seoDescription     String?
-  seoKeywords        String[]
+  seoTitle            String?
+  seoDescription      String?
+  seoKeywords         String[]
   // Badges
-  isFeatured         Boolean                      @default(false)
-  isPinned           Boolean                      @default(false)
-  isTrending         Boolean                      @default(false)
-  isBestSeller       Boolean                      @default(false)
-  badgeText          String?
+  isFeatured          Boolean                      @default(false)
+  isPinned            Boolean                      @default(false)
+  isTrending          Boolean                      @default(false)
+  isBestSeller        Boolean                      @default(false)
+  badgeText           String?
   // Analytics
-  averageRating      Float                        @default(0)
-  reviewCount        Int                          @default(0)
-  viewCount          Int                          @default(0)
+  averageRating       Float                        @default(0)
+  reviewCount         Int                          @default(0)
+  viewCount           Int                          @default(0)
   // Versioning / locking
-  version            Int                          @default(1)
-  lockedBy           String?
-  lockedAt           DateTime?
-  createdBy          String
-  lastEditedBy       String?
-  embedding          Unsupported("vector(1536)")?
-  createdAt          DateTime                     @default(now())
-  updatedAt          DateTime                     @updatedAt
+  version             Int                          @default(1)
+  lockedBy            String?
+  lockedAt            DateTime?
+  createdBy           String
+  lastEditedBy        String?
+  embedding           Unsupported("vector(1536)")?
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
 
   tiers              ProductTier[]
   reviews            ProductReview[]
   demoSessions       DemoSession[]
   subscriptions      Subscription[]
   versions           ProductVersion[]
-  vendor             VendorProfile?        @relation(fields: [vendorId], references: [id])
+  vendor             VendorProfile?         @relation(fields: [vendorId], references: [id])
   cartItems          CartItem[]
   orderItems         OrderItem[]
   entitlements       CustomerEntitlement[]
@@ -684,25 +686,25 @@ model Product {
 // Full inventory tracking: total / available / reserved / sold.
 // Linked 1:1 to Product. Backend is sole source of truth.
 model ProductStock {
-  id                String         @id @default(cuid())
-  productId         String         @unique
-  totalStock        Int            @default(0)
-  availableStock    Int            @default(0)
-  reservedStock     Int            @default(0)
-  soldStock         Int            @default(0)
-  lowStockThreshold Int            @default(5)
-  isOutOfStock      Boolean        @default(false)
-  restockQty        Int            @default(0)
-  stockVisible      Boolean        @default(true)
-  backOrdersEnabled Boolean        @default(false)
-  autoDisableOnZero Boolean        @default(true)
-  autoEnableOnRestock Boolean      @default(true)
-  warningMessage    String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  id                  String   @id @default(cuid())
+  productId           String   @unique
+  totalStock          Int      @default(0)
+  availableStock      Int      @default(0)
+  reservedStock       Int      @default(0)
+  soldStock           Int      @default(0)
+  lowStockThreshold   Int      @default(5)
+  isOutOfStock        Boolean  @default(false)
+  restockQty          Int      @default(0)
+  stockVisible        Boolean  @default(true)
+  backOrdersEnabled   Boolean  @default(false)
+  autoDisableOnZero   Boolean  @default(true)
+  autoEnableOnRestock Boolean  @default(true)
+  warningMessage      String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  product  Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
-  history  StockHistory[]
+  product Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  history StockHistory[]
 
   @@index([productId])
   @@index([isOutOfStock])
@@ -738,20 +740,20 @@ model StockHistory {
 // Sessions survive login/logout and enforce per-product preview quotas.
 // Admin configures duration and quota via Product.previewConfig JSON.
 model PreviewSession {
-  id          String   @id @default(cuid())
-  userId      String
-  productId   String
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
   /// ACTIVE | EXPIRED | CONVERTED
-  status      String   @default("ACTIVE")
-  expiresAt   DateTime
+  status    String   @default("ACTIVE")
+  expiresAt DateTime
   /// Stores resolved config snapshot at session creation time
-  config      Json     @default("{}")
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  config    Json     @default("{}")
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
   @@index([productId])
@@ -780,10 +782,10 @@ model PaymentVerification {
   lastReviewedAt     DateTime?
   submittedAt        DateTime           @default(now())
   verifiedAt         DateTime?
-  verifiedBy         String?            // Admin User ID
-  
-  order              Order              @relation(fields: [orderId], references: [id])
-  user               User               @relation(fields: [userId], references: [id])
+  verifiedBy         String? // Admin User ID
+
+  order Order @relation(fields: [orderId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
 }
 
 model ProductTier {
@@ -922,11 +924,11 @@ model DemoSession {
 }
 
 model Subscription {
-  id                 String      @id @default(cuid())
+  id                 String              @id @default(cuid())
   userId             String
   productId          String
   tierId             String
-  status             SubStatus   @default(TRIALING)
+  status             SubStatus           @default(TRIALING)
   /// Domain provenance. NULL = legacy (pre-Phase-1) record.
   source             SubscriptionSource?
   /// Deployment environment this subscription belongs to ("development" |
@@ -935,17 +937,17 @@ model Subscription {
   environment        String?
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
-  cancelAtPeriodEnd  Boolean     @default(false)
+  cancelAtPeriodEnd  Boolean             @default(false)
   cancelledAt        DateTime?
   trialEndsAt        DateTime?
-  stripeSubId        String?     @unique
-  razorpaySubId      String?     @unique
-  metadata           Json?       @default("{}")
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
-  user               User        @relation(fields: [userId], references: [id])
-  product            Product     @relation(fields: [productId], references: [id])
-  tier               ProductTier @relation(fields: [tierId], references: [id])
+  stripeSubId        String?             @unique
+  razorpaySubId      String?             @unique
+  metadata           Json?               @default("{}")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  user               User                @relation(fields: [userId], references: [id])
+  product            Product             @relation(fields: [productId], references: [id])
+  tier               ProductTier         @relation(fields: [tierId], references: [id])
   payments           Payment[]
   invoices           Invoice[]
 
@@ -1115,9 +1117,9 @@ model OrderItem {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
-  order   Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product      @relation(fields: [productId], references: [id])
-  tier    ProductTier? @relation(fields: [tierId], references: [id])
+  order            Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product          Product            @relation(fields: [productId], references: [id])
+  tier             ProductTier?       @relation(fields: [tierId], references: [id])
   purchasedService PurchasedService[]
 
   @@index([orderId])
@@ -1155,10 +1157,10 @@ model CustomerEntitlement {
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
 
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product        Product         @relation(fields: [productId], references: [id])
-  order          Order?          @relation(fields: [orderId], references: [id])
-  refundRequests RefundRequest[]
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product            Product             @relation(fields: [productId], references: [id])
+  order              Order?              @relation(fields: [orderId], references: [id])
+  refundRequests     RefundRequest[]
   credentialRequests CredentialRequest[]
 
   @@index([userId, status])
@@ -1208,26 +1210,26 @@ enum CredentialRequestStatus {
 }
 
 model CredentialRequest {
-  id               String                  @id @default(cuid())
-  userId           String
-  productId        String
-  entitlementId    String
-  email            String
-  reason           String?                 @db.Text
-  status           CredentialRequestStatus @default(PENDING)
-  adminNotes       String?                 @db.Text
+  id                String                  @id @default(cuid())
+  userId            String
+  productId         String
+  entitlementId     String
+  email             String
+  reason            String?                 @db.Text
+  status            CredentialRequestStatus @default(PENDING)
+  adminNotes        String?                 @db.Text
   // Admin-entered credentials for delivery
   deliveredUsername String?
   deliveredPassword String?
   // Whether admin enabled in-dashboard credential viewing
-  allowDashboard   Boolean                 @default(false)
+  allowDashboard    Boolean                 @default(false)
   // Encrypted payload for dashboard delivery (AES-256-GCM)
-  credentialPayload String?                @db.Text
-  requestedAt      DateTime                @default(now())
-  resolvedAt       DateTime?
-  resolvedBy       String?
-  createdAt        DateTime                @default(now())
-  updatedAt        DateTime                @updatedAt
+  credentialPayload String?                 @db.Text
+  requestedAt       DateTime                @default(now())
+  resolvedAt        DateTime?
+  resolvedBy        String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
 
   user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   product     Product             @relation(fields: [productId], references: [id])
@@ -1688,10 +1690,10 @@ model SubadminAccount {
   createdAt               DateTime              @default(now())
   updatedAt               DateTime              @updatedAt
 
-  user         User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
-  application  SubadminApplication?    @relation(fields: [applicationId], references: [id], onDelete: SetNull)
-  createdBy    User                    @relation("SubadminCreatedBy", fields: [createdById], references: [id])
-  updatedBy    User?                   @relation("SubadminUpdatedBy", fields: [updatedById], references: [id])
+  user         User?                     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  application  SubadminApplication?      @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  createdBy    User                      @relation("SubadminCreatedBy", fields: [createdById], references: [id])
+  updatedBy    User?                     @relation("SubadminUpdatedBy", fields: [updatedById], references: [id])
   permissions  SubadminPermission[]
   sessions     SubadminSession[]
   activityLogs SubadminActivityLog[]
@@ -1703,14 +1705,14 @@ model SubadminAccount {
 }
 
 model SubadminPermission {
-  id            String    @id @default(cuid())
-  subadminId    String
-  resource      String
-  action        String
-  grantedById   String
-  grantedAt     DateTime  @default(now())
-  revokedAt     DateTime?
-  revokeReason  String?
+  id           String    @id @default(cuid())
+  subadminId   String
+  resource     String
+  action       String
+  grantedById  String
+  grantedAt    DateTime  @default(now())
+  revokedAt    DateTime?
+  revokeReason String?
 
   subadmin  SubadminAccount @relation(fields: [subadminId], references: [id], onDelete: Cascade)
   grantedBy User            @relation("SubadminPermissionGrantedBy", fields: [grantedById], references: [id])
@@ -1753,7 +1755,7 @@ model SubadminActivityLog {
   createdAt  DateTime @default(now())
 
   subadmin SubadminAccount? @relation(fields: [subadminId], references: [id], onDelete: SetNull)
-  actor    User?           @relation("SubadminActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+  actor    User?            @relation("SubadminActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([subadminId, createdAt])
   @@index([actorId])
@@ -1934,17 +1936,17 @@ enum InviteStatus {
 }
 
 model Team {
-  id           String       @id @default(cuid())
-  name         String
-  slug         String       @unique
-  ownerId      String
-  billingEmail String?
-  avatarUrl    String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  members      TeamMember[]
+  id                String             @id @default(cuid())
+  name              String
+  slug              String             @unique
+  ownerId           String
+  billingEmail      String?
+  avatarUrl         String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  members           TeamMember[]
   // Abhibhi Agent Gateway (Phase 2) — machine identity back-relation.
-  agentConnections AgentConnection[] @relation("AgentConnectionTeam")
+  agentConnections  AgentConnection[]  @relation("AgentConnectionTeam")
   // Phase 3 entitlement engine — team-held grants.
   entitlementGrants EntitlementGrant[] @relation("EntitlementGrantTeam")
 
@@ -2124,46 +2126,46 @@ enum EmailCampaignStatus {
 }
 
 model EmailCampaign {
-  id                String             @id @default(cuid())
-  name              String
-  subject           String
-  templateName      String
-  payload           Json               @default("{}")
-  audienceType      EmailAudienceType
-  audienceFilter    Json?
-  status            EmailCampaignStatus @default(DRAFT)
-  createdByAdminId  String
-  scheduledAt       DateTime?
-  sentAt            DateTime?
-  totalRecipients   Int                @default(0)
-  sentCount         Int                @default(0)
-  deliveredCount    Int                @default(0)
-  openedCount       Int                @default(0)
-  clickedCount      Int                @default(0)
-  bouncedCount      Int                @default(0)
-  unsubscribeCount  Int                @default(0)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  id               String              @id @default(cuid())
+  name             String
+  subject          String
+  templateName     String
+  payload          Json                @default("{}")
+  audienceType     EmailAudienceType
+  audienceFilter   Json?
+  status           EmailCampaignStatus @default(DRAFT)
+  createdByAdminId String
+  scheduledAt      DateTime?
+  sentAt           DateTime?
+  totalRecipients  Int                 @default(0)
+  sentCount        Int                 @default(0)
+  deliveredCount   Int                 @default(0)
+  openedCount      Int                 @default(0)
+  clickedCount     Int                 @default(0)
+  bouncedCount     Int                 @default(0)
+  unsubscribeCount Int                 @default(0)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
-  createdByAdmin    User               @relation(fields: [createdByAdminId], references: [id], onDelete: Cascade)
-  queueItems        EmailQueue[]
+  createdByAdmin User         @relation(fields: [createdByAdminId], references: [id], onDelete: Cascade)
+  queueItems     EmailQueue[]
 
   @@index([status, scheduledAt])
   @@index([createdByAdminId])
 }
 
 model EmailQueue {
-  id             String    @id @default(cuid())
+  id             String      @id @default(cuid())
   emailType      String
   recipient      String
-  sender         String    @default("noreply@nexusai.com")
+  sender         String      @default("noreply@nexusai.com")
   subject        String
   templateName   String
-  payload        Json      @default("{}")
+  payload        Json        @default("{}")
   status         EmailStatus @default(PENDING)
-  priority       Int       @default(5)
-  attempts       Int       @default(0)
-  maxAttempts    Int       @default(5)
+  priority       Int         @default(5)
+  attempts       Int         @default(0)
+  maxAttempts    Int         @default(5)
   nextRetryAt    DateTime?
   lastError      String?
   campaignId     String?
@@ -2171,11 +2173,11 @@ model EmailQueue {
   orderId        String?
   subscriptionId String?
   productId      String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  campaign       EmailCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  log            EmailLog?
+  campaign EmailCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  log      EmailLog?
 
   @@index([status, nextRetryAt])
   @@index([emailType])
@@ -2184,30 +2186,30 @@ model EmailQueue {
 }
 
 model EmailLog {
-  id             String          @id @default(cuid())
-  queueId        String          @unique
-  emailType      String
-  recipient      String
-  sender         String
-  provider       EmailProviderName @default(RESEND)
-  status         EmailStatus
-  deliveryState  DeliveryState   @default(QUEUED)
-  providerMsgId  String?
+  id               String            @id @default(cuid())
+  queueId          String            @unique
+  emailType        String
+  recipient        String
+  sender           String
+  provider         EmailProviderName @default(RESEND)
+  status           EmailStatus
+  deliveryState    DeliveryState     @default(QUEUED)
+  providerMsgId    String?
   providerResponse Json?
-  retries        Int             @default(0)
-  failureReason  String?
-  userId         String?
-  orderId        String?
-  subscriptionId String?
-  productId      String?
-  queuedAt       DateTime        @default(now())
-  sentAt         DateTime?
-  deliveredAt    DateTime?
-  openedAt       DateTime?
-  clickedAt      DateTime?
-  failedAt       DateTime?
+  retries          Int               @default(0)
+  failureReason    String?
+  userId           String?
+  orderId          String?
+  subscriptionId   String?
+  productId        String?
+  queuedAt         DateTime          @default(now())
+  sentAt           DateTime?
+  deliveredAt      DateTime?
+  openedAt         DateTime?
+  clickedAt        DateTime?
+  failedAt         DateTime?
 
-  queue          EmailQueue      @relation(fields: [queueId], references: [id], onDelete: Cascade)
+  queue EmailQueue @relation(fields: [queueId], references: [id], onDelete: Cascade)
 
   @@index([recipient])
   @@index([emailType])
@@ -2229,12 +2231,12 @@ model RateLimit {
 }
 
 model EmailSuppression {
-  id          String           @id @default(cuid())
-  email       String           @unique
-  reason      SuppressionReason
-  emailTypes  String[]
-  source      String?
-  createdAt   DateTime         @default(now())
+  id         String            @id @default(cuid())
+  email      String            @unique
+  reason     SuppressionReason
+  emailTypes String[]
+  source     String?
+  createdAt  DateTime          @default(now())
 
   @@index([email])
 }
@@ -2243,7 +2245,7 @@ model EmailPreference {
   id               String   @id @default(cuid())
   userId           String   @unique
   transactional    Boolean  @default(true)
-  subscriptionMail  Boolean  @default(true)
+  subscriptionMail Boolean  @default(true)
   marketing        Boolean  @default(true)
   newsletter       Boolean  @default(true)
   productUpdates   Boolean  @default(true)
@@ -2256,59 +2258,59 @@ model EmailPreference {
 // ── Services Section (Independent Layer) ──────────────────────────────────────
 
 model ServiceCategory {
-  id          String        @id @default(cuid())
-  slug        String        @unique
-  name        String
-  description String?
-  isActive    Boolean       @default(true)
-  sortOrder   Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  services    ServicePage[]
+  id              String           @id @default(cuid())
+  slug            String           @unique
+  name            String
+  description     String?
+  isActive        Boolean          @default(true)
+  sortOrder       Int              @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  services        ServicePage[]
   premiumServices PremiumService[]
 }
 
 model ServicePage {
-  id               String             @id @default(cuid())
-  categoryId       String?
-  slug             String             @unique
-  title            String
-  heroHeading      String
-  heroSubheading   String
-  heroImageUrl     String?
-  overview         String             @db.Text
-  businessBenefits Json               @default("[]")
-  technicalBenefits Json              @default("[]")
-  workflow         Json               @default("[]")
-  useCases         Json               @default("[]")
-  industriesServed String[]
-  pricingGuidance  String?            @db.Text
-  isActive         Boolean            @default(true)
-  seoTitle         String?
-  seoDescription   String?
-  seoKeywords      String[]
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  id                String   @id @default(cuid())
+  categoryId        String?
+  slug              String   @unique
+  title             String
+  heroHeading       String
+  heroSubheading    String
+  heroImageUrl      String?
+  overview          String   @db.Text
+  businessBenefits  Json     @default("[]")
+  technicalBenefits Json     @default("[]")
+  workflow          Json     @default("[]")
+  useCases          Json     @default("[]")
+  industriesServed  String[]
+  pricingGuidance   String?  @db.Text
+  isActive          Boolean  @default(true)
+  seoTitle          String?
+  seoDescription    String?
+  seoKeywords       String[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  category         ServiceCategory?   @relation(fields: [categoryId], references: [id])
-  features         ServiceFeature[]
-  technologies     ServiceTechnology[]
-  faqs             ServiceFaq[]
-  portfolios       ServicePortfolio[]
-  plans            ServicePlan[]
-  addOns           ServiceAddon[]
-  requests         ServiceRequest[]
-  leads            ServiceLead[]
-  orders           ServiceOrder[]
-  serviceSubscriptions ServiceSubscription[]
-  serviceOwnerships    ServiceOwnership[]
-  serviceEntitlements  ServiceEntitlement[]
-  mediaAssets      ServiceMediaAsset[]
-  documents        ServiceDocument[]
-  discoveryTags    ServiceDiscoveryTagAssignment[]
+  category                 ServiceCategory?                 @relation(fields: [categoryId], references: [id])
+  features                 ServiceFeature[]
+  technologies             ServiceTechnology[]
+  faqs                     ServiceFaq[]
+  portfolios               ServicePortfolio[]
+  plans                    ServicePlan[]
+  addOns                   ServiceAddon[]
+  requests                 ServiceRequest[]
+  leads                    ServiceLead[]
+  orders                   ServiceOrder[]
+  serviceSubscriptions     ServiceSubscription[]
+  serviceOwnerships        ServiceOwnership[]
+  serviceEntitlements      ServiceEntitlement[]
+  mediaAssets              ServiceMediaAsset[]
+  documents                ServiceDocument[]
+  discoveryTags            ServiceDiscoveryTagAssignment[]
   discoveryCollectionItems ServiceDiscoveryCollectionItem[]
-  discoveryEvents  ServiceDiscoveryEvent[]
-  campaignEvents   ServiceCampaignEvent[]
+  discoveryEvents          ServiceDiscoveryEvent[]
+  campaignEvents           ServiceCampaignEvent[]
 }
 
 // Service discovery is intentionally isolated from marketplace campaigns and orders.
@@ -2338,13 +2340,13 @@ enum ServiceCampaignEventType {
 }
 
 model ServiceDiscoveryTag {
-  id          String   @id @default(cuid())
+  id          String                          @id @default(cuid())
   name        String
-  slug        String   @unique
+  slug        String                          @unique
   description String?
-  isFeatured  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isFeatured  Boolean                         @default(false)
+  createdAt   DateTime                        @default(now())
+  updatedAt   DateTime                        @updatedAt
   assignments ServiceDiscoveryTagAssignment[]
 
   @@index([isFeatured])
@@ -2353,8 +2355,8 @@ model ServiceDiscoveryTag {
 model ServiceDiscoveryTagAssignment {
   servicePageId String
   tagId         String
-  createdAt     DateTime @default(now())
-  servicePage   ServicePage          @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  createdAt     DateTime            @default(now())
+  servicePage   ServicePage         @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
   tag           ServiceDiscoveryTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([servicePageId, tagId])
@@ -2362,60 +2364,60 @@ model ServiceDiscoveryTagAssignment {
 }
 
 model ServiceDiscoveryCollection {
-  id          String   @id @default(cuid())
+  id          String                           @id @default(cuid())
   name        String
-  slug        String   @unique
+  slug        String                           @unique
   description String?
-  placement   String   @default("services")
-  isActive    Boolean  @default(true)
-  priority    Int      @default(0)
-  audience    Json     @default("{}")
+  placement   String                           @default("services")
+  isActive    Boolean                          @default(true)
+  priority    Int                              @default(0)
+  audience    Json                             @default("{}")
   createdById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime                         @default(now())
+  updatedAt   DateTime                         @updatedAt
   items       ServiceDiscoveryCollectionItem[]
 
   @@index([placement, isActive, priority])
 }
 
 model ServiceDiscoveryCollectionItem {
-  collectionId String
+  collectionId  String
   servicePageId String
-  sortOrder    Int      @default(0)
-  createdAt    DateTime @default(now())
-  collection   ServiceDiscoveryCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  servicePage  ServicePage @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  sortOrder     Int                        @default(0)
+  createdAt     DateTime                   @default(now())
+  collection    ServiceDiscoveryCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  servicePage   ServicePage                @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
 
   @@id([collectionId, servicePageId])
   @@index([servicePageId])
 }
 
 model ServiceDiscoveryCampaign {
-  id              String                @id @default(cuid())
-  name            String
-  slug            String                @unique
-  description     String?
-  status          ServiceCampaignStatus @default(DRAFT)
-  placement       String                @default("services")
-  bannerUrl       String?
-  thumbnailUrl    String?
-  backgroundUrl   String?
-  videoUrl        String?
-  ctaLabel        String?
-  landingUrl      String?
-  startsAt        DateTime?
-  endsAt          DateTime?
-  priority        Int                   @default(0)
-  targetAudience  Json                  @default("{}")
-  categorySlugs   String[]
+  id                String                 @id @default(cuid())
+  name              String
+  slug              String                 @unique
+  description       String?
+  status            ServiceCampaignStatus  @default(DRAFT)
+  placement         String                 @default("services")
+  bannerUrl         String?
+  thumbnailUrl      String?
+  backgroundUrl     String?
+  videoUrl          String?
+  ctaLabel          String?
+  landingUrl        String?
+  startsAt          DateTime?
+  endsAt            DateTime?
+  priority          Int                    @default(0)
+  targetAudience    Json                   @default("{}")
+  categorySlugs     String[]
   relatedServiceIds String[]
   relatedProductIds String[]
-  tags            String[]
-  createdById     String?
-  archivedAt      DateTime?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  events          ServiceCampaignEvent[]
+  tags              String[]
+  createdById       String?
+  archivedAt        DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  events            ServiceCampaignEvent[]
 
   @@index([status, placement, priority])
   @@index([startsAt, endsAt])
@@ -2449,17 +2451,17 @@ model ServiceInterestProfile {
 }
 
 model ServiceCampaignEvent {
-  id          String                      @id @default(cuid())
-  campaignId  String
-  userId      String?
-  sessionKey  String?
+  id            String                   @id @default(cuid())
+  campaignId    String
+  userId        String?
+  sessionKey    String?
   servicePageId String?
-  eventType   ServiceCampaignEventType
-  value       Decimal?                    @db.Decimal(12, 2)
-  createdAt   DateTime                    @default(now())
-  campaign    ServiceDiscoveryCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  user        User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  servicePage ServicePage?                @relation(fields: [servicePageId], references: [id], onDelete: SetNull)
+  eventType     ServiceCampaignEventType
+  value         Decimal?                 @db.Decimal(12, 2)
+  createdAt     DateTime                 @default(now())
+  campaign      ServiceDiscoveryCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user          User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  servicePage   ServicePage?             @relation(fields: [servicePageId], references: [id], onDelete: SetNull)
 
   @@index([campaignId, eventType, createdAt])
   @@index([userId, createdAt])
@@ -2494,29 +2496,29 @@ model CustomServicePortalSetting {
 }
 
 model CustomServiceRequest {
-  id              String                     @id @default(cuid())
-  requestNumber   String                     @unique
-  clientId        String
-  fullName        String
-  email           String
-  phone           String?
-  companyName     String?
-  serviceCategory String
-  projectTitle    String
-  ideaDescription String                     @db.Text
-  problemStatement String?                   @db.Text
-  requestedFeatures String?                  @db.Text
-  targetUsers     String?
-  expectedBudget  String?
-  expectedTimeline String?
-  additionalNotes String?                    @db.Text
-  status          CustomServiceRequestStatus @default(NEW)
-  lastActivityAt  DateTime                   @default(now())
-  createdAt       DateTime                   @default(now())
-  updatedAt       DateTime                   @updatedAt
-  client          User                       @relation("CustomServiceRequestClient", fields: [clientId], references: [id], onDelete: Cascade)
-  attachments     CustomServiceRequestAttachment[]
-  messages        CustomServiceDiscussionMessage[]
+  id                String                           @id @default(cuid())
+  requestNumber     String                           @unique
+  clientId          String
+  fullName          String
+  email             String
+  phone             String?
+  companyName       String?
+  serviceCategory   String
+  projectTitle      String
+  ideaDescription   String                           @db.Text
+  problemStatement  String?                          @db.Text
+  requestedFeatures String?                          @db.Text
+  targetUsers       String?
+  expectedBudget    String?
+  expectedTimeline  String?
+  additionalNotes   String?                          @db.Text
+  status            CustomServiceRequestStatus       @default(NEW)
+  lastActivityAt    DateTime                         @default(now())
+  createdAt         DateTime                         @default(now())
+  updatedAt         DateTime                         @updatedAt
+  client            User                             @relation("CustomServiceRequestClient", fields: [clientId], references: [id], onDelete: Cascade)
+  attachments       CustomServiceRequestAttachment[]
+  messages          CustomServiceDiscussionMessage[]
 
   @@index([clientId, status])
   @@index([status, lastActivityAt])
@@ -2524,33 +2526,33 @@ model CustomServiceRequest {
 }
 
 model CustomServiceRequestAttachment {
-  id          String   @id @default(cuid())
-  requestId   String
-  messageId   String?
-  fileName    String
-  mimeType    String
-  sizeBytes   Int
-  storageKey  String
-  url         String
-  createdAt   DateTime @default(now())
-  request     CustomServiceRequest          @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  message     CustomServiceDiscussionMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  id         String                          @id @default(cuid())
+  requestId  String
+  messageId  String?
+  fileName   String
+  mimeType   String
+  sizeBytes  Int
+  storageKey String
+  url        String
+  createdAt  DateTime                        @default(now())
+  request    CustomServiceRequest            @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  message    CustomServiceDiscussionMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([requestId])
   @@index([messageId])
 }
 
 model CustomServiceDiscussionMessage {
-  id          String                         @id @default(cuid())
+  id          String                           @id @default(cuid())
   requestId   String
   senderId    String
   senderType  CustomServiceMessageSenderType
-  body        String                         @db.Text
-  isInternal  Boolean                        @default(false)
-  isRead      Boolean                        @default(false)
-  createdAt   DateTime                       @default(now())
-  request     CustomServiceRequest           @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  sender      User                           @relation("CustomServiceMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  body        String                           @db.Text
+  isInternal  Boolean                          @default(false)
+  isRead      Boolean                          @default(false)
+  createdAt   DateTime                         @default(now())
+  request     CustomServiceRequest             @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sender      User                             @relation("CustomServiceMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
   attachments CustomServiceRequestAttachment[]
 
   @@index([requestId, createdAt])
@@ -2606,19 +2608,19 @@ model ServicePortfolio {
 }
 
 model ServiceLead {
-  id                  String       @id @default(cuid())
+  id                  String             @id @default(cuid())
   servicePageId       String?
   inquiryType         ServiceInquiryType @default(CONTACT)
   name                String
   email               String
   phone               String?
   company             String?
-  projectRequirements String       @db.Text
-  status              LeadStage    @default(NEW)
-  notifiedAdmin       Boolean      @default(false)
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-  servicePage         ServicePage? @relation(fields: [servicePageId], references: [id], onDelete: SetNull)
+  projectRequirements String             @db.Text
+  status              LeadStage          @default(NEW)
+  notifiedAdmin       Boolean            @default(false)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  servicePage         ServicePage?       @relation(fields: [servicePageId], references: [id], onDelete: SetNull)
 }
 
 enum ServiceInquiryType {
@@ -2704,146 +2706,146 @@ enum ServiceDocumentType {
 }
 
 model ServicePlan {
-  id            String           @id @default(cuid())
+  id            String             @id @default(cuid())
   servicePageId String
   type          ServicePlanType
   name          String
   billingLabel  String?
-  price         Decimal          @db.Decimal(12, 2)
-  currency      String           @default("USD")
-  description   String?          @db.Text
-  features      Json             @default("[]")
-  isPopular     Boolean          @default(false)
-  isActive      Boolean          @default(true)
-  sortOrder     Int              @default(0)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  servicePage   ServicePage      @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
-  serviceOrders ServiceOrder[]   @relation("ServiceOrderPrimaryPlan")
+  price         Decimal            @db.Decimal(12, 2)
+  currency      String             @default("USD")
+  description   String?            @db.Text
+  features      Json               @default("[]")
+  isPopular     Boolean            @default(false)
+  isActive      Boolean            @default(true)
+  sortOrder     Int                @default(0)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  servicePage   ServicePage        @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  serviceOrders ServiceOrder[]     @relation("ServiceOrderPrimaryPlan")
   orderLines    ServiceOrderLine[] @relation("ServiceOrderLinePlan")
 
   @@index([servicePageId, type])
 }
 
 model ServiceAddon {
-  id            String      @id @default(cuid())
+  id            String             @id @default(cuid())
   servicePageId String
   name          String
-  description   String?     @db.Text
-  price         Decimal     @db.Decimal(12, 2)
-  currency      String      @default("USD")
-  enabled       Boolean     @default(true)
-  bundleOnly    Boolean     @default(false)
-  restricted    Boolean     @default(false)
-  isPopular     Boolean     @default(false)
-  sortOrder     Int         @default(0)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  servicePage   ServicePage @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  description   String?            @db.Text
+  price         Decimal            @db.Decimal(12, 2)
+  currency      String             @default("USD")
+  enabled       Boolean            @default(true)
+  bundleOnly    Boolean            @default(false)
+  restricted    Boolean            @default(false)
+  isPopular     Boolean            @default(false)
+  sortOrder     Int                @default(0)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  servicePage   ServicePage        @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
   orderLines    ServiceOrderLine[] @relation("ServiceOrderLineAddon")
 
   @@index([servicePageId])
 }
 
 model ServiceRequest {
-  id            String               @id @default(cuid())
-  servicePageId String?
-  serviceOrderId String?
-  purchasedServiceId String?
-  type          ServiceRequestType
-  status        ServiceRequestStatus @default(OPEN)
-  name          String
-  email         String
-  orderRef      String?
-  reason        String              @db.Text
-  refundAmount  Decimal?            @db.Decimal(12, 2)
-  currency      String              @default("USD")
+  id                  String               @id @default(cuid())
+  servicePageId       String?
+  serviceOrderId      String?
+  purchasedServiceId  String?
+  type                ServiceRequestType
+  status              ServiceRequestStatus @default(OPEN)
+  name                String
+  email               String
+  orderRef            String?
+  reason              String               @db.Text
+  refundAmount        Decimal?             @db.Decimal(12, 2)
+  currency            String               @default("USD")
   refundEligibleUntil DateTime?
-  adminNotes    String?             @db.Text
-  reviewedBy    String?
-  reviewedAt    DateTime?
-  resolvedAt    DateTime?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  servicePage   ServicePage?        @relation(fields: [servicePageId], references: [id], onDelete: SetNull)
-  order         ServiceOrder?       @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  adminNotes          String?              @db.Text
+  reviewedBy          String?
+  reviewedAt          DateTime?
+  resolvedAt          DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  servicePage         ServicePage?         @relation(fields: [servicePageId], references: [id], onDelete: SetNull)
+  order               ServiceOrder?        @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
 
   @@index([servicePageId, type, status])
   @@index([serviceOrderId, type, status])
 }
 
 model ServiceOrder {
-  id             String            @id @default(cuid())
-  orderNumber    String            @unique
-  userId         String
-  servicePageId  String
-  servicePlanId  String
-  status         ServiceOrderStatus @default(PENDING_PAYMENT)
-  currency       String            @default("USD")
-  subtotal       Decimal           @default(0) @db.Decimal(12, 2)
-  discountTotal  Decimal           @default(0) @db.Decimal(12, 2)
-  taxTotal       Decimal           @default(0) @db.Decimal(12, 2)
-  grandTotal     Decimal           @default(0) @db.Decimal(12, 2)
-  billingSnapshot Json             @default("{}")
-  metadata       Json              @default("{}")
-  paidAt         DateTime?
-  fulfilledAt    DateTime?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id              String             @id @default(cuid())
+  orderNumber     String             @unique
+  userId          String
+  servicePageId   String
+  servicePlanId   String
+  status          ServiceOrderStatus @default(PENDING_PAYMENT)
+  currency        String             @default("USD")
+  subtotal        Decimal            @default(0) @db.Decimal(12, 2)
+  discountTotal   Decimal            @default(0) @db.Decimal(12, 2)
+  taxTotal        Decimal            @default(0) @db.Decimal(12, 2)
+  grandTotal      Decimal            @default(0) @db.Decimal(12, 2)
+  billingSnapshot Json               @default("{}")
+  metadata        Json               @default("{}")
+  paidAt          DateTime?
+  fulfilledAt     DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
-  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  servicePage    ServicePage       @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
-  servicePlan    ServicePlan       @relation("ServiceOrderPrimaryPlan", fields: [servicePlanId], references: [id])
-  lines          ServiceOrderLine[]
-  subscriptions  ServiceSubscription[]
-  ownerships     ServiceOwnership[]
-  entitlements   ServiceEntitlement[]
-  requests       ServiceRequest[]
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  servicePage   ServicePage           @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  servicePlan   ServicePlan           @relation("ServiceOrderPrimaryPlan", fields: [servicePlanId], references: [id])
+  lines         ServiceOrderLine[]
+  subscriptions ServiceSubscription[]
+  ownerships    ServiceOwnership[]
+  entitlements  ServiceEntitlement[]
+  requests      ServiceRequest[]
 
   @@index([userId, status])
   @@index([servicePageId, status])
 }
 
 model ServiceOrderLine {
-  id             String            @id @default(cuid())
-  serviceOrderId  String
+  id             String               @id @default(cuid())
+  serviceOrderId String
   lineType       ServiceOrderLineType
   servicePlanId  String?
-  serviceAddonId  String?
+  serviceAddonId String?
   name           String
-  quantity       Int               @default(1)
-  unitPrice      Decimal           @db.Decimal(12, 2)
-  totalPrice     Decimal           @db.Decimal(12, 2)
-  currency       String            @default("USD")
-  snapshot       Json              @default("{}")
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  quantity       Int                  @default(1)
+  unitPrice      Decimal              @db.Decimal(12, 2)
+  totalPrice     Decimal              @db.Decimal(12, 2)
+  currency       String               @default("USD")
+  snapshot       Json                 @default("{}")
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
 
-  order          ServiceOrder      @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
-  plan           ServicePlan?      @relation("ServiceOrderLinePlan", fields: [servicePlanId], references: [id])
-  addon          ServiceAddon?     @relation("ServiceOrderLineAddon", fields: [serviceAddonId], references: [id])
+  order ServiceOrder  @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  plan  ServicePlan?  @relation("ServiceOrderLinePlan", fields: [servicePlanId], references: [id])
+  addon ServiceAddon? @relation("ServiceOrderLineAddon", fields: [serviceAddonId], references: [id])
 
   @@index([serviceOrderId])
   @@index([lineType])
 }
 
 model ServiceSubscription {
-  id             String                   @id @default(cuid())
+  id             String                    @id @default(cuid())
   userId         String
   servicePageId  String
   serviceOrderId String
   status         ServiceSubscriptionStatus @default(ACTIVE)
-  startsAt       DateTime                 @default(now())
+  startsAt       DateTime                  @default(now())
   endsAt         DateTime?
-  metadata       Json                     @default("{}")
-  createdAt      DateTime                 @default(now())
-  updatedAt      DateTime                 @updatedAt
+  metadata       Json                      @default("{}")
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
 
-  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  servicePage    ServicePage              @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
-  order          ServiceOrder             @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
-  ownerships     ServiceOwnership[]
-  entitlements   ServiceEntitlement[]
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  servicePage  ServicePage          @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  order        ServiceOrder         @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  ownerships   ServiceOwnership[]
+  entitlements ServiceEntitlement[]
 
   @@index([userId, status])
   @@index([servicePageId, status])
@@ -2851,23 +2853,23 @@ model ServiceSubscription {
 }
 
 model ServiceOwnership {
-  id                  String                 @id @default(cuid())
-  userId              String
-  servicePageId       String
-  serviceOrderId      String
+  id                    String                 @id @default(cuid())
+  userId                String
+  servicePageId         String
+  serviceOrderId        String
   serviceSubscriptionId String?
-  status              ServiceOwnershipStatus @default(ACTIVE)
-  assignedAt          DateTime               @default(now())
-  expiresAt           DateTime?
-  metadata            Json                   @default("{}")
-  createdAt           DateTime               @default(now())
-  updatedAt           DateTime               @updatedAt
+  status                ServiceOwnershipStatus @default(ACTIVE)
+  assignedAt            DateTime               @default(now())
+  expiresAt             DateTime?
+  metadata              Json                   @default("{}")
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
-  user                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  servicePage         ServicePage            @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
-  order               ServiceOrder           @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
-  subscription        ServiceSubscription?   @relation(fields: [serviceSubscriptionId], references: [id], onDelete: SetNull)
-  entitlements        ServiceEntitlement[]
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  servicePage  ServicePage          @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  order        ServiceOrder         @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  subscription ServiceSubscription? @relation(fields: [serviceSubscriptionId], references: [id], onDelete: SetNull)
+  entitlements ServiceEntitlement[]
 
   @@index([userId, status])
   @@index([servicePageId, status])
@@ -2875,26 +2877,26 @@ model ServiceOwnership {
 }
 
 model ServiceEntitlement {
-  id                  String                    @id @default(cuid())
-  userId              String
-  servicePageId       String
-  serviceOrderId      String
+  id                    String                   @id @default(cuid())
+  userId                String
+  servicePageId         String
+  serviceOrderId        String
   serviceSubscriptionId String?
-  serviceOwnershipId  String?
-  status              ServiceEntitlementStatus  @default(ACTIVE)
-  accessType          String
-  startsAt            DateTime                  @default(now())
-  endsAt              DateTime?
-  credentialsSnapshot Json                      @default("{}")
-  metadata            Json                      @default("{}")
-  createdAt           DateTime                  @default(now())
-  updatedAt           DateTime                  @updatedAt
+  serviceOwnershipId    String?
+  status                ServiceEntitlementStatus @default(ACTIVE)
+  accessType            String
+  startsAt              DateTime                 @default(now())
+  endsAt                DateTime?
+  credentialsSnapshot   Json                     @default("{}")
+  metadata              Json                     @default("{}")
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
 
-  user                User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  servicePage         ServicePage               @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
-  order               ServiceOrder              @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
-  subscription        ServiceSubscription?      @relation(fields: [serviceSubscriptionId], references: [id], onDelete: SetNull)
-  ownership           ServiceOwnership?         @relation(fields: [serviceOwnershipId], references: [id], onDelete: SetNull)
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  servicePage  ServicePage          @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  order        ServiceOrder         @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  subscription ServiceSubscription? @relation(fields: [serviceSubscriptionId], references: [id], onDelete: SetNull)
+  ownership    ServiceOwnership?    @relation(fields: [serviceOwnershipId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
   @@index([servicePageId, status])
@@ -2915,29 +2917,29 @@ model ServiceMediaAsset {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
-  servicePage   ServicePage      @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  servicePage ServicePage @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
 
   @@index([servicePageId, mediaType, isActive])
 }
 
 model ServiceDocument {
-  id            String             @id @default(cuid())
+  id            String              @id @default(cuid())
   servicePageId String
   documentType  ServiceDocumentType @default(DOCUMENTATION)
   title         String
   slug          String
-  summary       String?            @db.Text
-  content       String?            @db.Text
+  summary       String?             @db.Text
+  content       String?             @db.Text
   previewUrl    String?
   demoUrl       String?
-  version       String             @default("1.0")
-  isPublished   Boolean            @default(true)
-  sortOrder     Int                @default(0)
-  metadata      Json               @default("{}")
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  version       String              @default("1.0")
+  isPublished   Boolean             @default(true)
+  sortOrder     Int                 @default(0)
+  metadata      Json                @default("{}")
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
-  servicePage   ServicePage        @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
+  servicePage ServicePage @relation(fields: [servicePageId], references: [id], onDelete: Cascade)
 
   @@unique([servicePageId, slug])
   @@index([servicePageId, documentType, isPublished])
@@ -3072,45 +3074,45 @@ enum PlanItemType {
 
 /// Master subscription plan definitions offered on the platform (e.g. Free, Starter, Pro, Enterprise)
 model SubscriptionPlan {
-  id              String            @id @default(cuid())
-  slug            String            @unique
-  name            String
-  tagline         String?
-  description     String?           @db.Text
-  tier            PlanTier          @default(PRO)
-  billingCycle    BillingCycle      @default(MONTHLY)
-  price           Decimal           @db.Decimal(10, 2)
-  discountPrice   Decimal?          @db.Decimal(10, 2)
-  currency        PriceCurrency     @default(USD)
-  trialDays       Int               @default(0)
-  isPopular       Boolean           @default(false)
-  isRecommended   Boolean           @default(false)
-  isActive        Boolean           @default(true)
-  isCustom        Boolean           @default(false)
-  sortOrder       Int               @default(0)
-  stripePlanId    String?
-  razorpayPlanId  String?
-  metadata        Json?             @default("{}")
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  name           String
+  tagline        String?
+  description    String?       @db.Text
+  tier           PlanTier      @default(PRO)
+  billingCycle   BillingCycle  @default(MONTHLY)
+  price          Decimal       @db.Decimal(10, 2)
+  discountPrice  Decimal?      @db.Decimal(10, 2)
+  currency       PriceCurrency @default(USD)
+  trialDays      Int           @default(0)
+  isPopular      Boolean       @default(false)
+  isRecommended  Boolean       @default(false)
+  isActive       Boolean       @default(true)
+  isCustom       Boolean       @default(false)
+  sortOrder      Int           @default(0)
+  stripePlanId   String?
+  razorpayPlanId String?
+  metadata       Json?         @default("{}")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   // ── Phase 2 catalog lifecycle (additive; legacy rows default to PUBLISHED) ──
   /// Catalog lifecycle. Defaults to PUBLISHED so pre-Phase-2 plans stay offered.
-  status           PlanStatus        @default(PUBLISHED)
+  status                PlanStatus @default(PUBLISHED)
   /// Commercial plan type. NULL on legacy rows.
-  planType         PlanType?
+  planType              PlanType?
   /// Commercial duration in months (FREE = 0). Distinct from billingCycle.
-  durationMonths   Int?
+  durationMonths        Int?
   /// Billing interval in months for this plan (1 = monthly, 3, 6, 12).
   billingIntervalMonths Int?
   /// Currently effective published version (plain reference; no FK cycle).
-  currentVersionId String?
+  currentVersionId      String?
   /// Idempotency/optimistic-locking guard for catalog mutations.
-  catalogRevision  Int               @default(0)
+  catalogRevision       Int        @default(0)
 
-  benefits        PlanBenefit[]
-  subscriptions   UserSubscription[]
-  versions        PlanVersion[]
+  benefits      PlanBenefit[]
+  subscriptions UserSubscription[]
+  versions      PlanVersion[]
 
   @@index([slug])
   @@index([tier, isActive])
@@ -3137,9 +3139,9 @@ model PlanVersion {
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
 
-  plan                  SubscriptionPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
-  items                 PlanItem[]
-  razorpayPlanMappings  RazorpayPlanMapping[]
+  plan                 SubscriptionPlan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+  items                PlanItem[]
+  razorpayPlanMappings RazorpayPlanMapping[]
 
   @@unique([planId, version])
   @@index([planId, status])
@@ -3172,7 +3174,7 @@ model PlanItem {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  planVersion   PlanVersion  @relation(fields: [planVersionId], references: [id], onDelete: Cascade)
+  planVersion PlanVersion @relation(fields: [planVersionId], references: [id], onDelete: Cascade)
 
   @@unique([planVersionId, itemType, itemRefKey])
   @@index([planVersionId])
@@ -3245,7 +3247,7 @@ model TrialEnrollment {
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
-  user              User        @relation("TrialEnrollmentUser", fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("TrialEnrollmentUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
   @@index([planVersionId])
@@ -3254,17 +3256,17 @@ model TrialEnrollment {
 
 /// Persistent Free Forever assignment. Grants come from the published FREE plan.
 model FreeEnrollment {
-  id            String                @id @default(cuid())
+  id            String               @id @default(cuid())
   userId        String
   planId        String
   planVersionId String
-  status        FreeEnrollmentStatus  @default(ACTIVE)
+  status        FreeEnrollmentStatus @default(ACTIVE)
   environment   String
-  dedupeKey     String                @unique
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
+  dedupeKey     String               @unique
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
-  user          User                  @relation("FreeEnrollmentUser", fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("FreeEnrollmentUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
   @@index([planVersionId])
@@ -3339,7 +3341,7 @@ model ReconciliationRun {
   createdAt     DateTime                @default(now())
   updatedAt     DateTime                @updatedAt
 
-  findings      ReconciliationFinding[]
+  findings ReconciliationFinding[]
 
   @@index([status, startedAt])
   @@index([mode])
@@ -3370,7 +3372,7 @@ model ReconciliationFinding {
   createdAt          DateTime                    @default(now())
   updatedAt          DateTime                    @updatedAt
 
-  run                ReconciliationRun           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  run ReconciliationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
 
   @@index([status, severity])
   @@index([category, status])
@@ -3403,21 +3405,21 @@ enum EntitlementSubjectType {
 
 /// Stable catalogue of entitlement definitions (semantic machine key).
 model EntitlementDefinition {
-  id            String           @id @default(cuid())
+  id            String          @id @default(cuid())
   /// Stable business key, e.g. "product.school_management", "limit.storage".
-  key           String           @unique
+  key           String          @unique
   name          String
-  description   String?          @db.Text
+  description   String?         @db.Text
   type          EntitlementType
   /// Application resource type this key refers to, when referential.
   resourceType  String?
-  configuration Json             @default("{}")
-  isActive      Boolean          @default(true)
-  metadata      Json             @default("{}")
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  configuration Json            @default("{}")
+  isActive      Boolean         @default(true)
+  metadata      Json            @default("{}")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
-  grants        EntitlementGrant[]
+  grants EntitlementGrant[]
 
   @@index([type, isActive])
   @@index([resourceType])
@@ -3425,31 +3427,31 @@ model EntitlementDefinition {
 
 /// A concrete grant held by a subject (user or team).
 model EntitlementGrant {
-  id                    String                @id @default(cuid())
+  id                      String                 @id @default(cuid())
   entitlementDefinitionId String
   /// Denormalized stable key for fast indexed resolution.
-  entitlementKey        String
-  subjectType           EntitlementSubjectType
-  subjectUserId         String?
-  subjectTeamId         String?
-  sourceType            EntitlementSourceType
+  entitlementKey          String
+  subjectType             EntitlementSubjectType
+  subjectUserId           String?
+  subjectTeamId           String?
+  sourceType              EntitlementSourceType
   /// Stable reference inside the source (orderId, subscriptionId, admin ref).
-  sourceReference       String
-  scope                 EntitlementScope      @default(OWNER)
-  resourceType          String?
-  resourceId            String?
-  quantity              Int?
-  limitValue            Decimal?              @db.Decimal(18, 4)
-  limitUnit             String?
-  status                GrantStatus           @default(ACTIVE)
-  startsAt              DateTime              @default(now())
-  expiresAt             DateTime?
-  configuration         Json                  @default("{}")
+  sourceReference         String
+  scope                   EntitlementScope       @default(OWNER)
+  resourceType            String?
+  resourceId              String?
+  quantity                Int?
+  limitValue              Decimal?               @db.Decimal(18, 4)
+  limitUnit               String?
+  status                  GrantStatus            @default(ACTIVE)
+  startsAt                DateTime               @default(now())
+  expiresAt               DateTime?
+  configuration           Json                   @default("{}")
   /// Deterministic idempotency key derived server-side from all grant axes.
-  dedupeKey             String                @unique
-  metadata              Json                  @default("{}")
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  dedupeKey               String                 @unique
+  metadata                Json                   @default("{}")
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
 
   entitlementDefinition EntitlementDefinition @relation(fields: [entitlementDefinitionId], references: [id], onDelete: Restrict)
   subjectUser           User?                 @relation("EntitlementGrantUser", fields: [subjectUserId], references: [id], onDelete: Cascade)
@@ -3485,24 +3487,24 @@ enum SubscriptionChargeStatus {
 /// Provider-neutral catalog remains the commercial source of truth; this is
 /// only the external reference needed to bill.
 model RazorpayPlanMapping {
-  id               String             @id @default(cuid())
-  planVersionId    String
-  environment      String
-  provider         String             @default("RAZORPAY")
-  razorpayPlanId   String             @unique
-  currency         String
-  amountSubunits   Int
-  billingPeriod    String
-  billingInterval  Int
+  id              String            @id @default(cuid())
+  planVersionId   String
+  environment     String
+  provider        String            @default("RAZORPAY")
+  razorpayPlanId  String            @unique
+  currency        String
+  amountSubunits  Int
+  billingPeriod   String
+  billingInterval Int
   /// Finite billing cycles when the internal contract has one; NULL = renew
   /// until cancelled (indefinite).
-  totalCount       Int?
-  mappingStatus    PlanMappingStatus  @default(ACTIVE)
-  metadata         Json               @default("{}")
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  totalCount      Int?
+  mappingStatus   PlanMappingStatus @default(ACTIVE)
+  metadata        Json              @default("{}")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
-  planVersion      PlanVersion        @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
+  planVersion PlanVersion @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
 
   @@unique([planVersionId, environment])
   @@index([mappingStatus])
@@ -3513,22 +3515,22 @@ model RazorpayPlanMapping {
 /// One recurring charge (payment) on a subscription. Distinct from the
 /// standalone Order/Payment system — recurring charges never create Orders.
 model SubscriptionCharge {
-  id                    String                   @id @default(cuid())
-  subscriptionId        String
+  id                     String                   @id @default(cuid())
+  subscriptionId         String
   razorpaySubscriptionId String
-  razorpayPaymentId     String?                  @unique
-  razorpayInvoiceId     String?
-  amountSubunits        Int
-  currency              String
-  chargeStatus          SubscriptionChargeStatus @default(PENDING)
-  providerEventId       String?                  @unique
-  billingPeriodStart    DateTime?
-  billingPeriodEnd      DateTime?
-  metadata              Json                     @default("{}")
-  createdAt             DateTime                 @default(now())
-  updatedAt             DateTime                 @updatedAt
+  razorpayPaymentId      String?                  @unique
+  razorpayInvoiceId      String?
+  amountSubunits         Int
+  currency               String
+  chargeStatus           SubscriptionChargeStatus @default(PENDING)
+  providerEventId        String?                  @unique
+  billingPeriodStart     DateTime?
+  billingPeriodEnd       DateTime?
+  metadata               Json                     @default("{}")
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
 
-  subscription          UserSubscription         @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscription UserSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   @@index([subscriptionId, chargeStatus])
   @@index([razorpaySubscriptionId])
@@ -3582,7 +3584,7 @@ model SubscriptionProvisioning {
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
 
-  subscription   UserSubscription      @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscription UserSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   @@index([subscriptionId, status])
   @@index([status, attemptCount])
@@ -3591,45 +3593,45 @@ model SubscriptionProvisioning {
 
 /// Granular features and benefit entitlements associated with a SubscriptionPlan
 model PlanBenefit {
-  id           String           @id @default(cuid())
-  planId       String
-  title        String
-  description  String?          @db.Text
-  benefitType  BenefitType      @default(FEATURE)
-  benefitValue String?          // e.g. "10", "50GB", "Unlimited", "24/7"
-  isHighlighted Boolean         @default(false)
-  isIncluded   Boolean          @default(true)
-  sortOrder    Int              @default(0)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id            String      @id @default(cuid())
+  planId        String
+  title         String
+  description   String?     @db.Text
+  benefitType   BenefitType @default(FEATURE)
+  benefitValue  String? // e.g. "10", "50GB", "Unlimited", "24/7"
+  isHighlighted Boolean     @default(false)
+  isIncluded    Boolean     @default(true)
+  sortOrder     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
-  plan         SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  plan SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
   @@index([planId])
 }
 
 /// Catalog of premium services offered standalone or as plan attachments
 model PremiumService {
-  id               String            @id @default(cuid())
+  id               String        @id @default(cuid())
   categoryId       String?
-  slug             String            @unique
+  slug             String        @unique
   name             String
   shortDescription String
-  fullDescription  String?           @db.Text
+  fullDescription  String?       @db.Text
   iconUrl          String?
   bannerUrl        String?
-  basePrice        Decimal           @db.Decimal(10, 2)
-  currency         PriceCurrency     @default(USD)
-  billingCycle     BillingCycle      @default(MONTHLY)
-  isActive         Boolean           @default(true)
-  isFeatured       Boolean           @default(false)
-  sortOrder        Int               @default(0)
-  metadata         Json?             @default("{}")
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  basePrice        Decimal       @db.Decimal(10, 2)
+  currency         PriceCurrency @default(USD)
+  billingCycle     BillingCycle  @default(MONTHLY)
+  isActive         Boolean       @default(true)
+  isFeatured       Boolean       @default(false)
+  sortOrder        Int           @default(0)
+  metadata         Json?         @default("{}")
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  category         ServiceCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  addonServices    AddonService[]
+  category      ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  addonServices AddonService[]
 
   @@index([slug])
   @@index([categoryId])
@@ -3638,26 +3640,26 @@ model PremiumService {
 
 /// Optional addon services that users can attach to their active UserSubscription
 model AddonService {
-  id               String                 @id @default(cuid())
+  id               String           @id @default(cuid())
   premiumServiceId String?
-  slug             String                 @unique
+  slug             String           @unique
   name             String
-  description      String?                @db.Text
-  pricingType      AddonPricingType       @default(FLAT_RECURRING)
-  unitName         String?                // e.g. "Seat", "GB", "API Key"
-  unitPrice        Decimal                @db.Decimal(10, 2)
-  currency         PriceCurrency          @default(USD)
-  billingCycle     BillingCycle           @default(MONTHLY)
+  description      String?          @db.Text
+  pricingType      AddonPricingType @default(FLAT_RECURRING)
+  unitName         String? // e.g. "Seat", "GB", "API Key"
+  unitPrice        Decimal          @db.Decimal(10, 2)
+  currency         PriceCurrency    @default(USD)
+  billingCycle     BillingCycle     @default(MONTHLY)
   maxQuantity      Int?
-  isActive         Boolean                @default(true)
-  sortOrder        Int                    @default(0)
+  isActive         Boolean          @default(true)
+  sortOrder        Int              @default(0)
   stripePriceId    String?
   razorpayPlanId   String?
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
-  premiumService   PremiumService?        @relation(fields: [premiumServiceId], references: [id], onDelete: SetNull)
-  userAddons       UserSubscriptionAddon[]
+  premiumService PremiumService?         @relation(fields: [premiumServiceId], references: [id], onDelete: SetNull)
+  userAddons     UserSubscriptionAddon[]
 
   @@index([slug])
   @@index([premiumServiceId])
@@ -3666,44 +3668,44 @@ model AddonService {
 
 /// Active or historical user subscription instance
 model UserSubscription {
-  id                     String                  @id @default(cuid())
-  subscriptionNumber     String                  @unique
+  id                     String             @id @default(cuid())
+  subscriptionNumber     String             @unique
   userId                 String
   planId                 String
-  status                 SubscriptionStatus      @default(TRIALING)
-  billingCycle           BillingCycle            @default(MONTHLY)
-  quantity               Int                     @default(1)
-  unitPrice              Decimal                 @db.Decimal(10, 2)
-  discountAmount         Decimal                 @default(0) @db.Decimal(10, 2)
-  taxAmount              Decimal                 @default(0) @db.Decimal(10, 2)
-  totalAmount            Decimal                 @db.Decimal(10, 2)
-  currency               PriceCurrency           @default(USD)
-  startDate              DateTime                @default(now())
+  status                 SubscriptionStatus @default(TRIALING)
+  billingCycle           BillingCycle       @default(MONTHLY)
+  quantity               Int                @default(1)
+  unitPrice              Decimal            @db.Decimal(10, 2)
+  discountAmount         Decimal            @default(0) @db.Decimal(10, 2)
+  taxAmount              Decimal            @default(0) @db.Decimal(10, 2)
+  totalAmount            Decimal            @db.Decimal(10, 2)
+  currency               PriceCurrency      @default(USD)
+  startDate              DateTime           @default(now())
   currentPeriodStart     DateTime
   currentPeriodEnd       DateTime
   trialStartsAt          DateTime?
   trialEndsAt            DateTime?
   canceledAt             DateTime?
   endedAt                DateTime?
-  cancelAtPeriodEnd      Boolean                 @default(false)
-  autoRenew              Boolean                 @default(true)
+  cancelAtPeriodEnd      Boolean            @default(false)
+  autoRenew              Boolean            @default(true)
   paymentMethodId        String?
-  stripeSubscriptionId   String?                 @unique
-  razorpaySubscriptionId String?                 @unique
+  stripeSubscriptionId   String?            @unique
+  razorpaySubscriptionId String?            @unique
   /// Immutable plan version this subscription was purchased against.
   planVersionId          String?
   environment            String?
-  metadata               Json?                   @default("{}")
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @updatedAt
+  metadata               Json?              @default("{}")
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
-  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan                   SubscriptionPlan        @relation(fields: [planId], references: [id])
-  addons                 UserSubscriptionAddon[]
-  invoices               SubscriptionInvoice[]
-  payments               SubscriptionPayment[]
-  charges                SubscriptionCharge[]
-  provisionings          SubscriptionProvisioning[]
+  user          User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan          SubscriptionPlan           @relation(fields: [planId], references: [id])
+  addons        UserSubscriptionAddon[]
+  invoices      SubscriptionInvoice[]
+  payments      SubscriptionPayment[]
+  charges       SubscriptionCharge[]
+  provisionings SubscriptionProvisioning[]
 
   @@index([userId, status])
   @@index([planId])
@@ -3713,19 +3715,19 @@ model UserSubscription {
 
 /// Junction table connecting active user subscriptions with selected addon services
 model UserSubscriptionAddon {
-  id                 String           @id @default(cuid())
+  id                 String        @id @default(cuid())
   userSubscriptionId String
   addonServiceId     String
-  quantity           Int              @default(1)
-  unitPrice          Decimal          @db.Decimal(10, 2)
-  totalPrice         Decimal          @db.Decimal(10, 2)
-  currency           PriceCurrency    @default(USD)
-  addedAt            DateTime         @default(now())
+  quantity           Int           @default(1)
+  unitPrice          Decimal       @db.Decimal(10, 2)
+  totalPrice         Decimal       @db.Decimal(10, 2)
+  currency           PriceCurrency @default(USD)
+  addedAt            DateTime      @default(now())
   removedAt          DateTime?
-  isActive           Boolean          @default(true)
+  isActive           Boolean       @default(true)
 
-  userSubscription   UserSubscription @relation(fields: [userSubscriptionId], references: [id], onDelete: Cascade)
-  addonService       AddonService     @relation(fields: [addonServiceId], references: [id])
+  userSubscription UserSubscription @relation(fields: [userSubscriptionId], references: [id], onDelete: Cascade)
+  addonService     AddonService     @relation(fields: [addonServiceId], references: [id])
 
   @@unique([userSubscriptionId, addonServiceId])
   @@index([userSubscriptionId])
@@ -3759,9 +3761,9 @@ model SubscriptionInvoice {
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
 
-  userSubscription   UserSubscription          @relation(fields: [userSubscriptionId], references: [id], onDelete: Cascade)
-  user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payments           SubscriptionPayment[]
+  userSubscription UserSubscription      @relation(fields: [userSubscriptionId], references: [id], onDelete: Cascade)
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments         SubscriptionPayment[]
 
   @@index([userId, status])
   @@index([userSubscriptionId])
@@ -3788,9 +3790,9 @@ model SubscriptionPayment {
   createdAt             DateTime                  @default(now())
   updatedAt             DateTime                  @updatedAt
 
-  subscriptionInvoice   SubscriptionInvoice?      @relation(fields: [subscriptionInvoiceId], references: [id], onDelete: SetNull)
-  userSubscription      UserSubscription          @relation(fields: [userSubscriptionId], references: [id], onDelete: Cascade)
-  user                  User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionInvoice SubscriptionInvoice? @relation(fields: [subscriptionInvoiceId], references: [id], onDelete: SetNull)
+  userSubscription    UserSubscription     @relation(fields: [userSubscriptionId], references: [id], onDelete: Cascade)
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
   @@index([userSubscriptionId])
@@ -3856,10 +3858,10 @@ model PurchasedService {
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
 
-  user       User      @relation(fields: [userId], references: [id])
-  order      Order     @relation(fields: [orderId], references: [id])
-  orderItem  OrderItem @relation(fields: [orderItemId], references: [id])
-  product    Product   @relation(fields: [productId], references: [id])
+  user       User                   @relation(fields: [userId], references: [id])
+  order      Order                  @relation(fields: [orderId], references: [id])
+  orderItem  OrderItem              @relation(fields: [orderItemId], references: [id])
+  product    Product                @relation(fields: [productId], references: [id])
   deployment ServiceDeployment?
   timeline   ServiceTimelineEvent[]
   upgrades   ServiceUpgrade[]
@@ -3937,28 +3939,27 @@ model ServiceUpgrade {
 /// Admin-managed upgrade/add-on catalog. All pricing lives here — the frontend
 /// never hardcodes prices.
 model AddonCatalogItem {
-  id                    String   @id @default(cuid())
-  slug                  String   @unique
-  name                  String
-  description           String?
+  id                   String   @id @default(cuid())
+  slug                 String   @unique
+  name                 String
+  description          String?
   /// e.g. DOMAIN, STORAGE, DATABASE, COMPUTE, ACCOUNTS, AI_CREDITS, BRANDING,
   /// INTEGRATIONS, ANALYTICS, SUPPORT
-  category              String   @default("GENERAL")
-  price                 Decimal  @db.Decimal(12, 2)
-  currency              String   @default("INR")
+  category             String   @default("GENERAL")
+  price                Decimal  @db.Decimal(12, 2)
+  currency             String   @default("INR")
   /// Free-form spec JSON shown to customers (e.g. { "storageGb": 50 }).
-  specs                 Json     @default("{}")
-  isActive              Boolean  @default(true)
-  isPopular             Boolean  @default(false)
+  specs                Json     @default("{}")
+  isActive             Boolean  @default(true)
+  isPopular            Boolean  @default(false)
   /// Empty = applies to all products.
-  applicableProductIds  String[]
-  sortOrder             Int      @default(0)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  applicableProductIds String[]
+  sortOrder            Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([isActive, category])
 }
-
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ABHIBHI AGENT GATEWAY — PHASE 2: MACHINE IDENTITY / AGENT CONNECTION LIFECYCLE
@@ -4002,24 +4003,24 @@ enum AgentCredentialStatus {
 }
 
 model AgentConnection {
-  id               String                 @id @default(cuid())
+  id String @id @default(cuid())
 
-  name             String
+  name            String
   /// Free-text provider label (e.g. "claude", "hermes", "paperclip", "custom").
   /// Metadata only — the backend is never coupled to a specific AI product.
-  provider         String
-  externalAgentId  String?
-  description      String?
+  provider        String
+  externalAgentId String?
+  description     String?
 
-  ownerId          String
-  teamId           String?
+  ownerId String
+  teamId  String?
 
-  status           AgentConnectionStatus  @default(PENDING)
-  authMethod       AgentAuthMethod        @default(BEARER)
+  status      AgentConnectionStatus @default(PENDING)
+  authMethod  AgentAuthMethod       @default(BEARER)
   /// development | staging | production — informational; the credential
   /// store itself is the actual environment boundary (separate env vars /
   /// separate DB per deployment, per the existing deployment topology).
-  environment      String                 @default("development")
+  environment String                @default("development")
 
   lastAuthenticatedAt DateTime?
   lastSeenAt          DateTime?
@@ -4027,18 +4028,18 @@ model AgentConnection {
   revokedAt           DateTime?
   suspendedAt         DateTime?
 
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  createdById      String
-  updatedById      String?
+  createdById String
+  updatedById String?
 
-  owner            User                   @relation("AgentConnectionOwner", fields: [ownerId], references: [id])
-  team             Team?                  @relation("AgentConnectionTeam", fields: [teamId], references: [id])
-  createdBy        User                   @relation("AgentConnectionCreatedBy", fields: [createdById], references: [id])
-  updatedBy        User?                  @relation("AgentConnectionUpdatedBy", fields: [updatedById], references: [id])
+  owner     User  @relation("AgentConnectionOwner", fields: [ownerId], references: [id])
+  team      Team? @relation("AgentConnectionTeam", fields: [teamId], references: [id])
+  createdBy User  @relation("AgentConnectionCreatedBy", fields: [createdById], references: [id])
+  updatedBy User? @relation("AgentConnectionUpdatedBy", fields: [updatedById], references: [id])
 
-  credentials      AgentCredential[]
+  credentials AgentCredential[]
 
   // Abhibhi Agent Gateway (Phase 7) — back-relations only; no column on
   // this table changes.
@@ -4057,42 +4058,42 @@ model AgentConnection {
 }
 
 model AgentCredential {
-  id                 String                @id @default(cuid())
+  id String @id @default(cuid())
 
-  connectionId       String
+  connectionId String
 
-  status             AgentCredentialStatus @default(ACTIVE)
+  status AgentCredentialStatus @default(ACTIVE)
 
   /// SHA-256 hash of the bearer token, OR of the HMAC key-id's associated
   /// secret when authMethod is SIGNED_REQUEST. Never the raw secret.
-  secretHash         String                @unique
+  secretHash       String  @unique
   /// Non-secret identification metadata (safe to display/log). Derived
   /// deterministically from the secret but never usable to authenticate.
-  fingerprint        String
+  fingerprint      String
   /// Public key id for SIGNED_REQUEST credentials (X-Abhibhi-Key-Id header
   /// value). Null for BEARER credentials.
-  keyId              String?               @unique
+  keyId            String? @unique
   /// AES-256-GCM ciphertext of the HMAC signing secret (via the EXISTING
   /// lib/encryption.ts utility), present only for SIGNED_REQUEST
   /// credentials. Null for BEARER — bearer tokens are identified solely by
   /// secretHash and are never stored reversibly at all.
-  signingSecretRef   String?
+  signingSecretRef String?
 
   /// Supports safe rotation-with-overlap: the credential this one replaces.
-  replacesCredentialId String?             @unique
+  replacesCredentialId String? @unique
 
-  createdAt          DateTime              @default(now())
-  activatedAt         DateTime?
-  expiresAt           DateTime?
-  lastUsedAt          DateTime?
-  revokedAt           DateTime?
+  createdAt   DateTime  @default(now())
+  activatedAt DateTime?
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
 
-  createdById        String
+  createdById String
 
-  connection         AgentConnection       @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  createdBy          User                  @relation("AgentCredentialCreatedBy", fields: [createdById], references: [id])
-  replaces           AgentCredential?      @relation("AgentCredentialReplacement", fields: [replacesCredentialId], references: [id])
-  replacedBy         AgentCredential?      @relation("AgentCredentialReplacement")
+  connection AgentConnection  @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  createdBy  User             @relation("AgentCredentialCreatedBy", fields: [createdById], references: [id])
+  replaces   AgentCredential? @relation("AgentCredentialReplacement", fields: [replacesCredentialId], references: [id])
+  replacedBy AgentCredential? @relation("AgentCredentialReplacement")
 
   @@index([connectionId])
   @@index([status])
@@ -4154,23 +4155,23 @@ enum AgentPolicyVersionStatus {
 }
 
 model AgentPolicy {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String?
 
   /// Kill switch — disabling a policy here takes effect immediately
   /// (subject only to the policy CACHE's short TTL, never bypassable by
   /// a stale ALLOW; see lib/agent-gateway/authorization/policy-cache.ts).
-  enabled     Boolean  @default(true)
+  enabled Boolean @default(true)
 
   /// Higher priority evaluated first among same-specificity matches.
   /// Explicit DENY still always wins over ALLOW regardless of priority
   /// (see docs/agent-gateway/phase-6/04-precedence.md) — priority only
   /// orders among decisions of the SAME effect class.
-  priority    Int      @default(0)
+  priority Int @default(0)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   createdById String
 
@@ -4180,8 +4181,8 @@ model AgentPolicy {
   /// (never matched), never as an error.
   currentVersionId String? @unique
 
-  createdBy      User                @relation("AgentPolicyCreatedBy", fields: [createdById], references: [id])
-  currentVersion AgentPolicyVersion? @relation("AgentPolicyCurrentVersion", fields: [currentVersionId], references: [id])
+  createdBy      User                 @relation("AgentPolicyCreatedBy", fields: [createdById], references: [id])
+  currentVersion AgentPolicyVersion?  @relation("AgentPolicyCurrentVersion", fields: [currentVersionId], references: [id])
   versions       AgentPolicyVersion[] @relation("AgentPolicyVersions")
 
   @@index([enabled])
@@ -4189,7 +4190,7 @@ model AgentPolicy {
 }
 
 model AgentPolicyVersion {
-  id     String @id @default(cuid())
+  id       String @id @default(cuid())
   policyId String
   /// 1-based, monotonically increasing per policyId. Immutable once created.
   version  Int
@@ -4228,8 +4229,8 @@ model AgentPolicyVersion {
   createdAt   DateTime @default(now())
   createdById String
 
-  policy    AgentPolicy @relation("AgentPolicyVersions", fields: [policyId], references: [id], onDelete: Cascade)
-  createdBy User        @relation("AgentPolicyVersionCreatedBy", fields: [createdById], references: [id])
+  policy    AgentPolicy  @relation("AgentPolicyVersions", fields: [policyId], references: [id], onDelete: Cascade)
+  createdBy User         @relation("AgentPolicyVersionCreatedBy", fields: [createdById], references: [id])
   /// Back-reference from AgentPolicy.currentVersionId — lets Prisma
   /// resolve the 1:1 "this version is somebody's current version" link.
   currentOf AgentPolicy? @relation("AgentPolicyCurrentVersion")
@@ -4467,10 +4468,10 @@ model AgentTask {
   updatedAt              DateTime            @updatedAt
 
   /// Phase 9 — the trigger that created this task (null for agent-submitted tasks).
-  triggerId              String?
+  triggerId String?
   /// Phase 11 — trace id of the request that created the task, so the worker
   /// continues the same trace (correlation only; never a security input).
-  traceId                String?
+  traceId   String?
 
   connection      AgentConnection       @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   approvalRequest AgentApprovalRequest? @relation(fields: [approvalRequestId], references: [id], onDelete: SetNull)
@@ -4528,57 +4529,57 @@ enum AgentTriggerRunStatus {
 }
 
 model AgentTrigger {
-  id                String                       @id @default(cuid())
+  id                   String                       @id @default(cuid())
   /// Display-safe reference; also the webhook path segment. Never the DB id.
-  publicRef         String                       @unique
-  name              String
-  type              AgentTriggerType
-  status            AgentTriggerStatus           @default(DRAFT)
+  publicRef            String                       @unique
+  name                 String
+  type                 AgentTriggerType
+  status               AgentTriggerStatus           @default(DRAFT)
   /// Optimistic-concurrency version for human edits.
-  version           Int                          @default(1)
+  version              Int                          @default(1)
   /// Security context — always copied from the connection, never from input.
-  connectionId      String
-  ownerId           String
-  teamId            String?
-  environment       String
-  capabilityId      String
-  capabilityVersion Int
+  connectionId         String
+  ownerId              String
+  teamId               String?
+  environment          String
+  capabilityId         String
+  capabilityVersion    Int
   /// Fixed, schema-validated capability input.
-  input             Json
+  input                Json
   /// Bind the event / webhook resource id into the capability's resource locator.
-  bindResource      Boolean                      @default(false)
-  concurrency       AgentTriggerConcurrency      @default(DROP_WHILE_RUNNING)
+  bindResource         Boolean                      @default(false)
+  concurrency          AgentTriggerConcurrency      @default(DROP_WHILE_RUNNING)
   // EVENT
-  eventType         String?
-  eventResourceId   String?
+  eventType            String?
+  eventResourceId      String?
   /// "OWNER" (event caused by / about the owner) or "ANY" (public resources only).
-  eventActorScope   String?
+  eventActorScope      String?
   // WEBHOOK — secret stored encrypted with lib/encryption.ts (same as Phase 2 signing secrets).
-  webhookSecretRef  String?
+  webhookSecretRef     String?
   webhookSecretVersion Int?
   // SCHEDULE
-  scheduleKind      String?
-  cronExpression    String?
-  timezone          String?
-  runAt             DateTime?
-  missedRunPolicy   AgentTriggerMissedRunPolicy?
-  nextRunAt         DateTime?
-  lastScheduledFor  DateTime?
+  scheduleKind         String?
+  cronExpression       String?
+  timezone             String?
+  runAt                DateTime?
+  missedRunPolicy      AgentTriggerMissedRunPolicy?
+  nextRunAt            DateTime?
+  lastScheduledFor     DateTime?
   // Bookkeeping
-  expiresAt         DateTime?
-  lastTriggeredAt   DateTime?
-  lastSuccessAt     DateTime?
-  lastFailureAt     DateTime?
-  failureCount      Int                          @default(0)
-  activatedAt       DateTime?
-  pausedAt          DateTime?
-  disabledAt        DateTime?
-  expiredAt         DateTime?
-  revokedAt         DateTime?
-  createdById       String
-  updatedById       String?
-  createdAt         DateTime                     @default(now())
-  updatedAt         DateTime                     @updatedAt
+  expiresAt            DateTime?
+  lastTriggeredAt      DateTime?
+  lastSuccessAt        DateTime?
+  lastFailureAt        DateTime?
+  failureCount         Int                          @default(0)
+  activatedAt          DateTime?
+  pausedAt             DateTime?
+  disabledAt           DateTime?
+  expiredAt            DateTime?
+  revokedAt            DateTime?
+  createdById          String
+  updatedById          String?
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
 
   connection AgentConnection   @relation(fields: [connectionId], references: [id], onDelete: Cascade)
   runs       AgentTriggerRun[]
@@ -4773,22 +4774,23 @@ enum AgentRolloutStage {
 /// gated call (no cache). A missing row means "legacy ACTIVE" while
 /// AGENT_GATEWAY_ROLLOUT_ENFORCED is off, and DISABLED when it is on.
 model AgentRollout {
-  id                   String            @id @default(cuid())
+  id                   String             @id @default(cuid())
   capabilityId         String
   environment          String
-  stage                AgentRolloutStage @default(DISABLED)
+  stage                AgentRolloutStage  @default(DISABLED)
   /// CANARY: share (0-100) of connections, by a stable hash of connection + capability.
-  canaryPercent        Int               @default(0)
+  canaryPercent        Int                @default(0)
   /// INTERNAL / CANARY: connections that always receive the capability.
   allowedConnectionIds String[]
   /// Set while PAUSED: the stage to resume to.
   pausedFromStage      AgentRolloutStage?
   pausedReason         String?
   /// Optimistic concurrency: every change is conditional on it.
-  version              Int               @default(1)
+  version              Int                @default(1)
   updatedById          String
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
   @@unique([capabilityId, environment])
   @@index([environment, stage])
 }
@@ -4805,22 +4807,23 @@ enum AgentKillSwitchScope {
 /// Rows are never deleted: deactivation is recorded on the row and in the
 /// audit ledger.
 model AgentKillSwitch {
-  id            String               @id @default(cuid())
+  id                 String               @id @default(cuid())
   /// Display-safe reference ("ksw_" + 32 hex).
-  publicRef     String               @unique
-  scope         AgentKillSwitchScope
+  publicRef          String               @unique
+  scope              AgentKillSwitchScope
   /// capability id / connection id / risk tier; null for GLOBAL.
-  target        String?
-  environment   String
-  active        Boolean              @default(true)
-  reason        String
-  activatedById String
-  activatedAt   DateTime             @default(now())
-  deactivatedById String?
-  deactivatedAt DateTime?
+  target             String?
+  environment        String
+  active             Boolean              @default(true)
+  reason             String
+  activatedById      String
+  activatedAt        DateTime             @default(now())
+  deactivatedById    String?
+  deactivatedAt      DateTime?
   deactivationReason String?
-  version       Int                  @default(1)
-  updatedAt     DateTime             @updatedAt
+  version            Int                  @default(1)
+  updatedAt          DateTime             @updatedAt
+
   @@index([environment, active])
   @@index([scope, target])
 }
@@ -4833,6 +4836,14 @@ model KnowledgeSource {
   title            String
   sourceHash       String?
   publicationState String              @default("APPROVED")
+  contentType      String              @default("page")
+  // Admin-authored authoritative answer body (P1). Never populated for
+  // fetched website sources; those are read from canonicalUrl at ingest.
+  directContent    String?             @db.Text
+  category         String?
+  version          Int                 @default(1)
+  // Optional hard expiry — expired entries are excluded from public retrieval.
+  expiresAt        DateTime?
   visibility       String              @default("public")
   status           String              @default("ACTIVE")
   lastIngestedAt   DateTime?
@@ -4840,49 +4851,54 @@ model KnowledgeSource {
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
   documents        KnowledgeDocument[]
+
   @@index([status, publicationState])
+  @@index([contentType, publicationState])
 }
 
 model KnowledgeDocument {
-  id            String            @id @default(cuid())
-  sourceId      String
-  source        KnowledgeSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
-  title         String
-  canonicalUrl  String?
-  contentHash   String?
-  version       Int               @default(1)
-  isActive      Boolean           @default(true)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  chunks        KnowledgeChunk[]
+  id           String           @id @default(cuid())
+  sourceId     String
+  source       KnowledgeSource  @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  title        String
+  canonicalUrl String?
+  contentHash  String?
+  version      Int              @default(1)
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  chunks       KnowledgeChunk[]
+
   @@index([sourceId])
   @@index([isActive])
 }
 
 model KnowledgeChunk {
-  id          String            @id @default(cuid())
-  documentId  String
-  document    KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  sourceId    String
-  chunkIndex  Int
-  content     String            @db.Text
-  embedding   Unsupported("vector(1536)")?
-  metadata    Json?
-  createdAt   DateTime          @default(now())
+  id         String                       @id @default(cuid())
+  documentId String
+  document   KnowledgeDocument            @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sourceId   String
+  chunkIndex Int
+  content    String                       @db.Text
+  embedding  Unsupported("vector(1536)")?
+  metadata   Json?
+  createdAt  DateTime                     @default(now())
+
   @@index([documentId])
   @@index([sourceId])
 }
 
 model AiSupportConversation {
-  id             String              @id @default(cuid())
+  id             String             @id @default(cuid())
   userId         String?
-  guestTokenHash String?             @unique
-  status         String              @default("ACTIVE")
+  guestTokenHash String?            @unique
+  status         String             @default("ACTIVE")
   title          String?
   ticketId       String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
   messages       AiSupportMessage[]
+
   @@index([userId])
   @@index([guestTokenHash])
   @@index([status])
@@ -4897,5 +4913,34 @@ model AiSupportMessage {
   citations      Json?
   toolCalls      Json?
   createdAt      DateTime              @default(now())
+
   @@index([conversationId, createdAt])
+}
+
+model LegalConsent {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  termsVersion   String
+  privacyVersion String
+  acceptedAt     DateTime @default(now())
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model CookiePreference {
+  id         String   @id @default(cuid())
+  userId     String?  @unique
+  user       User?    @relation("UserCookiePreference", fields: [userId], references: [id], onDelete: Cascade)
+  sessionKey String?  @unique
+  essential  Boolean  @default(true)
+  analytics  Boolean  @default(false)
+  marketing  Boolean  @default(false)
+  version    String   @default("v1")
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
 }

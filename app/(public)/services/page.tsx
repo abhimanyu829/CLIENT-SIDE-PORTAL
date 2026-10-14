@@ -1,6 +1,9 @@
+import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import Link from "next/link"
 import { ArrowRight, Briefcase, Layers3, Sparkles } from "lucide-react"
+import { auth } from "@/lib/auth"
+import { hasAcceptedCurrentLegal } from "@/lib/legal-consent"
 import { ServiceDiscoveryShelf } from "@/components/services/ServiceDiscoveryShelf"
 import { BrandSectionList } from "@/components/content/BrandBlocks"
 import { SERVICES_BRAND } from "@/lib/content/brand-blocks"
@@ -15,6 +18,9 @@ export const metadata = {
 }
 
 export default async function ServicesDirectoryPage({ searchParams }: Props) {
+  const session = await auth()
+  if (!session?.user?.id) redirect(`/login?callbackUrl=${encodeURIComponent("/services")}`)
+  if (!(await hasAcceptedCurrentLegal(session.user.id).catch(() => false))) redirect(`/consent?returnTo=${encodeURIComponent("/services")}`)
   const { category } = await searchParams
 
   const [categories, services] = await Promise.all([

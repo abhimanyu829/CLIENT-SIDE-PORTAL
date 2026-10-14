@@ -89,7 +89,20 @@ export default function ContactPage() {
 
       <section className="border-t border-border px-4 py-10">
         <div className="mx-auto max-w-3xl text-sm leading-7 text-muted-foreground">
-          <h2 className="text-base font-semibold text-foreground">Business details</h2>
+          <h2 className="text-base font-semibold text-foreground">Contact emails</h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-border bg-muted/30 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Business Support</p>
+              <a href="mailto:support@abhibhideveloper.tech" className="mt-1 inline-block text-sm font-medium text-primary hover:underline underline-offset-4 break-all">support@abhibhideveloper.tech</a>
+              <p className="mt-1 text-xs text-muted-foreground">Product, billing, and technical enquiries.</p>
+            </div>
+            <div className="rounded-xl border border-border bg-muted/30 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Direct Contact</p>
+              <a href="mailto:luckypal5002@gmail.com" className="mt-1 inline-block text-sm font-medium text-primary hover:underline underline-offset-4 break-all">luckypal5002@gmail.com</a>
+              <p className="mt-1 text-xs text-muted-foreground">Direct line for urgent or partnership matters.</p>
+            </div>
+          </div>
+          <h2 className="mt-8 text-base font-semibold text-foreground">Business details</h2>
           <p className="mt-2">
             Brand: Abhibhideveloper. The exact legal entity, registered address, and dedicated grievance
             contact are published as required once finalised; they are not invented on this page. For

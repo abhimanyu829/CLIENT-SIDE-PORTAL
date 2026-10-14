@@ -35,7 +35,7 @@ export function resolveEmailTemplate(templateName: string, payload: EmailTemplat
       name: asString(payload.name, "there"),
       verificationUrl: asString(payload.verificationUrl, asString(payload.ctaUrl, "")),
       expiryMinutes: Number(payload.expiryMinutes ?? 15),
-      supportEmail: asString(payload.supportEmail, "support@abhibhideveloper.com"),
+      supportEmail: asString(payload.supportEmail, "support@abhibhideveloper.tech"),
       ipAddress: asString(payload.ipAddress, ""),
       deviceName: asString(payload.deviceName, ""),
     })

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { hasAcceptedCurrentLegal } from "@/lib/legal-consent"
 import { db } from "@/lib/db"
 
 /**
@@ -25,6 +26,14 @@ export async function POST(req: NextRequest) {
       reasons: ["AUTH_REQUIRED"],
       redirectUrl: `/login?callbackUrl=${encodeURIComponent("/marketplace")}`,
     }, { status: 401 })
+  }
+
+  if (!(await hasAcceptedCurrentLegal(session.user.id).catch(() => false))) {
+    return NextResponse.json({
+      valid: false,
+      reasons: ["CONSENT_REQUIRED"],
+      redirectUrl: `/consent?returnTo=${encodeURIComponent("/marketplace")}`,
+    }, { status: 403 })
   }
 
   const body = await req.json()
