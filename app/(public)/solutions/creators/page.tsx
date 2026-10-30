@@ -136,58 +136,6 @@ const STEPS = [
   },
 ]
 
-const TIERS = [
-  {
-    name: "Free Creator",
-    price: "₹0",
-    sub: "Start selling today — no upfront cost",
-    highlight: false,
-    features: [
-      "1 marketplace listing",
-      "Up to ₹10,000 / month revenue",
-      "Basic analytics",
-      "5% platform fee",
-      "Community support",
-    ],
-    cta: "Start for Free",
-    href: "/register",
-  },
-  {
-    name: "Pro Creator",
-    price: "₹799",
-    sub: "per month · cancel anytime",
-    highlight: true,
-    features: [
-      "Unlimited listings",
-      "Unlimited revenue",
-      "2% platform fee (vs 5%)",
-      "AI assistant for your store",
-      "Email marketing automation",
-      "Advanced analytics + MRR",
-      "Priority support",
-      "Custom storefront domain",
-    ],
-    cta: "Try 14 Days Free",
-    href: "/register?plan=pro-creator",
-  },
-  {
-    name: "Creator Agency",
-    price: "₹2,999",
-    sub: "per month · for teams & agencies",
-    highlight: false,
-    features: [
-      "Everything in Pro",
-      "5 team seats",
-      "White-label storefront",
-      "0% platform fee",
-      "Dedicated account manager",
-      "Custom integrations",
-    ],
-    cta: "Talk to Us",
-    href: "/contact-sales",
-  },
-]
-
 const TESTIMONIALS = [
   {
     quote:
@@ -214,33 +162,33 @@ const TESTIMONIALS = [
 
 export default function CreatorsPage() {
   return (
-    <main className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden">
+    <main className="min-h-screen bg-white text-zinc-900 overflow-x-hidden selection:bg-rose-100 selection:text-rose-900">
 
       {/* ── HERO ─────────────────────────────────────────── */}
-      <section className="relative isolate pt-32 pb-24 px-4 text-center">
+      <section className="relative isolate pt-32 pb-24 px-4 text-center bg-gradient-to-b from-rose-50/40 via-white to-white border-b border-zinc-100">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-rose-600/15 blur-[120px]" />
-          <div className="absolute top-60 -right-32 w-[500px] h-[500px] rounded-full bg-violet-500/10 blur-[100px]" />
-          <div className="absolute top-40 -left-32 w-[400px] h-[400px] rounded-full bg-amber-500/10 blur-[100px]" />
+          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-rose-500/10 blur-[130px]" />
+          <div className="absolute top-60 -right-32 w-[500px] h-[500px] rounded-full bg-violet-500/5 blur-[120px]" />
+          <div className="absolute top-40 -left-32 w-[400px] h-[400px] rounded-full bg-amber-500/5 blur-[120px]" />
         </div>
 
-        <div className="inline-flex items-center gap-2 bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-semibold px-4 py-1.5 rounded-full mb-6">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+        <div className="inline-flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 shadow-xs">
+          <Sparkles className="w-3.5 h-3.5 text-rose-500" />
           For Creators, Educators &amp; Digital Entrepreneurs
         </div>
 
-        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6 leading-none">
+        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6 leading-none text-zinc-950">
           Turn your audience into{" "}
-          <span className="bg-gradient-to-r from-rose-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-rose-600 via-pink-600 to-violet-600 bg-clip-text text-transparent">
             recurring revenue.
           </span>
           <br />
-          <span className="text-3xl sm:text-4xl font-bold text-zinc-400 mt-3 block">
+          <span className="text-3xl sm:text-4xl font-bold text-zinc-600 mt-4 block">
             With AI working for you around the clock.
           </span>
         </h1>
 
-        <p className="max-w-2xl mx-auto text-zinc-400 text-lg sm:text-xl leading-relaxed mb-10">
+        <p className="max-w-2xl mx-auto text-zinc-600 text-lg sm:text-xl leading-relaxed mb-10">
           Sell digital products, courses, templates, and AI tools on the Abhibhi
           marketplace. Automate your support. Grow subscriptions. Keep more of
           what you earn.
@@ -249,44 +197,44 @@ export default function CreatorsPage() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 hover:-translate-y-0.5"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold px-8 py-4 rounded-2xl text-base transition-all shadow-lg shadow-rose-500/20 hover:shadow-rose-500/35 hover:-translate-y-0.5"
           >
             <Palette className="w-4 h-4" />
             Start Selling — Free
           </Link>
           <Link
             href="/marketplace"
-            className="inline-flex items-center gap-2 bg-white/5 border border-white/10 hover:border-rose-500/40 hover:bg-white/10 text-white font-semibold px-8 py-4 rounded-2xl text-base transition-all"
+            className="inline-flex items-center gap-2 bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-800 font-semibold px-8 py-4 rounded-2xl text-base transition-all shadow-xs"
           >
             <Globe2 className="w-4 h-4" />
             Browse Marketplace
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 text-zinc-400" />
           </Link>
         </div>
 
-        <div className="mt-14 flex flex-wrap items-center justify-center gap-8 text-zinc-500 text-sm">
-          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> No coding needed</span>
-          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> Instant payouts</span>
-          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> UPI &amp; Razorpay supported</span>
-          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> 500+ creators earning</span>
+        <div className="mt-14 flex flex-wrap items-center justify-center gap-8 text-zinc-600 text-sm font-medium">
+          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> No coding needed</span>
+          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Instant payouts</span>
+          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> UPI &amp; Razorpay supported</span>
+          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> 500+ creators earning</span>
         </div>
       </section>
 
       {/* ── WHAT YOU CAN SELL ────────────────────────────── */}
-      <section className="py-16 px-4 bg-white/[0.02] border-y border-white/5">
+      <section className="py-16 px-4 bg-zinc-50/60 border-b border-zinc-200/80">
         <div className="max-w-5xl mx-auto text-center">
-          <p className="text-rose-400 text-sm font-semibold uppercase tracking-widest mb-4">Sell anything digital</p>
-          <h2 className="text-3xl font-black mb-10">What creators list on Abhibhi</h2>
+          <p className="text-rose-600 text-xs font-bold uppercase tracking-widest mb-3">Sell anything digital</p>
+          <h2 className="text-3xl font-black text-zinc-950 mb-10">What creators list on Abhibhi</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {PRODUCT_TYPES.map(({ icon: Icon, label }) => (
               <div
                 key={label}
-                className="flex flex-col items-center gap-3 bg-white/3 border border-white/8 rounded-2xl p-5 hover:border-rose-500/30 hover:bg-white/5 transition-all group"
+                className="flex flex-col items-center gap-3 bg-white border border-zinc-200/90 rounded-2xl p-5 hover:border-rose-300 hover:shadow-md transition-all group shadow-xs"
               >
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Icon className="w-5 h-5 text-rose-400" />
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-50 to-pink-50 border border-rose-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Icon className="w-5 h-5 text-rose-600" />
                 </div>
-                <span className="text-sm font-semibold text-zinc-300">{label}</span>
+                <span className="text-sm font-semibold text-zinc-800">{label}</span>
               </div>
             ))}
           </div>
@@ -296,41 +244,41 @@ export default function CreatorsPage() {
       {/* ── PAIN → SOLUTION ──────────────────────────────── */}
       <section className="py-20 px-4 max-w-6xl mx-auto">
         <div className="text-center mb-14">
-          <p className="text-rose-400 text-sm font-semibold uppercase tracking-widest mb-3">We get it</p>
-          <h2 className="text-4xl font-black">
+          <p className="text-rose-600 text-xs font-bold uppercase tracking-widest mb-3">We get it</p>
+          <h2 className="text-4xl font-black text-zinc-950">
             Creator problems.{" "}
-            <span className="text-zinc-400">Solved by AI.</span>
+            <span className="text-zinc-500">Solved by AI.</span>
           </h2>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {PAIN_POINTS.map(({ icon: Icon, pain, fix }) => (
             <div
               key={pain}
-              className="group bg-white/3 border border-white/8 rounded-2xl p-6 hover:border-rose-500/30 hover:bg-white/5 transition-all"
+              className="group bg-white border border-zinc-200/90 rounded-2xl p-6 hover:border-rose-300 hover:shadow-md transition-all shadow-xs"
             >
-              <div className="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center mb-4">
-                <Icon className="w-5 h-5 text-rose-400" />
+              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center mb-4">
+                <Icon className="w-5 h-5 text-rose-600" />
               </div>
-              <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-2 line-through decoration-red-500/60">
+              <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-2 line-through decoration-rose-500/70">
                 {pain}
               </p>
-              <p className="text-white text-sm leading-relaxed">{fix}</p>
+              <p className="text-zinc-800 text-sm leading-relaxed font-medium">{fix}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── PLATFORM FEATURES ────────────────────────────── */}
-      <section className="py-20 px-4 max-w-6xl mx-auto">
+      <section className="py-20 px-4 max-w-6xl mx-auto border-t border-zinc-100">
         <div className="text-center mb-14">
-          <p className="text-rose-400 text-sm font-semibold uppercase tracking-widest mb-3">Platform</p>
-          <h2 className="text-4xl font-black mb-4">
+          <p className="text-rose-600 text-xs font-bold uppercase tracking-widest mb-3">Platform</p>
+          <h2 className="text-4xl font-black mb-4 text-zinc-950">
             Your complete creator{" "}
-            <span className="bg-gradient-to-r from-rose-400 to-violet-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-rose-600 to-violet-600 bg-clip-text text-transparent">
               business stack.
             </span>
           </h2>
-          <p className="text-zinc-500 max-w-xl mx-auto">
+          <p className="text-zinc-600 max-w-xl mx-auto">
             Everything you need — marketplace, billing, AI, analytics — in one place. No 12-tab juggling.
           </p>
         </div>
@@ -338,39 +286,39 @@ export default function CreatorsPage() {
           {FEATURES.map(({ icon: Icon, title, description, badge, color }) => (
             <div
               key={title}
-              className="group relative bg-white/3 border border-white/8 rounded-2xl p-6 hover:border-white/20 hover:bg-white/5 transition-all hover:-translate-y-1"
+              className="group relative bg-white border border-zinc-200/90 rounded-2xl p-6 hover:border-zinc-300 hover:shadow-lg transition-all hover:-translate-y-1 shadow-xs"
             >
               {badge && (
-                <span className="absolute top-4 right-4 text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full">
+                <span className="absolute top-4 right-4 text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full">
                   {badge}
                 </span>
               )}
-              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center mb-4 shadow-lg`}>
+              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center mb-4 shadow-md`}>
                 <Icon className="w-5 h-5 text-white" />
               </div>
-              <h3 className="font-bold text-white text-base mb-2">{title}</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">{description}</p>
+              <h3 className="font-bold text-zinc-950 text-base mb-2">{title}</h3>
+              <p className="text-zinc-600 text-sm leading-relaxed">{description}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────── */}
-      <section className="py-20 px-4 bg-white/[0.02] border-y border-white/5">
+      <section className="py-20 px-4 bg-zinc-50/60 border-y border-zinc-200/80">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-rose-400 text-sm font-semibold uppercase tracking-widest mb-3">Process</p>
-            <h2 className="text-4xl font-black">Live and earning in 4 steps.</h2>
+            <p className="text-rose-600 text-xs font-bold uppercase tracking-widest mb-3">Process</p>
+            <h2 className="text-4xl font-black text-zinc-950">Live and earning in 4 steps.</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 relative">
-            <div className="hidden lg:block absolute top-8 left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-transparent via-rose-500/30 to-transparent" />
+            <div className="hidden lg:block absolute top-8 left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-transparent via-rose-300 to-transparent" />
             {STEPS.map(({ n, title, desc }) => (
               <div key={n} className="text-center">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center mx-auto mb-4 text-xl font-black shadow-lg shadow-rose-500/20">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center mx-auto mb-4 text-xl font-black text-white shadow-lg shadow-rose-500/20">
                   {n}
                 </div>
-                <h3 className="font-bold text-white mb-2">{title}</h3>
-                <p className="text-zinc-500 text-sm">{desc}</p>
+                <h3 className="font-bold text-zinc-950 mb-2">{title}</h3>
+                <p className="text-zinc-600 text-sm">{desc}</p>
               </div>
             ))}
           </div>
@@ -385,37 +333,37 @@ export default function CreatorsPage() {
             { value: "500+", label: "Active creators", icon: Users },
             { value: "2%", label: "Platform fee (Pro)", icon: TrendingUp },
           ].map(({ value, label, icon: Icon }) => (
-            <div key={label} className="bg-white/3 border border-white/8 rounded-2xl p-8 hover:border-rose-500/20 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center mx-auto mb-3">
-                <Icon className="w-5 h-5 text-rose-400" />
+            <div key={label} className="bg-white border border-zinc-200/90 rounded-2xl p-8 hover:border-rose-300 hover:shadow-md transition-all shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center mx-auto mb-3">
+                <Icon className="w-5 h-5 text-rose-600" />
               </div>
-              <p className="text-4xl font-black text-white mb-1">{value}</p>
-              <p className="text-zinc-500 text-sm">{label}</p>
+              <p className="text-4xl font-black text-zinc-950 mb-1">{value}</p>
+              <p className="text-zinc-600 text-sm font-medium">{label}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── TESTIMONIALS ─────────────────────────────────── */}
-      <section className="py-20 px-4 max-w-6xl mx-auto">
+      <section className="py-20 px-4 max-w-6xl mx-auto border-t border-zinc-100">
         <div className="text-center mb-14">
-          <p className="text-rose-400 text-sm font-semibold uppercase tracking-widest mb-3">Creator stories</p>
-          <h2 className="text-4xl font-black">Real creators. Real income.</h2>
+          <p className="text-rose-600 text-xs font-bold uppercase tracking-widest mb-3">Creator stories</p>
+          <h2 className="text-4xl font-black text-zinc-950">Real creators. Real income.</h2>
         </div>
         <div className="grid sm:grid-cols-3 gap-6">
           {TESTIMONIALS.map(({ quote, author, role, stars }) => (
             <div
               key={author}
-              className="bg-white/3 border border-white/8 rounded-2xl p-6 hover:border-rose-500/30 transition-all"
+              className="bg-white border border-zinc-200/90 rounded-2xl p-6 hover:border-zinc-300 hover:shadow-md transition-all shadow-xs"
             >
               <div className="flex gap-0.5 mb-4">
                 {Array.from({ length: stars }).map((_, i) => (
                   <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
                 ))}
               </div>
-              <p className="text-zinc-300 text-sm leading-relaxed mb-5 italic">"{quote}"</p>
+              <p className="text-zinc-700 text-sm leading-relaxed mb-5 italic">"{quote}"</p>
               <div>
-                <p className="font-bold text-white text-sm">{author}</p>
+                <p className="font-bold text-zinc-950 text-sm">{author}</p>
                 <p className="text-zinc-500 text-xs">{role}</p>
               </div>
             </div>
@@ -423,87 +371,30 @@ export default function CreatorsPage() {
         </div>
       </section>
 
-      {/* ── PRICING ──────────────────────────────────────── */}
-      <section className="py-20 px-4 bg-white/[0.02] border-y border-white/5">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-rose-400 text-sm font-semibold uppercase tracking-widest mb-3">Pricing</p>
-            <h2 className="text-4xl font-black mb-3">Keep more of what you earn.</h2>
-            <p className="text-zinc-500">Start free. As you grow, your fee drops.</p>
-          </div>
-          <div className="grid sm:grid-cols-3 gap-6 items-stretch">
-            {TIERS.map(({ name, price, sub, highlight, features, cta, href }) => (
-              <div
-                key={name}
-                className={`relative rounded-2xl p-6 flex flex-col transition-all ${
-                  highlight
-                    ? "bg-gradient-to-b from-rose-600/20 to-pink-900/20 border-2 border-rose-500/60 shadow-xl shadow-rose-500/10"
-                    : "bg-white/3 border border-white/8 hover:border-white/15"
-                }`}
-              >
-                {highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg">
-                      BEST FOR CREATORS
-                    </span>
-                  </div>
-                )}
-                <div className="mb-6">
-                  <h3 className="font-black text-white text-xl mb-1">{name}</h3>
-                  <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-4xl font-black text-white">{price}</span>
-                    {price !== "₹0" && <span className="text-zinc-500 text-sm">/mo</span>}
-                  </div>
-                  <p className="text-zinc-500 text-xs">{sub}</p>
-                </div>
-                <ul className="space-y-2.5 mb-8 flex-1">
-                  {features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-zinc-300">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href={href}
-                  className={`w-full text-center font-bold py-3 rounded-xl transition-all text-sm ${
-                    highlight
-                      ? "bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white shadow-lg shadow-rose-500/25"
-                      : "bg-white/8 hover:bg-white/15 text-white border border-white/10"
-                  }`}
-                >
-                  {cta}
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── FINAL CTA ────────────────────────────────────── */}
       <section className="py-20 px-4 max-w-4xl mx-auto text-center">
-        <div className="relative bg-gradient-to-br from-rose-600/10 via-pink-600/10 to-violet-600/10 border border-rose-500/20 rounded-3xl p-14 overflow-hidden">
+        <div className="relative bg-gradient-to-br from-rose-50 via-pink-50/70 to-violet-50 border border-rose-200/80 rounded-3xl p-10 sm:p-14 overflow-hidden shadow-sm">
           <div className="pointer-events-none absolute inset-0">
-            <div className="absolute top-0 left-1/4 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl" />
+            <div className="absolute top-0 left-1/4 w-64 h-64 bg-rose-400/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-violet-400/10 rounded-full blur-3xl" />
           </div>
           <div className="relative z-10">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 mb-6 shadow-lg shadow-rose-500/30">
               <Zap className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-4xl sm:text-5xl font-black mb-4">
+            <h2 className="text-4xl sm:text-5xl font-black mb-4 text-zinc-950">
               Your content deserves{" "}
-              <span className="bg-gradient-to-r from-rose-400 to-violet-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-rose-600 to-violet-600 bg-clip-text text-transparent">
                 a business.
               </span>
             </h2>
-            <p className="text-zinc-400 text-lg mb-8 max-w-xl mx-auto">
+            <p className="text-zinc-600 text-lg mb-8 max-w-xl mx-auto">
               Join 500+ creators already earning with Abhibhi Developers. List your first product in under 10 minutes — completely free.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/register"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white font-bold px-8 py-4 rounded-2xl transition-all shadow-lg shadow-rose-500/25 hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold px-8 py-4 rounded-2xl transition-all shadow-lg shadow-rose-500/25 hover:-translate-y-0.5"
               >
                 <Sparkles className="w-4 h-4" />
                 List Your First Product Free
@@ -511,10 +402,10 @@ export default function CreatorsPage() {
               </Link>
               <Link
                 href="/marketplace"
-                className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors font-medium"
+                className="inline-flex items-center gap-2 text-zinc-600 hover:text-zinc-900 transition-colors font-semibold"
               >
                 Explore the marketplace
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 text-zinc-400" />
               </Link>
             </div>
           </div>

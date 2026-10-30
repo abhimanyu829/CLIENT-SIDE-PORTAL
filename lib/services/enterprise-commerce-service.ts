@@ -6,6 +6,9 @@ import { createNotification } from "@/lib/notifications"
 import { emailQueue, EMAIL_JOBS } from "@/lib/queue"
 import { redis } from "@/lib/redis"
 import { currentSubscriptionEnvironment } from "@/lib/services/subscription-state-machine"
+import { sendEmail } from "@/lib/resend"
+import ProductDeliveryEmail from "@/emails/ProductDeliveryEmail"
+import { CommunicationEmail } from "@/emails/CommunicationEmail"
 
 const PLATFORM_COMMISSION_RATE = 0.15
 const DEFAULT_TAX_RATE = 0.18
@@ -1138,7 +1141,7 @@ export async function markOrderPaid(orderId: string, gatewayPaymentId?: string, 
       }
     }
 
-    return { order: paidOrder, payment, alreadyProcessed: false }
+    return { order: paidOrder, payment, alreadyProcessed: false, buyerUser: order.user, orderItems: order.items }
   }, { timeout: 30000 })
 
   if (result.alreadyProcessed) {
@@ -1197,6 +1200,36 @@ export async function markOrderPaid(orderId: string, gatewayPaymentId?: string, 
       orderNumber: processedOrder.orderNumber,
     })
   } catch {}
+
+  const buyerUser = (result as any)?.buyerUser
+  if (buyerUser?.email) {
+    try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+      const itemsList = ((result as any).orderItems ?? []).map((i: any) => i.product?.name ?? i.name).filter(Boolean)
+      await sendEmail({
+        to: buyerUser.email,
+        subject: `Order Confirmed: ${processedOrder.orderNumber} — Abhibhi Developers`,
+        react: CommunicationEmail({
+          preview: `Your order ${processedOrder.orderNumber} is confirmed`,
+          title: "Thank you for your purchase!",
+          subtitle: `Order ${processedOrder.orderNumber}`,
+          recipientName: buyerUser.name ?? "there",
+          body: `We are thrilled to welcome you! Your payment of ₹${Number(processedOrder.grandTotal).toLocaleString()} has been received and your order is active.`,
+          ctaLabel: "View Your Products",
+          ctaUrl: `${appUrl}/dashboard/subscriptions`,
+          details: [
+            { label: "Order Number", value: processedOrder.orderNumber },
+            { label: "Products Purchased", value: itemsList.join(", ") || "Digital Products" },
+            { label: "Amount Paid", value: `₹${Number(processedOrder.grandTotal).toLocaleString()}` },
+            { label: "Payment Status", value: "✓ PAID" },
+          ],
+        }),
+      })
+      console.log(`[COMMERCE] ✉️ Direct greeting & order confirmation email sent to ${buyerUser.email}`)
+    } catch (err) {
+      console.error(`[COMMERCE] ⚠️ Failed to send direct greeting email:`, err)
+    }
+  }
 
   await emitEvent({
     type: EVENTS.ORDER_PAID,
@@ -1445,6 +1478,34 @@ export async function fulfillOrder(orderId: string): Promise<void> {
         renewalDate: expiresAt?.toLocaleDateString(),
         supportUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/dashboard/tickets`,
       })
+
+      // Direct delivery email via Resend — guarantees immediate delivery to customer inbox
+      const recipientEmail = order.user?.email
+      if (recipientEmail) {
+        try {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+          await sendEmail({
+            to: recipientEmail,
+            subject: `Your ${product.name} is ready — Abhibhi Developers`,
+            react: ProductDeliveryEmail({
+              name: order.user.name ?? "there",
+              productName: product.name,
+              saasUrl: credentials?.saasUrl as string | undefined,
+              username: credentials?.username as string | undefined,
+              password: credentials?.password as string | undefined,
+              apiKeys: credentials?.apiKeys as string | undefined,
+              onboardingInstructions: credentials?.onboardingInstructions as string | undefined,
+              accessDocUrl: credentials?.accessDocUrl as string | undefined,
+              subscriptionDuration: item.tier ? item.tier.name : "Lifetime",
+              renewalDate: expiresAt?.toLocaleDateString(),
+              supportUrl: `${appUrl}/dashboard/tickets`,
+            }),
+          })
+          console.log(`[FULFILL] ✉️ Direct product delivery email sent to ${recipientEmail} for ${product.name}`)
+        } catch (emailErr) {
+          console.error(`[FULFILL] ⚠️ Failed to send direct delivery email to ${recipientEmail}:`, emailErr)
+        }
+      }
 
       // Emit CREDENTIAL_DELIVERED event
       await emitEvent({

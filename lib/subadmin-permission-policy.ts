@@ -82,6 +82,7 @@ const ROUTE_POLICIES: RoutePolicy[] = [
   { prefix: "/admin/emails", resource: "Email Center" },
   { prefix: "/admin/crm", resource: "CRM" },
   { prefix: "/admin/ecosystem", resource: "Marketing" },
+  { prefix: "/admin/blog", resource: "Blogs" },
 ]
 
 const API_RESOURCE_PREFIXES: Array<{ prefix: string; resource: SubadminResource }> = [
@@ -100,6 +101,7 @@ const API_RESOURCE_PREFIXES: Array<{ prefix: string; resource: SubadminResource 
   { prefix: "/api/admin/custom-service-portal", resource: "Services" },
   { prefix: "/api/admin/service-campaigns", resource: "Marketing" },
   { prefix: "/api/admin/campaigns", resource: "Marketing" },
+  { prefix: "/api/admin/blog", resource: "Blogs" },
   { prefix: "/api/admin/coupons", resource: "Marketing" },
   { prefix: "/api/admin/previews", resource: "Media" },
   { prefix: "/api/admin/analytics", resource: "Analytics" },

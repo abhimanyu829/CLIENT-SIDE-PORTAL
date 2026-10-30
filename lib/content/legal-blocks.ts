@@ -30,8 +30,27 @@ export const TERMS_ADDENDUM: BlockSection[] = [
   { heading: "19. Complaints and Dispute Resolution", body: ["Please contact us first with the order reference, relevant dates, a description of the issue, and any supporting evidence.", "We aim to review complaints fairly and communicate the next steps. Any legally required grievance process, response period, or escalation route will apply as specified by law and our published grievance details.", "Nothing in these terms prevents a customer from exercising a legal right or approaching an appropriate authority or forum."] },
   { heading: "20. Governing Law", body: ["These terms are governed by the laws of India, subject to applicable conflict-of-law principles and mandatory consumer protections.", "Any dispute will be handled by a court or forum with lawful jurisdiction. Nothing in this section removes a customer's statutory rights or imposes an unlawful restriction on access to remedies."] },
   { heading: "21. Changes to These Terms", body: ["We may update these terms to reflect changes in our services, operations, or legal obligations.", "We will publish the revised version with an updated effective date and provide any notice required by law or the applicable agreement. Material changes will not be applied retroactively where prohibited."] },
-  { heading: "22. Contact Information", list: ["Business name: [Exact legal/proprietor name]", "Brand: Abhibhideveloper", "Business address: [Complete business or registered address, as applicable]", "Support email: [Monitored support email]", "Grievance contact: [Name or designation and dedicated contact details, where required]", "Effective date: [Insert date]"] },
-  { heading: "Legal Details to Complete Before Publishing", body: ["The brand name alone may not identify the legal contracting party. Since Abhibhideveloper is currently a solo, early-stage venture, determine whether you are operating as an individual proprietor, a registered entity, or another legal form, and describe it accurately. Do not copy another startup's legal name, address, GSTIN, registration number, grievance officer, or dispute jurisdiction."] },
+  { heading: "22. Contact Information", list: [
+    "Business name: Abhibhi Developers",
+    "Brand name: Abhibhi Developers – SaaS and AI Automation Tools",
+    "Business address: Head Office: Prayagraj, Uttar Pradesh, India. Departmental Office: Gorakhpur, Uttar Pradesh, India.",
+    "Business phone: +91 9142798767",
+    "Support email: support@abhibhideveloper.tech",
+    "General enquiries email: luckypal5002@gmail.com",
+    "Website: https://www.abhibhideveloper.tech",
+    "Grievance contact: Grievance Officer, Abhibhi Developers (Name and dedicated contact details to be confirmed).",
+    "Effective date: 26 July 2024"
+  ] },
+  {
+    heading: "23. Legal Entity & Regulatory Disclosure",
+    lead: "For the purposes of these Terms of Service and all transactions conducted through this platform, the legal contracting party is Abhimanyu Kumar, operating as a registered Sole Proprietorship under the trade and brand name AbhibhiDeveloper (also styled as Abhibhideveloper and ABHIBHIDEVELOPERS GROUP).",
+    list: [
+      "Legal Status: Sole Proprietorship (Registered MSME under Udyam Registration, Government of India)",
+      "Proprietor Name: Abhimanyu Kumar",
+      "Principal Place of Business: Prayagraj (Allahabad), Uttar Pradesh – 273010, India",
+      "Exclusive Jurisdiction: Subject to mandatory consumer protection laws, any legal disputes, claims, or proceedings arising out of or related to the use of our services shall be subject to the exclusive jurisdiction of the competent courts in Gorakhpur, Uttar Pradesh, India."
+    ]
+  },
 ]
 
 export const PRIVACY_ADDENDUM: BlockSection[] = [

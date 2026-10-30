@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { SignOutButton, UserButton, useUser } from "@clerk/nextjs"
 import { useState, useEffect, useCallback, lazy, Suspense } from "react"
 import { usePathname } from "next/navigation"
@@ -138,9 +139,19 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
           </div>
 
           {/* Logo */}
-          <Link href="/" className="relative z-10 flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-full hover:bg-muted/40 transition-colors">
+          <Link href="/" className="relative z-10 flex items-center gap-2 shrink-0 px-1.5 py-1 rounded-full hover:bg-muted/40 transition-colors group">
+            <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg overflow-hidden border border-amber-500/40 shadow-sm shrink-0 bg-amber-500/10 transition-transform group-hover:scale-105">
+              <Image
+                src="/abhibhi-logo.jpg"
+                alt="Abhibhi Developers"
+                fill
+                sizes="32px"
+                className="object-cover"
+                priority
+              />
+            </div>
             <span className="brand-gradient text-sm sm:text-base xl:text-lg font-black tracking-tight whitespace-nowrap">
-              ⬡ ABHIBHIDEVELOPERS
+              ABHIBHIDEVELOPERS
             </span>
           </Link>
 
@@ -320,9 +331,20 @@ export default function Navbar({ announcement }: { announcement?: AnnouncementDa
       {mobileOpen && (
         <div className="fixed inset-0 bg-background/98 backdrop-blur-2xl z-[100] flex flex-col p-6 overflow-y-auto animate-in fade-in slide-in-from-top-4 duration-200 lg:hidden">
           <div className="flex justify-between items-center mb-6">
-            <span className="brand-gradient text-xl font-black">
-              ⬡ ABHIBHIDEVELOPERS GROUP
-            </span>
+            <div className="flex items-center gap-2">
+              <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-amber-500/40 shadow-sm shrink-0 bg-amber-500/10">
+                <Image
+                  src="/abhibhi-logo.jpg"
+                  alt="Abhibhi Developers"
+                  fill
+                  sizes="32px"
+                  className="object-cover"
+                />
+              </div>
+              <span className="brand-gradient text-lg sm:text-xl font-black">
+                ABHIBHIDEVELOPERS GROUP
+              </span>
+            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setMobileOpen(false)}

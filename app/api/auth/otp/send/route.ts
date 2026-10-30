@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { phone } = body as { phone?: string }
+    const { phone, force } = body as { phone?: string; force?: boolean }
 
     const normalized = normalizePhone(phone ?? "")
     if (!normalized) {
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       where: { id: userId },
       select: { phone: true, phoneVerified: true },
     })
-    if (user?.phone === normalized && user?.phoneVerified) {
+    if (user?.phone === normalized && user?.phoneVerified && !force) {
       return NextResponse.json(
         {
           success: true,
@@ -76,7 +76,53 @@ export async function POST(req: Request) {
       `Your NexusAI verification code is: ${otp}. Expires in 10 minutes.`
     )
 
-    if (!smsSent) {
+    let delivered = smsSent
+    let deliveryChannel = "phone"
+
+    if (!delivered) {
+      // Twilio Trial account cannot send SMS to numbers not verified in Twilio Console.
+      // Fallback: send the verification code to user's registered email via Resend.
+      const userRecord = await db.user.findUnique({
+        where: { id: userId },
+        select: { email: true, name: true },
+      })
+      const targetEmail = session.user.email || userRecord?.email
+
+      if (targetEmail) {
+        try {
+          const { sendEmail } = await import("@/lib/resend")
+          const React = (await import("react")).default
+          const { CommunicationEmail } = await import("@/emails/CommunicationEmail")
+
+          console.log(`[OTP] Twilio trial blocked SMS to ${normalized}. Delivering OTP ${otp} to ${targetEmail}`)
+
+          const emailRes = await sendEmail({
+            to: targetEmail,
+            subject: `Your Phone Verification Code: ${otp} — Abhibhi Developers`,
+            react: React.createElement(CommunicationEmail, {
+              preview: `Your phone verification code is ${otp}`,
+              title: "Phone Verification Code",
+              subtitle: `Verifying mobile: ${normalized}`,
+              recipientName: userRecord?.name ?? "there",
+              body: `Your verification code for mobile number ${normalized} is below. Enter this 6-digit code on the checkout screen to verify your phone. Valid for 10 minutes.`,
+              details: [
+                { label: "Mobile Number", value: normalized },
+                { label: "Verification Code", value: otp },
+                { label: "Valid For", value: "10 minutes" },
+              ],
+            }),
+          })
+          if (!emailRes.error) {
+            delivered = true
+            deliveryChannel = "email"
+          }
+        } catch (emailErr) {
+          console.error("[OTP] Email fallback error:", emailErr)
+        }
+      }
+    }
+
+    if (!delivered) {
       // Do not start the resend cooldown on a failed send — but the OTP
       // itself remains valid, so a retry inside the same window would fail
       // verifyOtp with "code not found". Safe: consume it.
@@ -102,8 +148,11 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: true,
-        message: "OTP sent to your phone.",
+        message: deliveryChannel === "email"
+          ? "Verification code sent to your registered email (Twilio trial limited)."
+          : "OTP sent to your phone.",
         phone: normalized,
+        channel: deliveryChannel,
         cooldownSeconds: 60,
       },
       { status: 200 }

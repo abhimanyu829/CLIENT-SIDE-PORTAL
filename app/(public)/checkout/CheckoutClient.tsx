@@ -21,7 +21,6 @@ import {
 } from "lucide-react"
 
 const EmailOtpVerifier = lazy(() => import("@/components/checkout/EmailOtpVerifier"))
-const PhoneOtpVerifier = lazy(() => import("@/components/checkout/PhoneOtpVerifier"))
 import QRCode from "qrcode"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -197,7 +196,7 @@ export default function CheckoutClient({
   // Email OTP gate
   const [emailVerified, setEmailVerified] = useState(false)
   // Phone OTP gate (Twilio) — server re-checks this independently at order time
-  const [phoneVerified, setPhoneVerified] = useState(false)
+  const phoneVerified = Boolean(mobile.trim())
   const [selectedGateway, setSelectedGateway] = useState<"RAZORPAY" | "PHONEPE" | "PAYTM">("RAZORPAY")
   const [couponLoading, setCouponLoading] = useState(false)
   const [couponError, setCouponError] = useState<string | null>(null)
@@ -1082,22 +1081,26 @@ export default function CheckoutClient({
                 </Suspense>
               </div>
 
-              {/* Phone OTP Verification Box (Twilio) */}
+              {/* Phone Number Input (Submission Only — No OTP Required) */}
               <div className="pt-2">
-                <Suspense fallback={
-                  <div className="rounded-2xl border border-border bg-muted/30 p-4 text-center text-xs text-muted-foreground">Loading phone verifier…</div>
-                }>
-                  <PhoneOtpVerifier
-                    onVerified={(verifiedPhone) => {
-                      setMobile(verifiedPhone)
-                      setPhoneVerified(true)
-                    }}
-                    onReset={() => {
-                      setPhoneVerified(false)
-                      setMobile("")
-                    }}
-                  />
-                </Suspense>
+                <div className="rounded-2xl border border-border bg-card p-4 space-y-2">
+                  <label className="space-y-1.5 block">
+                    <span className="text-xs font-semibold text-foreground flex items-center justify-between">
+                      <span>Phone / WhatsApp Number <span className="text-red-500">*</span></span>
+                      <span className="text-[10px] text-muted-foreground font-normal">Contact info only</span>
+                    </span>
+                    <Input
+                      type="tel"
+                      value={mobile}
+                      onChange={(e) => setMobile(e.target.value)}
+                      placeholder="+91 98765 43210"
+                      className="rounded-xl border-border bg-white dark:bg-zinc-800 text-sm font-medium text-foreground focus:ring-2 focus:ring-amber-500/30"
+                    />
+                  </label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Used for order delivery and customer communication. No phone OTP required.
+                  </p>
+                </div>
               </div>
 
               <div className="flex justify-between pt-4 border-t border-border">
@@ -1106,7 +1109,7 @@ export default function CheckoutClient({
                 </Button>
                 <Button
                   onClick={() => setState({ phase: "IDLE", step: "payment" })}
-                  disabled={!billingName.trim() || !billingEmail.trim() || !addressLine1.trim() || !city.trim() || !billingState.trim() || !postalCode.trim() || !emailVerified || !phoneVerified}
+                  disabled={!billingName.trim() || !billingEmail.trim() || !mobile.trim() || !addressLine1.trim() || !city.trim() || !billingState.trim() || !postalCode.trim() || !emailVerified}
                   className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-8 py-6 shadow-md"
                 >
                   Continue to Payment →

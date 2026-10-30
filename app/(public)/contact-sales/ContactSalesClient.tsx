@@ -245,8 +245,8 @@ export default function ContactSalesClient() {
                     <div>
                       <h3 className="text-lg font-bold text-white mb-1">Email Us Directly</h3>
                       <p className="text-xs text-zinc-400 mb-2">For general sales inquiries, contracts, and RFPs.</p>
-                      <a href="mailto:sales@nexusai.com" className="text-blue-400 font-bold text-sm hover:underline">
-                        sales@nexusai.com
+                      <a href="mailto:luckypal5002@gmail.com" className="text-blue-400 font-bold text-sm hover:underline">
+                        luckypal5002@gmail.com
                       </a>
                     </div>
                   </div>
@@ -260,21 +260,34 @@ export default function ContactSalesClient() {
                     <div>
                       <h3 className="text-lg font-bold text-white mb-1">Instant Live Chat</h3>
                       <p className="text-xs text-zinc-400 mb-2">Chat directly with an online product specialist.</p>
-                      <button className="text-emerald-400 font-bold text-sm hover:underline cursor-pointer">
-                        Start Chat →
-                      </button>
+                      <a
+                        href="https://wa.me/919142798767"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-400 font-bold text-sm hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        Start WhatsApp Chat (+91 9142798767) →
+                      </a>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-purple-500/30 bg-gradient-to-r from-purple-950/40 to-blue-950/40 p-6 flex items-center gap-4">
-              <Headset className="w-8 h-8 text-purple-400 shrink-0" />
-              <div>
-                <p className="text-sm font-bold text-white">Need Technical Support?</p>
-                <p className="text-xs text-zinc-400">Existing customers can open tickets directly from the user dashboard.</p>
+            <div className="rounded-2xl border border-purple-500/30 bg-gradient-to-r from-purple-950/40 to-blue-950/40 p-6 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <Headset className="w-8 h-8 text-purple-400 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-white">Need Technical Support?</p>
+                  <p className="text-xs text-zinc-400">Existing customers can email our technical support team directly.</p>
+                </div>
               </div>
+              <a
+                href="mailto:luckypal5002@gmail.com?subject=Technical%20Support%20Request"
+                className="text-purple-400 font-bold text-sm hover:underline shrink-0"
+              >
+                luckypal5002@gmail.com →
+              </a>
             </div>
           </div>
         </div>

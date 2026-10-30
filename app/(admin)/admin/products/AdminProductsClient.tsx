@@ -16,6 +16,7 @@ import {
 
 // Lazy-load stock panel to keep initial bundle small
 const StockManagementPanel = lazy(() => import("./StockManagementPanel"))
+import ProductStructuredDescription, { normalizeMarkdownStructure } from "@/components/marketplace/ProductStructuredDescription"
 import {
   Package, Plus, Settings2, Tag, Eye, EyeOff, Edit, X,
   Globe, Sparkles, DollarSign, Star, Zap, Crown, TrendingUp,
@@ -206,6 +207,7 @@ export default function AdminProductsClient({ initialProducts }: Props) {
   const [pTagline, setPTagline] = useState("")
   const [pDesc, setPDesc] = useState("")
   const [pLongDesc, setPLongDesc] = useState("")
+  const [descViewMode, setDescViewMode] = useState<"edit" | "preview">("edit")
   const [pType, setPType] = useState<ProductType>("SAAS")
   const [pCategory, setPCategory] = useState("")
   const [pSubcategory, setPSubcategory] = useState("")
@@ -957,8 +959,65 @@ export default function AdminProductsClient({ initialProducts }: Props) {
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Long Description (Rich Content)</label>
-                    <Textarea value={pLongDesc} onChange={e => setPLongDesc(e.target.value)} placeholder="Detailed rich-text content for the product page..." rows={5} className="mt-1 font-mono text-sm" />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Long Description (Rich Content)</label>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const cleaned = normalizeMarkdownStructure(pLongDesc)
+                            setPLongDesc(cleaned)
+                          }}
+                          className="px-2 py-0.5 text-[11px] rounded bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                          title="Format headings and list items into clean point-wise structure"
+                        >
+                          🪄 Auto-Format
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const template = `## Overview\nBrief description of what this product does, its purpose, and core value proposition.\n\n## Where it can fit\nDescribe target users, relevant workflows, and where it fits in the stack.\n\n## How to evaluate\n1. Confirm account requirements and pricing tier.\n2. Review documentation and security terms.\n3. Run initial tests with sample workloads.\n4. Measure against acceptance criteria.\n\n## Pricing and availability\nDetails about license models, usage limits, or plan tiers.\n\n## Important considerations\nKey policies, data handling notes, and operational requirements.`
+                            setPLongDesc(template)
+                          }}
+                          className="px-2 py-0.5 text-[11px] rounded bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
+                          title="Insert structured section template"
+                        >
+                          📋 Insert Template
+                        </button>
+                        <div className="border-l border-border h-3.5 mx-0.5" />
+                        <button
+                          type="button"
+                          onClick={() => setDescViewMode("edit")}
+                          className={`px-2 py-0.5 text-[11px] rounded font-medium transition-colors ${descViewMode === "edit" ? "bg-violet-600 text-white" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDescViewMode("preview")}
+                          className={`px-2 py-0.5 text-[11px] rounded font-medium transition-colors ${descViewMode === "preview" ? "bg-violet-600 text-white" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+                        >
+                          Structured Preview
+                        </button>
+                      </div>
+                    </div>
+
+                    {descViewMode === "edit" ? (
+                      <Textarea
+                        value={pLongDesc}
+                        onChange={e => setPLongDesc(e.target.value)}
+                        placeholder="## Overview&#10;Product overview...&#10;&#10;## Where it can fit&#10;Point-wise details...&#10;&#10;## How to evaluate&#10;1. Step one&#10;2. Step two"
+                        rows={6}
+                        className="mt-1 font-mono text-sm leading-relaxed"
+                      />
+                    ) : (
+                      <div className="mt-1 border border-border rounded-xl p-4 max-h-[350px] overflow-y-auto bg-zinc-950/90 text-left">
+                        <ProductStructuredDescription content={pLongDesc} isCompact={true} />
+                      </div>
+                    )}
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Use <code className="text-violet-400">## Section Name</code> for headings and <code className="text-violet-400">1.</code>, <code className="text-violet-400">-</code> for point-wise items. They automatically render as modern structured cards on the product page.
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

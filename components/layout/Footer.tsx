@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import Link from "next/link"
 import { motion, useScroll, useTransform } from "framer-motion"
 import { CookiePreferencesButton } from "@/components/consent/CookieConsentCard"
@@ -18,6 +18,7 @@ import {
   Rocket,
   TrendingDown,
   Sparkles,
+  CheckCircle2,
 } from "lucide-react"
 
 const FOOTER_LINKS = [
@@ -44,7 +45,7 @@ const FOOTER_LINKS = [
       ["FAQs", "/faq"],
       ["Compare Products", "/compare"],
       ["Feedback & Ratings", "/feedback"],
-      ["Status Page", "https://status.nexusai.app"],
+      ["Status Page", "/status"],
     ],
   },
   {
@@ -89,6 +90,39 @@ const SOCIALS = [
 export default function Footer() {
   const year = new Date().getFullYear()
   const containerRef = useRef<HTMLDivElement>(null)
+
+  const [email, setEmail] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [subscribed, setSubscribed] = useState(false)
+  const [error, setError] = useState("")
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    if (!email || !email.includes("@")) {
+      setError("Please enter a valid email.")
+      return
+    }
+    setSubmitting(true)
+    try {
+      const res = await fetch("/api/public/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setSubscribed(true)
+        setEmail("")
+      } else {
+        setError(data.error || "Failed to subscribe. Please try again.")
+      }
+    } catch (err) {
+      setError("Network error. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -173,17 +207,36 @@ export default function Footer() {
                     <p className="text-xs font-bold text-gray-900 dark:text-gray-300 uppercase tracking-widest">
                       Stay in the loop
                     </p>
-                    <div className="flex gap-2 max-w-md">
-                      <input
-                        type="email"
-                        placeholder="Enter your email"
-                        className="w-full bg-gray-50 dark:bg-zinc-800/80 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200"
-                      />
-                      <button className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl whitespace-nowrap shadow-md hover:shadow-orange-500/25 transition-all duration-200 flex items-center gap-1.5 shrink-0 active:scale-95">
-                        <span>Subscribe</span>
-                        <Send className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    {subscribed ? (
+                      <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 flex items-center gap-2.5 text-xs font-bold shadow-xs animate-in fade-in duration-200">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Subscribed! Notification sent to luckypal5002@gmail.com and welcome email to your inbox.</span>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleSubscribe} className="space-y-1.5">
+                        <div className="flex gap-2 max-w-md">
+                          <input
+                            type="email"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Enter your email"
+                            className="w-full bg-gray-50 dark:bg-zinc-800/80 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-200"
+                          />
+                          <button
+                            type="submit"
+                            disabled={submitting}
+                            className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-bold px-5 py-2.5 rounded-xl whitespace-nowrap shadow-md hover:shadow-orange-500/25 transition-all duration-200 flex items-center gap-1.5 shrink-0 active:scale-95"
+                          >
+                            <span>{submitting ? "Subscribing..." : "Subscribe"}</span>
+                            <Send className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        {error && (
+                          <p className="text-[11px] text-red-600 font-semibold">{error}</p>
+                        )}
+                      </form>
+                    )}
                     <p className="text-[11px] text-gray-500 dark:text-gray-500">
                       No spam. Product updates & AI insights only.
                     </p>

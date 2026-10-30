@@ -3,6 +3,10 @@ import Link from "next/link"
 import { db } from "@/lib/db"
 import { FAQSection } from "@/components/public/FAQSection"
 import { CallToAction } from "@/components/public/CallToAction"
+import { BlogSubscribeClient } from "@/components/public/BlogSubscribeClient"
+
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 export const metadata: Metadata = {
   title: "Blog — NexusAI Engineering",
@@ -55,7 +59,16 @@ export default async function BlogListPage() {
         {/* Grid */}
         <div className="absolute inset-0 opacity-20" style={{backgroundImage:"linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px)",backgroundSize:"60px 60px"}} />
         <div className="max-w-3xl mx-auto relative z-10">
-          <p className="text-purple-400 font-mono text-sm tracking-widest uppercase mb-4">The NexusAI Blog</p>
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
+            <p className="text-purple-400 font-mono text-sm tracking-widest uppercase">The NexusAI Blog</p>
+            <Link
+              href="/admin/blog"
+              className="inline-flex items-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 px-5 py-2.5 rounded-full shadow-lg shadow-purple-600/30 hover:shadow-purple-600/50 hover:scale-105 transition-all border border-purple-400/60"
+            >
+              <span className="text-base">✍️</span>
+              <span>Upload New Post →</span>
+            </Link>
+          </div>
           <h1 className="text-6xl md:text-7xl font-black tracking-tighter mb-6">
             <span className="text-white">Engineering</span><br />
             <span className="text-gradient">the Future</span>

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import CountdownTimer from "@/components/marketplace/CountdownTimer"
 import ProductCard from "@/components/marketplace/ProductCard"
+import ProductStructuredDescription from "@/components/marketplace/ProductStructuredDescription"
 import { useCart } from "@/providers/CartProvider"
 
 const TYPE_ICONS: Record<string, string> = {
@@ -68,6 +69,73 @@ interface Product {
 export default function ProductDetailClient({ product }: { product: Product }) {
   const [activeScreenshot, setActiveScreenshot] = useState(0)
   const [activeTab, setActiveTab] = useState<"overview" | "pricing" | "reviews" | "changelog">("overview")
+  const [reviewsList, setReviewsList] = useState<Review[]>(product.reviews || [])
+  const [reviewCount, setReviewCount] = useState<number>(product.reviewCount || 0)
+  const [showReviewModal, setShowReviewModal] = useState<boolean>(false)
+  const [reviewRating, setReviewRating] = useState<number>(5)
+  const [reviewTitle, setReviewTitle] = useState<string>("")
+  const [reviewBody, setReviewBody] = useState<string>("")
+  const [submittingReview, setSubmittingReview] = useState<boolean>(false)
+  const [reviewError, setReviewError] = useState<string | null>(null)
+  const [reviewSuccess, setReviewSuccess] = useState<string | null>(null)
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setReviewError(null)
+    setReviewSuccess(null)
+
+    if (reviewTitle.trim().length < 3) {
+      setReviewError("Title must be at least 3 characters")
+      return
+    }
+    if (reviewBody.trim().length < 10) {
+      setReviewError("Review body must be at least 10 characters")
+      return
+    }
+
+    setSubmittingReview(true)
+    try {
+      const res = await fetch(`/api/products/${product.slug}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating: reviewRating,
+          title: reviewTitle.trim(),
+          body: reviewBody.trim(),
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          setReviewError("Please sign in to submit a review.")
+        } else if (res.status === 409) {
+          setReviewError("You have already reviewed this product.")
+        } else {
+          setReviewError(data.error?.message || "Failed to submit review.")
+        }
+        return
+      }
+
+      if (data.success && data.data) {
+        setReviewSuccess("Your review has been submitted successfully!")
+        setReviewsList((prev) => [data.data, ...prev])
+        setReviewCount((prev) => prev + 1)
+        setReviewTitle("")
+        setReviewBody("")
+        setReviewRating(5)
+        setTimeout(() => {
+          setShowReviewModal(false)
+          setReviewSuccess(null)
+        }, 1200)
+      }
+    } catch (err: any) {
+      setReviewError(err?.message || "Something went wrong. Please try again.")
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
   const [wishlisted, setWishlisted] = useState(false)
   const [cartState, setCartState] = useState<"idle" | "adding" | "added" | "error">("idle")
   const [cartError, setCartError] = useState<string | null>(null)
@@ -314,7 +382,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                 {(["overview", "pricing", "reviews", "changelog"] as const).map(tab => (
                   <button key={tab} onClick={() => setActiveTab(tab)}
                     className={`tab-item capitalize ${activeTab === tab ? "tab-active" : ""}`}>
-                    {tab === "reviews" ? `Reviews (${product.reviewCount})` : tab === "pricing" ? `Pricing (${product.tiers.length})` : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    {tab === "reviews" ? `Reviews (${reviewCount})` : tab === "pricing" ? `Pricing (${product.tiers.length})` : tab.charAt(0).toUpperCase() + tab.slice(1)}
                   </button>
                 ))}
               </div>
@@ -325,9 +393,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                   {/* Description */}
                   <div>
                     <h2 className="text-2xl font-black mb-4">About this product</h2>
-                    <p className="text-zinc-400 text-base leading-relaxed">
-                      {product.longDescription || product.description}
-                    </p>
+                    <ProductStructuredDescription content={product.longDescription || product.description} />
                   </div>
 
                   {/* Features */}
@@ -421,7 +487,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               {/* Pricing tab */}
               {activeTab === "pricing" && (
                 <div className="pt-8">
-                  <p className="text-zinc-500 mb-8">
+                  <p className="text-zinc-600 mb-8 font-medium">
                     All plans include a {product.tiers[0]?.trialDays > 0 ? `${product.tiers[0].trialDays}-day free trial` : "14-day money-back guarantee"}.
                     No credit card required to start.
                   </p>
@@ -429,67 +495,103 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                     {product.tiers.map(tier => {
                       const effectivePrice = displayPrice(tier)
                       const isFlash = !!(tier.flashSalePrice && tier.flashSaleEndsAt && new Date(tier.flashSaleEndsAt) > new Date())
+                      
+                      // Filter internal/null database limits for clean client presentation
+                      const IGNORED_KEYS = new Set([
+                        "status", "fxrateused", "fxsourceurl", "pricingstatus", "researchedat",
+                        "providerunit", "priceinr", "price", "isdraft", "draft_reference", "propoints"
+                      ])
+                      const cleanLimits = tier.limits ? Object.entries(tier.limits).filter(([k, v]) => {
+                        if (v === null || v === undefined || v === "" || v === "null") return false
+                        const cleanK = k.toLowerCase().replace(/[^a-z0-9]/g, "")
+                        if (IGNORED_KEYS.has(cleanK)) return false
+                        return true
+                      }) : []
+
+                      const billingNotes = cleanLimits.find(([k]) => k.toLowerCase().includes("billing"))
+                      const displayLimits = cleanLimits.filter(([k]) => !k.toLowerCase().includes("billing"))
+
                       return (
                         <div key={tier.id}
-                          className={`relative rounded-2xl p-7 transition-all hover:-translate-y-1 ${tier.isPopular ? "bg-gradient-to-b from-purple-900/60 to-indigo-900/40 border border-purple-500/60 shadow-2xl shadow-purple-500/20" : "glass"}`}>
+                          className={`relative rounded-2xl p-7 transition-all hover:-translate-y-1 bg-white border text-zinc-900 ${tier.isPopular ? "border-2 border-violet-500 shadow-xl ring-4 ring-violet-500/10" : "border-zinc-200/90 shadow-sm hover:shadow-md"}`}>
                           {tier.isPopular && (
-                            <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-indigo-500 text-xs font-bold px-5 py-1.5 rounded-full whitespace-nowrap shadow-lg">
+                            <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-violet-600 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap shadow-md uppercase tracking-wider">
                               Most Popular
                             </span>
                           )}
                           {tier.isRecommended && !tier.isPopular && (
-                            <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-xs font-bold px-5 py-1.5 rounded-full whitespace-nowrap shadow-lg">
+                            <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap shadow-md uppercase tracking-wider">
                               Recommended
                             </span>
                           )}
 
-                          <p className="font-bold text-sm text-zinc-500 uppercase tracking-wider mb-3">{tier.name}</p>
-                          {tier.description && <p className="text-zinc-600 text-xs mb-4">{tier.description}</p>}
+                          <div className="mb-4">
+                            <span className="inline-block text-xs font-bold text-violet-700 bg-violet-50 px-3 py-1 rounded-full uppercase tracking-wider border border-violet-100 mb-2">
+                              {tier.name}
+                            </span>
+                            {tier.description && !tier.description.startsWith("INTERNAL DRAFT") && (
+                              <p className="text-zinc-600 text-xs mt-1 leading-relaxed">{tier.description}</p>
+                            )}
+                          </div>
 
-                          <div className="mb-6">
+                          <div className="mb-6 pb-5 border-b border-zinc-100">
                             {isFlash && (
-                              <div className="flex items-center gap-2 mb-1 text-red-400 text-xs font-medium">
+                              <div className="flex items-center gap-2 mb-1.5 text-red-600 text-xs font-bold">
                                 <span>🔥 Flash Sale</span>
                                 {tier.flashSaleEndsAt && <CountdownTimer endDate={tier.flashSaleEndsAt} variant="compact" />}
                               </div>
                             )}
                             <div className="flex items-baseline gap-2">
-                              <span className={`text-4xl font-black ${isFlash ? "text-red-400" : "text-white"}`}>
+                              <span className={`text-4xl font-extrabold tracking-tight ${isFlash ? "text-red-600" : "text-zinc-950"}`}>
                                 ₹{effectivePrice.toFixed(0)}
                               </span>
                               {(isFlash || tier.discountPrice) && (
-                                <span className="text-zinc-600 line-through text-lg">₹{tier.price.toFixed(0)}</span>
+                                <span className="text-zinc-400 line-through text-lg font-medium">₹{tier.price.toFixed(0)}</span>
                               )}
+                              <span className="text-zinc-500 text-sm font-medium">{INTERVAL_LABELS[tier.interval] || "/month"}</span>
                             </div>
-                            <p className="text-zinc-500 text-sm mt-1">{INTERVAL_LABELS[tier.interval] || "/month"}</p>
-                            {tier.trialDays > 0 && <p className="text-xs text-emerald-400 mt-1">✓ {tier.trialDays}-day free trial</p>}
-                            {tier.setupFee && tier.setupFee > 0 && <p className="text-xs text-zinc-600 mt-1">+ ${tier.setupFee} setup fee</p>}
-                            {tier.maxSeats && <p className="text-xs text-zinc-600 mt-1">Up to {tier.maxSeats} seats</p>}
+                            {tier.trialDays > 0 && <p className="text-xs font-semibold text-emerald-600 mt-2">✓ {tier.trialDays}-day free trial included</p>}
+                            {Boolean((tier.setupFee ?? 0) > 0) && <p className="text-xs text-zinc-500 mt-1">+ ₹{tier.setupFee} setup fee</p>}
+                            {Boolean((tier.maxSeats ?? 0) > 0) && <p className="text-xs text-zinc-600 font-medium mt-1">👥 Up to {tier.maxSeats} seats</p>}
                           </div>
 
-                          {/* Limits */}
-                          {tier.limits && (
-                            <div className="mb-5 space-y-1.5">
-                              {Object.entries(tier.limits).map(([k, v]) => (
-                                <div key={k} className="flex items-center justify-between text-xs">
-                                  <span className="text-zinc-600 capitalize">{k.replace(/([A-Z])/g, ' $1')}</span>
-                                  <span className="text-zinc-300 font-medium">{String(v)}</span>
+                          {/* Structured Customer Limits */}
+                          {cleanLimits.length > 0 && (
+                            <div className="mb-5 space-y-2">
+                              {displayLimits.length > 0 && (
+                                <div className="rounded-xl bg-zinc-50/90 border border-zinc-200/80 p-3 space-y-2 text-xs">
+                                  {displayLimits.map(([k, v]) => {
+                                    const label = k.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')
+                                    return (
+                                      <div key={k} className="flex items-center justify-between text-xs">
+                                        <span className="text-zinc-500 capitalize">{label}</span>
+                                        <span className="text-zinc-950 font-bold">{String(v)}</span>
+                                      </div>
+                                    )
+                                  })}
                                 </div>
-                              ))}
+                              )}
+                              {billingNotes && (
+                                <div className="p-2.5 rounded-lg bg-blue-50/70 border border-blue-100 text-[11px] text-zinc-700 leading-tight">
+                                  <span className="font-bold text-blue-700">Billing: </span>{String(billingNotes[1])}
+                                </div>
+                              )}
                             </div>
                           )}
 
                           <ul className="space-y-2.5 mb-7">
                             {tier.features.map((f, i) => (
-                              <li key={i} className="flex items-start gap-2 text-sm text-zinc-300">
-                                <span className="text-emerald-400 flex-shrink-0 mt-0.5">✓</span>{f}
+                              <li key={i} className="flex items-start gap-2.5 text-sm text-zinc-700">
+                                <span className="text-emerald-600 font-bold flex-shrink-0 mt-0.5">✓</span>
+                                <span>{f}</span>
                               </li>
                             ))}
                           </ul>
 
                           <Link href={`/checkout?tierId=${tier.id}&product=${product.slug}`}>
-                            <button className={`w-full py-3.5 rounded-xl font-bold transition-all hover:scale-105 text-sm ${tier.isPopular ? "btn-primary text-white" : "glass text-white hover:border-purple-500/50"}`}>
-                              Get {tier.name} {tier.trialDays > 0 ? "— Free Trial" : "→"}
+                            <button className="w-full py-3.5 rounded-xl font-extrabold text-sm transition-all hover:scale-[1.02] bg-white hover:bg-zinc-50 text-zinc-950 border border-zinc-300 shadow-sm flex items-center justify-center gap-1.5">
+                              <span>Get {tier.name} {tier.trialDays > 0 ? "— Free Trial" : ""}</span>
+                              <span>→</span>
                             </button>
                           </Link>
                         </div>
@@ -499,62 +601,179 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                 </div>
               )}
 
-              {/* Reviews tab */}
               {activeTab === "reviews" && (
                 <div className="pt-8 space-y-8">
-                  {/* Rating distribution */}
-                  {product.reviewCount > 0 && (
-                    <div className="glass rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="text-center">
-                        <div className="text-6xl font-black text-white mb-2">{product.averageRating.toFixed(1)}</div>
-                        <div className="flex justify-center gap-1 mb-2">
-                          {[1,2,3,4,5].map(s => <span key={s} className={`text-xl ${product.averageRating >= s ? "star" : "text-zinc-700"}`}>★</span>)}
+                  {/* Reviews Header with Write Review action */}
+                  <div className="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-zinc-200">
+                    <div>
+                      <h2 className="text-2xl font-black text-zinc-950">Customer Reviews</h2>
+                      <p className="text-sm text-zinc-500 mt-0.5">
+                        {reviewCount > 0 ? `${reviewCount} review${reviewCount === 1 ? "" : "s"} for this product` : "No reviews yet"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setShowReviewModal(true); setReviewError(null); }}
+                      className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm shadow-sm hover:shadow transition-all flex items-center gap-2"
+                    >
+                      <span>✍️</span>
+                      <span>Write a Review</span>
+                    </button>
+                  </div>
+
+                  {/* Write Review Form Card */}
+                  {showReviewModal && (
+                    <div className="bg-white border-2 border-violet-500/30 rounded-2xl p-6 sm:p-7 shadow-xl animate-in fade-in duration-200 text-zinc-900">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold text-zinc-950">Write your review</h3>
+                        <button
+                          type="button"
+                          onClick={() => setShowReviewModal(false)}
+                          className="text-zinc-400 hover:text-zinc-600 p-1 text-sm font-bold"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleSubmitReview} className="space-y-4">
+                        {/* Rating Stars */}
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600 mb-2">Rating</label>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                  key={star}
+                                  type="button"
+                                  onClick={() => setReviewRating(star)}
+                                  className="text-2xl transition-transform hover:scale-125 focus:outline-hidden"
+                                >
+                                  <span className={reviewRating >= star ? "text-amber-400" : "text-zinc-200"}>★</span>
+                                </button>
+                              ))}
+                            </div>
+                            <span className="text-xs font-semibold text-zinc-600 ml-2">
+                              {reviewRating === 5 ? "5/5 — Excellent" : reviewRating === 4 ? "4/5 — Good" : reviewRating === 3 ? "3/5 — Average" : reviewRating === 2 ? "2/5 — Below Average" : "1/5 — Poor"}
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-zinc-600 text-sm">{product.reviewCount} reviews</p>
+
+                        {/* Title */}
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600 mb-1">Headline / Title *</label>
+                          <input
+                            type="text"
+                            value={reviewTitle}
+                            onChange={(e) => setReviewTitle(e.target.value)}
+                            placeholder="e.g. Incredibly helpful and easy to integrate"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 bg-zinc-50/50 text-sm font-medium text-zinc-900 focus:outline-hidden focus:ring-2 focus:ring-violet-500 focus:bg-white transition-all"
+                            required
+                          />
+                        </div>
+
+                        {/* Review Body */}
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600 mb-1">Review Details *</label>
+                          <textarea
+                            value={reviewBody}
+                            onChange={(e) => setReviewBody(e.target.value)}
+                            placeholder="Describe your experience with this product, features you liked, and how it helped you..."
+                            rows={4}
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 bg-zinc-50/50 text-sm text-zinc-900 focus:outline-hidden focus:ring-2 focus:ring-violet-500 focus:bg-white transition-all"
+                            required
+                          />
+                          <p className="text-[11px] text-zinc-500 mt-1">Minimum 10 characters.</p>
+                        </div>
+
+                        {reviewError && (
+                          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-700 flex items-center justify-between">
+                            <span>{reviewError}</span>
+                            {reviewError.includes("sign in") && (
+                              <Link href={`/sign-in?redirect_url=/marketplace/${product.slug}`} className="underline text-red-800 ml-2">
+                                Sign in now →
+                              </Link>
+                            )}
+                          </div>
+                        )}
+
+                        {reviewSuccess && (
+                          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800">
+                            {reviewSuccess}
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-end gap-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowReviewModal(false)}
+                            className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-600 hover:text-zinc-900 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={submittingReview}
+                            className="px-6 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-bold text-xs shadow-sm transition-all"
+                          >
+                            {submittingReview ? "Submitting..." : "Submit Review"}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Rating distribution */}
+                  {reviewCount > 0 && (
+                    <div className="bg-white border border-zinc-200 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 gap-8 shadow-xs text-zinc-900">
+                      <div className="text-center md:border-r border-zinc-100 md:pr-8 flex flex-col items-center justify-center">
+                        <div className="text-6xl font-black text-zinc-950 mb-2">{product.averageRating.toFixed(1)}</div>
+                        <div className="flex justify-center gap-1 mb-2">
+                          {[1,2,3,4,5].map(s => <span key={s} className={`text-xl ${product.averageRating >= s ? "text-amber-400" : "text-zinc-200"}`}>★</span>)}
+                        </div>
+                        <p className="text-zinc-500 text-xs font-medium">Based on {reviewCount} customer review{reviewCount === 1 ? "" : "s"}</p>
                       </div>
                       <div className="space-y-2">
                         {ratingDist.map(({ r, count, pct }) => (
-                          <div key={r} className="flex items-center gap-3 text-sm">
-                            <span className="text-zinc-500 w-4 flex-shrink-0">{r}</span>
-                            <span className="star text-xs">★</span>
-                            <div className="flex-1 rating-bar">
-                              <div className="rating-fill" style={{ width: `${pct}%` }} />
+                          <div key={r} className="flex items-center gap-3 text-xs">
+                            <span className="text-zinc-500 w-4 font-semibold">{r}★</span>
+                            <div className="flex-1 h-2 rounded-full bg-zinc-100 overflow-hidden">
+                              <div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }} />
                             </div>
-                            <span className="text-zinc-600 w-5 text-right flex-shrink-0">{count}</span>
+                            <span className="text-zinc-600 w-6 text-right font-medium">{count}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {product.reviews.length > 0 ? (
+                  {reviewsList.length > 0 ? (
                     <div className="space-y-4">
-                      {product.reviews.map(review => (
-                        <div key={review.id} className="glass rounded-2xl p-6">
+                      {reviewsList.map(review => (
+                        <div key={review.id} className="bg-white border border-zinc-200/90 rounded-2xl p-6 shadow-xs text-zinc-900">
                           <div className="flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-sm font-bold flex-shrink-0 overflow-hidden">
-                              {review.user.avatarUrl ? (
-                                <img src={review.user.avatarUrl} alt={review.user.name || ""} className="w-full h-full object-cover" />
+                            <div className="w-10 h-10 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                              {review.user?.avatarUrl ? (
+                                <img src={review.user.avatarUrl} alt={review.user.name || ""} className="w-full h-full object-cover rounded-full" />
                               ) : (
-                                (review.user.name || "?").charAt(0).toUpperCase()
+                                (review.user?.name || "U").charAt(0).toUpperCase()
                               )}
                             </div>
                             <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-1 flex-wrap">
-                                <span className="font-semibold text-sm">{review.user.name || "Anonymous"}</span>
-                                <div className="flex gap-0.5">
-                                  {[1,2,3,4,5].map(s => <span key={s} className={`text-xs ${review.rating >= s ? "star" : "text-zinc-700"}`}>★</span>)}
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="font-bold text-sm text-zinc-950">{review.user?.name || "Customer"}</span>
+                                <div className="flex gap-0.5 text-xs text-amber-400">
+                                  {[1,2,3,4,5].map(s => <span key={s} className={review.rating >= s ? "text-amber-400" : "text-zinc-200"}>★</span>)}
                                 </div>
                                 {review.verifiedPurchase && (
-                                  <span className="bg-emerald-500/15 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">✓ Verified</span>
+                                  <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200">✓ Verified Purchase</span>
                                 )}
                               </div>
-                              {review.title && <p className="font-medium text-sm mb-2">{review.title}</p>}
-                              <p className="text-sm text-zinc-400 leading-relaxed">{review.body}</p>
+                              {review.title && <p className="font-bold text-sm text-zinc-950 mb-1">{review.title}</p>}
+                              <p className="text-sm text-zinc-700 leading-relaxed">{review.body}</p>
                               <div className="flex items-center gap-4 mt-3">
-                                <p className="text-xs text-zinc-700">{new Date(review.createdAt).toLocaleDateString()}</p>
+                                <p className="text-xs text-zinc-400">{new Date(review.createdAt).toLocaleDateString()}</p>
                                 {review.helpfulCount > 0 && (
-                                  <span className="text-xs text-zinc-600">👍 {review.helpfulCount} found helpful</span>
+                                  <span className="text-xs text-zinc-500">👍 {review.helpfulCount} found helpful</span>
                                 )}
                               </div>
                             </div>
@@ -563,15 +782,22 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 text-zinc-600">
-                      <div className="text-4xl mb-3">⭐</div>
-                      <p>No reviews yet. Be the first to review this product.</p>
+                    <div className="text-center py-12 rounded-2xl bg-white border border-zinc-200 shadow-xs text-zinc-900">
+                      <div className="text-5xl mb-3">⭐</div>
+                      <h4 className="font-bold text-zinc-950 text-base mb-1">No reviews yet</h4>
+                      <p className="text-zinc-500 text-sm mb-5">Be the first to review this product and share your experience.</p>
+                      <button
+                        type="button"
+                        onClick={() => { setShowReviewModal(true); setReviewError(null); }}
+                        className="px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm shadow-sm transition-all"
+                      >
+                        ✍️ Write the First Review
+                      </button>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Changelog tab */}
               {activeTab === "changelog" && (
                 <div className="pt-8 space-y-4">
                   {product.versions.length > 0 ? (
@@ -599,14 +825,14 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             {/* Related products */}
             {product.related.length > 0 && (
               <div className="border-t border-white/5 pt-10">
-                <h2 className="text-2xl font-black mb-6">You might also like</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <h2 className="text-2xl font-black mb-6 text-zinc-950">You might also like</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {product.related.map(r => (
                     <ProductCard key={r.id}
                       id={r.id} slug={r.slug} name={r.name} tagline={r.tagline || undefined}
                       type={r.type} thumbnailUrl={r.thumbnailUrl} averageRating={r.averageRating}
                       startingPrice={r.startingPrice || undefined} interval={r.interval || undefined}
-                      variant="compact"
+                      variant="grid"
                     />
                   ))}
                 </div>
@@ -647,12 +873,12 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
             {/* Main pricing card */}
             {cheapestTier && (
-              <div className="glass rounded-2xl p-6 space-y-5">
+              <div className="rounded-2xl p-6 space-y-5 bg-white border border-zinc-200/90 shadow-sm text-zinc-900">
                 {/* Price display */}
                 <div>
                   <p className="text-xs text-zinc-600 uppercase tracking-wider mb-1">Starting from</p>
                   <div className="flex items-baseline gap-2">
-                    <span className={`text-4xl font-black ${hasFlash ? "text-red-400" : "text-white"}`}>
+                    <span className={`text-4xl font-black ${hasFlash ? "text-red-500" : "text-zinc-950"}`}>
                       ₹{displayPrice(cheapestTier).toFixed(0)}
                     </span>
                     {(hasFlash || cheapestTier.discountPrice) && (
@@ -696,8 +922,9 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                     </div>
                   ) : (
                     <Link href={`/checkout?tierId=${cheapestTier.id}&product=${product.slug}`}>
-                      <button className="btn-primary w-full py-4 rounded-xl text-white font-bold text-base">
-                        {cheapestTier.trialDays > 0 ? `Start ${cheapestTier.trialDays}-day Free Trial` : "Get Started →"}
+                      <button className="w-full py-4 rounded-xl bg-white hover:bg-zinc-50 text-zinc-950 font-extrabold text-base border border-zinc-300 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                        <span>{cheapestTier.trialDays > 0 ? `Start ${cheapestTier.trialDays}-day Free Trial` : "Get Started"}</span>
+                        <span>→</span>
                       </button>
                     </Link>
                   )}

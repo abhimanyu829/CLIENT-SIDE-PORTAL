@@ -25,6 +25,7 @@ export default function PhoneOtpVerifier({ onVerified, onReset, defaultPhone = "
   const [phase, setPhase] = useState<Phase>("idle")
   const [error, setError] = useState<string | null>(null)
   const [resendCooldown, setResendCooldown] = useState(0)
+  const [infoMessage, setInfoMessage] = useState<string | null>(null)
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -47,11 +48,12 @@ export default function PhoneOtpVerifier({ onVerified, onReset, defaultPhone = "
     }, 1000)
   }, [])
 
-  const validatePhone = (p: string) => /^\+[1-9]\d{6,14}$/.test(p.trim())
+  const validatePhone = (p: string) => /^\+[1-9]\d{6,14}$/.test(p.trim().replace(/[\s-]/g, ""))
 
-  const handleSendOtp = useCallback(async () => {
+  const handleSendOtp = useCallback(async (isResend?: boolean | unknown) => {
+    const force = isResend === true
     setError(null)
-    const trimmedPhone = phone.trim()
+    const trimmedPhone = phone.trim().replace(/[\s-]/g, "")
 
     if (!validatePhone(trimmedPhone)) {
       setError("Enter a valid phone number with country code. Example: +911111111111")
@@ -63,20 +65,21 @@ export default function PhoneOtpVerifier({ onVerified, onReset, defaultPhone = "
       const res = await fetch("/api/auth/otp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: trimmedPhone }),
+        body: JSON.stringify({ phone: trimmedPhone, force }),
       })
       const data = await res.json()
+
+      if (data.alreadyVerified && !force) {
+        // Server says this number is already verified — accept it immediately.
+        setPhase("done")
+        onVerified(trimmedPhone)
+        return
+      }
 
       if (!res.ok || !data.success) {
         const code = data.error?.code
         if (data.cooldownSeconds || code === "OTP_COOLDOWN") {
           startCooldown(data.cooldownSeconds ?? 60)
-        }
-        if (data.alreadyVerified) {
-          // Server says this number is already verified — accept it.
-          setPhase("done")
-          onVerified(trimmedPhone)
-          return
         }
         setError(data.error?.message ?? "Failed to send verification code.")
         setPhase("error")
@@ -84,6 +87,7 @@ export default function PhoneOtpVerifier({ onVerified, onReset, defaultPhone = "
       }
 
       setPhase("otp")
+      if (data.message) setInfoMessage(data.message)
       startCooldown(data.cooldownSeconds ?? 60)
     } catch (err) {
       console.error("[PhoneOtpVerifier] sendOtp:", err)
@@ -101,7 +105,7 @@ export default function PhoneOtpVerifier({ onVerified, onReset, defaultPhone = "
       const res = await fetch("/api/auth/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim(), code: otp.trim() }),
+        body: JSON.stringify({ phone: phone.trim().replace(/[\s-]/g, ""), code: otp.trim() }),
       })
       const data = await res.json()
 
@@ -112,7 +116,7 @@ export default function PhoneOtpVerifier({ onVerified, onReset, defaultPhone = "
       }
 
       setPhase("done")
-      onVerified(phone.trim())
+      onVerified(phone.trim().replace(/[\s-]/g, ""))
     } catch (err) {
       console.error("[PhoneOtpVerifier] verifyOtp:", err)
       setError("Network error. Please try again.")
@@ -124,6 +128,7 @@ export default function PhoneOtpVerifier({ onVerified, onReset, defaultPhone = "
     setPhase("idle")
     setOtp("")
     setError(null)
+    setInfoMessage(null)
     setResendCooldown(0)
     if (cooldownRef.current) clearInterval(cooldownRef.current)
     onReset?.()
@@ -197,7 +202,11 @@ export default function PhoneOtpVerifier({ onVerified, onReset, defaultPhone = "
         {phase === "otp" && (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              6-digit code sent to <span className="text-foreground font-semibold">{phone}</span>
+              {infoMessage ? (
+                <span className="text-amber-700 dark:text-amber-400 font-medium">{infoMessage}</span>
+              ) : (
+                <>6-digit code sent to <span className="text-foreground font-semibold">{phone}</span></>
+              )}
             </p>
             <div className="flex gap-2">
               <input
@@ -224,7 +233,7 @@ export default function PhoneOtpVerifier({ onVerified, onReset, defaultPhone = "
               {resendCooldown > 0 ? (
                 <span>Resend in {resendCooldown}s</span>
               ) : (
-                <button onClick={handleSendOtp} className="hover:text-foreground">
+                <button onClick={() => handleSendOtp(true)} className="hover:text-foreground">
                   Resend OTP
                 </button>
               )}

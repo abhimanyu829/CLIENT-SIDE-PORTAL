@@ -65,24 +65,24 @@ function PriceDisplay({ price, discount, flash, flashEnd, currency = "USD", inte
     return (
       <div className="flex flex-col">
         <div className="flex items-baseline gap-1.5">
-          <span className="text-red-400 font-bold text-sm">
+          <span className="text-red-600 font-black text-sm">
             ₹{flash.toFixed(0)}{intervalLabel}
           </span>
-          {price && <span className="text-zinc-600 text-xs line-through">₹{price.toFixed(0)}</span>}
+          {price && <span className="text-zinc-400 text-xs line-through">₹{price.toFixed(0)}</span>}
         </div>
       </div>
     )
   }
-  if (!price) return <span className="text-xs text-zinc-500">Free</span>
+  if (!price) return <span className="text-xs text-zinc-600 font-semibold">Free</span>
   if (discount && discount < price) {
     return (
       <div className="flex items-baseline gap-1.5">
-        <span className="text-emerald-400 font-bold text-sm">₹{discount.toFixed(0)}{intervalLabel}</span>
-        <span className="text-zinc-600 text-xs line-through">₹{price.toFixed(0)}</span>
+        <span className="text-zinc-950 font-black text-sm">₹{discount.toFixed(0)}{intervalLabel}</span>
+        <span className="text-zinc-400 text-xs line-through">₹{price.toFixed(0)}</span>
       </div>
     )
   }
-  return <span className="font-bold text-sm text-white">₹{price.toFixed(0)}{intervalLabel}</span>
+  return <span className="font-black text-sm text-zinc-950">₹{price.toFixed(0)}{intervalLabel}</span>
 }
 
 function Stars({ rating, count }: { rating?: number; count?: number }) {
@@ -235,7 +235,7 @@ function GridCard(p: ProductCardProps) {
           </div>
 
           {/* Price — above action buttons */}
-          <div className={cn("flex items-center px-3 py-1.5 rounded-xl text-sm font-bold mb-3", hasFlash ? "bg-red-500/15 text-red-400 border border-red-500/30" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30")}>
+          <div className={cn("flex items-center px-3 py-1.5 rounded-xl text-sm font-bold mb-3", hasFlash ? "bg-red-500/10 text-red-600 border border-red-500/20" : "bg-white text-zinc-950 border border-zinc-200 shadow-2xs")}>
             <PriceDisplay
               price={p.startingPrice}
               discount={p.discountPrice}
@@ -296,7 +296,7 @@ function FeaturedCard(p: ProductCardProps) {
             </div>
           )}
           {/* Price — above action buttons */}
-          <div className={cn("flex items-center px-3 py-1.5 rounded-xl text-sm font-bold mb-3", hasFlash ? "bg-red-500/15 text-red-400 border border-red-500/30" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30")}>
+          <div className={cn("flex items-center px-3 py-1.5 rounded-xl text-sm font-bold mb-3", hasFlash ? "bg-red-500/10 text-red-600 border border-red-500/20" : "bg-white text-zinc-950 border border-zinc-200 shadow-2xs")}>
             <PriceDisplay price={p.startingPrice} discount={p.discountPrice} flash={p.flashSalePrice} flashEnd={p.flashSaleEndsAt} currency={p.currency} interval={p.interval} />
           </div>
           <ActionButtons p={p} layout="row" />
@@ -350,7 +350,7 @@ function SpotlightCard(p: ProductCardProps) {
               </div>
             )}
             {/* Price — above action buttons */}
-            <div className={cn("flex items-center px-3 py-1.5 rounded-xl text-sm font-bold mb-3", hasFlash ? "bg-red-500/15 text-red-400 border border-red-500/30" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30")}>
+            <div className={cn("flex items-center px-3 py-1.5 rounded-xl text-sm font-bold mb-3", hasFlash ? "bg-red-500/10 text-red-600 border border-red-500/20" : "bg-white text-zinc-950 border border-zinc-200 shadow-2xs")}>
               <PriceDisplay price={p.startingPrice} discount={p.discountPrice} flash={p.flashSalePrice} flashEnd={p.flashSaleEndsAt} currency={p.currency} interval={p.interval} />
             </div>
             <ActionButtons p={p} layout="row" />

@@ -1,20 +1,14 @@
 /**
- * Phone-verification gate for payment-order creation.
+ * Phone number submission validation for payment-order creation.
  *
- * Mirrors the BillingEmailOtp gate precedent in the razorpay/phonepe/paytm
- * order routes: the server checks its OWN database — User.phoneVerified plus
- * a match between User.phone and the billing mobile — and never trusts any
- * client-sent verification flag.
- *
- * Both existing verification writers (Twilio /api/auth/otp/* and the
- * Firebase /api/auth/verify-phone-otp route) persist exactly these fields,
- * so this gate honors either system without modifying either.
+ * Phone OTP verification has been removed per requirement: phone number
+ * is submission-only (contact info for delivery/communication).
+ * Email OTP verification remains strictly required and enforced at DB level.
  */
 import { db } from "@/lib/db"
-import { normalizePhone } from "@/lib/otp"
 
 export interface PhoneGateInput {
-  /** Authenticated user id — the row that must actually be verified. */
+  /** Authenticated user id */
   userId: string
   /** The billing mobile submitted with the order request. */
   billingMobile?: unknown
@@ -27,46 +21,27 @@ export interface PhoneGateResult {
 }
 
 /**
- * Returns { verified: true } when the user has a phoneVerified timestamp AND
- * the verified number matches the billing mobile. Any mismatch, missing
- * verification, or malformed input fails CLOSED with a 403-shaped payload.
+ * Validates that a valid phone number is submitted with the billing details.
+ * Persists the mobile number to user profile and returns { verified: true }.
  */
 export async function requireVerifiedPhoneForPayment({
   userId,
   billingMobile,
 }: PhoneGateInput): Promise<PhoneGateResult> {
-  const mobile = typeof billingMobile === "string" ? normalizePhone(billingMobile) : null
-  if (!mobile) {
+  const rawMobile = typeof billingMobile === "string" ? billingMobile.trim().replace(/[\s-]/g, "") : ""
+  if (!rawMobile || rawMobile.length < 7) {
     return {
       verified: false,
       code: "PHONE_NOT_VERIFIED",
-      message: "A verified phone number is required before payment. Please verify the mobile number in the billing step.",
+      message: "A valid phone number is required in the billing details before payment.",
     }
   }
 
-  const user = await db.user.findUnique({
+  // Persist submitted phone number to user record
+  await db.user.update({
     where: { id: userId },
-    select: { phone: true, phoneVerified: true },
-  })
-
-  if (!user?.phoneVerified) {
-    return {
-      verified: false,
-      code: "PHONE_NOT_VERIFIED",
-      message: "Phone verification is required before payment. Please complete OTP verification in the billing step.",
-    }
-  }
-
-  const verifiedPhone = normalizePhone(user.phone ?? "")
-  if (!verifiedPhone || verifiedPhone !== mobile) {
-    // The billing mobile differs from the verified number — force
-    // re-verification rather than accepting an unverified number.
-    return {
-      verified: false,
-      code: "PHONE_NOT_VERIFIED",
-      message: "The billing mobile number does not match your verified phone. Please verify the new number via OTP before payment.",
-    }
-  }
+    data: { phone: rawMobile },
+  }).catch(() => {})
 
   return { verified: true }
 }
