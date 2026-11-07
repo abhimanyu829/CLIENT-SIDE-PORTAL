@@ -223,14 +223,14 @@ export default async function HomePage() {
         <div className="relative z-10 text-center px-4 max-w-7xl mx-auto w-full">
           {/* Badge */}
           <MotionWrapper delay={0}>
-            <div className="inline-flex items-center gap-2.5 bg-card text-card-foreground border border-border rounded-full px-5 py-2.5 text-sm mb-10 shadow-sm">
-              <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-              <span className="uppercase tracking-widest text-xs font-bold">AI · Automation · Software · SaaS</span>
+            <div className="inline-flex items-center gap-2.5 bg-white text-slate-800 border border-slate-200/80 rounded-full px-5 py-2.5 text-sm mb-10 shadow-sm">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              <span className="uppercase tracking-widest text-xs font-bold text-slate-700">AI · Automation · Software · SaaS</span>
             </div>
           </MotionWrapper>
 
           <MotionWrapper delay={0.1}>
-            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter mb-8 leading-[1.05] text-foreground text-balance">
+            <h1 className="font-sans text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight mb-8 leading-[1.08] text-slate-900 text-balance">
               AI Agents, SaaS Tools &amp; Automation —{" "}
               <span className="bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 bg-clip-text text-transparent">
                 The Abhibhideveloper Marketplace
@@ -239,7 +239,7 @@ export default async function HomePage() {
           </MotionWrapper>
 
           <MotionWrapper delay={0.2}>
-            <p className="text-lg md:text-xl text-neutral-700 max-w-2xl mx-auto mb-12 leading-relaxed text-pretty">
+            <p className="font-sans text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-12 leading-relaxed text-pretty">
               Explore digital products, AI-powered solutions, and custom software development.
               Manage purchases, subscriptions, and support from your customer dashboard.
             </p>
@@ -263,15 +263,15 @@ export default async function HomePage() {
               {/* This always went to sign-up, so it now says so. */}
               <Link
                 href="/register"
-                className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2.5 overflow-hidden rounded-2xl border border-black/20 bg-white/70 px-9 py-4 text-xs sm:text-sm font-bold uppercase tracking-widest text-black backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:border-black/50 hover:bg-white hover:shadow-xl hover:shadow-black/10 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2.5 overflow-hidden rounded-2xl border border-slate-300 bg-white/90 px-9 py-4 text-xs sm:text-sm font-bold uppercase tracking-widest text-slate-900 backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:border-slate-400 hover:bg-white hover:shadow-xl hover:shadow-black/10 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <span>Start free</span>
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
               </Link>
             </div>
-            <p className="-mt-8 mb-12 text-sm text-neutral-600">
+            <p className="-mt-8 mb-12 text-sm text-slate-600">
               Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-foreground underline-offset-4 hover:underline">
+              <Link href="/login" className="font-semibold text-slate-900 underline-offset-4 hover:underline">
                 Sign in
               </Link>
             </p>
