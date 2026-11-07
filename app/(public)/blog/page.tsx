@@ -9,8 +9,9 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 export const metadata: Metadata = {
-  title: "Blog — NexusAI Engineering",
-  description: "Deep dives into AI infrastructure, SaaS engineering, deployment strategies, and the future of AI software.",
+  title: "Engineering Blog & Tech Insights — Abhibhideveloper",
+  description: "Deep dives into AI infrastructure, SaaS engineering, deployment strategies, and digital solutions by Abhibhideveloper.",
+  alternates: { canonical: "https://abhibhideveloper.tech/blog" },
 }
 
 const CATEGORIES = ["All","AI","Engineering","SaaS","Startup","Deployment","Automation","Security","Product Updates"]

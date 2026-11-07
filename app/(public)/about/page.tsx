@@ -6,8 +6,9 @@ import { BrandSectionList } from "@/components/content/BrandBlocks"
 import { ABOUT_BRAND } from "@/lib/content/brand-blocks"
 
 export const metadata: Metadata = {
-  title: "About Us — ABHIBHIDEVELOPERS Platform",
-  description: "Learn about ABHIBHIDEVELOPERS's mission, our team, and our vision for building the world's best AI SaaS infrastructure and marketplace.",
+  title: "About Us — Abhibhideveloper Platform & Team",
+  description: "Learn about Abhibhideveloper's mission, team, and vision for building modern AI SaaS infrastructure, web development, and digital solutions.",
+  alternates: { canonical: "https://abhibhideveloper.tech/about" },
 }
 
 const STATS = [

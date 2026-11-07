@@ -147,9 +147,11 @@ export function AuroraHero({
 
       <div className="aurora-hero-bg"></div>
 
-      <div className="aurora-content">
-        <h1 className="h1-scalingSize" data-text={title}>{title}</h1>
-      </div>
+      {title ? (
+        <div className="aurora-content">
+          <span className="h1-scalingSize" data-text={title}>{title}</span>
+        </div>
+      ) : null}
 
       <svg
         version="1.1"

@@ -31,8 +31,9 @@ import {
 import { CallToAction } from "@/components/public/CallToAction"
 
 export const metadata: Metadata = {
-  title: "Refund Policy & Cancellation Terms — NexusAI",
-  description: "Comprehensive refund policy and cancellation terms for NexusAI SaaS products, AI agents, custom development, subscriptions, APIs, and digital services.",
+  title: "Refund Policy & Cancellation Terms — Abhibhideveloper",
+  description: "Comprehensive refund policy and cancellation terms for Abhibhideveloper SaaS products, AI agents, custom development, subscriptions, APIs, and digital services.",
+  alternates: { canonical: "https://abhibhideveloper.tech/refund-policy" },
 }
 
 export default function RefundPolicyPage() {

@@ -6,8 +6,9 @@ import { BrandSectionList } from "@/components/content/BrandBlocks"
 import { PRIVACY_ADDENDUM } from "@/lib/content/legal-blocks"
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — ABHIBHIDEVELOPERS",
-  description: "How ABHIBHIDEVELOPERS collects, uses, protects, and isolates your data and AI agent payloads.",
+  title: "Privacy Policy — Abhibhideveloper",
+  description: "How Abhibhideveloper collects, uses, protects, and isolates your data and AI agent payloads.",
+  alternates: { canonical: "https://abhibhideveloper.tech/privacy" },
 }
 
 const SECTIONS = [

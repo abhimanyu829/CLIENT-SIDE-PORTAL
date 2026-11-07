@@ -7,10 +7,15 @@ import { CompareTable, type CompareProduct } from "@/components/public/CompareTa
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: "Compare Products & Plans | Abhibhideveloper",
+  title: "Compare AI Products & Software Plans | Abhibhideveloper",
   description:
-    "Compare published Abhibhideveloper products using their real attributes — type, category, starting price, billing interval, tags and demo availability — before you buy or request a demonstration.",
-  alternates: { canonical: "/compare" },
+    "Compare published Abhibhideveloper products using real attributes — type, category, starting price, billing interval, and features — before purchasing.",
+  alternates: { canonical: "https://abhibhideveloper.tech/compare" },
+  openGraph: {
+    title: "Compare AI Products & Software Plans | Abhibhideveloper",
+    description: "Compare features and pricing for AI agents and software.",
+    url: "https://abhibhideveloper.tech/compare",
+  },
 }
 
 export default async function ComparePage() {

@@ -6,16 +6,34 @@ import { ui } from "@clerk/ui"
 import { clerkAppearance } from "@/lib/clerk"
 import { AiSupportWidget } from "@/components/ai-support/AiSupportWidget"
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "https://abhibhideveloper.tech"
+
 export const metadata: Metadata = {
   title: {
-    default: "ABHIBHIDEVELOPERS GROUP - AI SaaS Platform",
-    template: "%s - ABHIBHIDEVELOPERS GROUP",
+    default: "Abhibhideveloper — AI SaaS Marketplace & Software Solutions",
+    template: "%s | Abhibhideveloper",
   },
   description:
-    "Deploy AI agents, manage subscriptions, and automate your business workflows with OpenClaude.",
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
-  ),
+    "Deploy autonomous AI agents, explore SaaS software, and scale your business with Abhibhideveloper.",
+  metadataBase: new URL(SITE_URL),
+  icons: {
+    icon: "/abhibhi-logo.jpg",
+    apple: "/abhibhi-logo.jpg",
+  },
+  openGraph: {
+    siteName: "Abhibhideveloper",
+    images: [
+      {
+        url: "/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "Abhibhideveloper",
+      },
+    ],
+  },
 }
 
 export default function RootLayout({

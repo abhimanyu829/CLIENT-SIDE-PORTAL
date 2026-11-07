@@ -18,11 +18,23 @@ export const revalidate = 30
 export async function generateMetadata() {
   const count = await db.product.count({ where: { status: ProductStatus.AVAILABLE } }).catch(() => 0)
   return {
-    title: `${count} Products — NexusAI Marketplace | AI Agents, SaaS Tools & More`,
-    description: `Browse ${count}+ premium AI agents, SaaS tools, automation workflows, APIs, and developer products. Filter, compare, and deploy instantly.`,
+    title: "AI Tools & SaaS Marketplace — Abhibhideveloper",
+    description: `Browse ${count}+ premium AI agents, SaaS tools, automation workflows, APIs, and digital products on Abhibhideveloper. Filter, compare, and deploy instantly.`,
+    alternates: {
+      canonical: "https://abhibhideveloper.tech/marketplace",
+    },
     openGraph: {
-      title: `${count} Products — NexusAI Marketplace`,
-      description: `Browse and deploy ${count}+ AI products instantly`,
+      title: "AI Tools & SaaS Marketplace — Abhibhideveloper",
+      description: `Browse and deploy ${count}+ AI products and developer solutions instantly.`,
+      url: "https://abhibhideveloper.tech/marketplace",
+      images: [
+        {
+          url: "https://abhibhideveloper.tech/og-default.png",
+          width: 1200,
+          height: 630,
+          alt: "Abhibhideveloper Marketplace",
+        },
+      ],
     },
   }
 }
@@ -133,6 +145,18 @@ export default async function MarketplacePage() {
   if (!(await hasAcceptedCurrentLegal(session.user.id).catch(() => false))) redirect(`/consent?returnTo=${encodeURIComponent("/marketplace")}`)
   const { featured, trending, flashSale, bestSellers, allProducts, campaign, totalCount } = await getMarketplaceData()
 
+  const itemListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Abhibhideveloper Software & AI Marketplace",
+    "itemListElement": allProducts.slice(0, 20).map((p: any, idx: number) => ({
+      "@type": "ListItem",
+      "position": idx + 1,
+      "url": `https://abhibhideveloper.tech/marketplace/${p.slug}`,
+      "name": p.name,
+    })),
+  }
+
   const campaignData = campaign ? {
     id: campaign.id,
     bannerText: campaign.bannerText,
@@ -146,6 +170,10 @@ export default async function MarketplacePage() {
 
   return (
     <div className="bg-background text-foreground min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+      />
       <MarketplaceHero 
         titleText="THE ENTERPRISE AI MARKETPLACE"
         description="Discover, deploy, and scale production-grade AI agents, SaaS tools, and developer APIs in seconds. The trusted ecosystem for modern AI infrastructure."

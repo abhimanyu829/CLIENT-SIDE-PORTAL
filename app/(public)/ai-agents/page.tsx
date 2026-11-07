@@ -13,8 +13,24 @@ import { Cpu, Workflow, Network, Server, Lock, Bot } from "lucide-react"
 export const revalidate = 30
 
 export const metadata = {
-  title: "AI Agents Store — NexusAI | Deploy Intelligent AI Agents",
-  description: "Browse and deploy production-ready AI agents. Coding, research, writing, marketing, analytics, customer support, and enterprise AI agents.",
+  title: "AI Agents Directory & Store — Abhibhideveloper",
+  description: "Browse and deploy production-ready autonomous AI agents. Coding, research, writing, automation, and enterprise intelligent agents by Abhibhideveloper.",
+  alternates: {
+    canonical: "https://abhibhideveloper.tech/ai-agents",
+  },
+  openGraph: {
+    title: "AI Agents Directory & Store — Abhibhideveloper",
+    description: "Browse and deploy production-ready autonomous AI agents.",
+    url: "https://abhibhideveloper.tech/ai-agents",
+    images: [
+      {
+        url: "https://abhibhideveloper.tech/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "Abhibhideveloper AI Agents",
+      },
+    ],
+  },
 }
 
 const getAgentData = unstable_cache(async () => {

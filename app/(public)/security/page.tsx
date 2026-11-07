@@ -20,9 +20,10 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Security & Trust Center — ABHIBHIDEVELOPERS GROUP | NexusAI",
+  title: "Security & Trust Center — Abhibhideveloper",
   description:
-    "Enterprise-grade security architecture, AES-256 encryption, zero customer data training, SOC 2 compliance, and AI governance at Abhibhi Developers & NexusAI.",
+    "Enterprise-grade security architecture, AES-256 encryption, zero customer data training, SOC 2 compliance, and AI governance at Abhibhideveloper.",
+  alternates: { canonical: "https://abhibhideveloper.tech/security" },
 }
 
 const SECURITY_PILLARS = [

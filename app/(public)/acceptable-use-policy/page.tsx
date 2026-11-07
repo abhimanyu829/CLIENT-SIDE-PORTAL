@@ -17,9 +17,10 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Acceptable Use Policy (AUP) — ABHIBHIDEVELOPERS GROUP | NexusAI",
+  title: "Acceptable Use Policy (AUP) — Abhibhideveloper",
   description:
-    "Acceptable Use Policy governing lawful, authorized, and responsible use of Abhibhi Developers & NexusAI websites, software, AI agents, and cloud platforms.",
+    "Acceptable Use Policy governing lawful, authorized, and responsible use of Abhibhideveloper websites, software, AI agents, and cloud platforms.",
+  alternates: { canonical: "https://abhibhideveloper.tech/acceptable-use-policy" },
 }
 
 const PROHIBITED_CATEGORIES = [

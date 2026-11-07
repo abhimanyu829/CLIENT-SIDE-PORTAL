@@ -6,8 +6,9 @@ import { BrandSectionList } from "@/components/content/BrandBlocks"
 import { TERMS_ADDENDUM } from "@/lib/content/legal-blocks"
 
 export const metadata: Metadata = {
-  title: "Terms of Service — NexusAI",
-  description: "Terms and conditions for using the NexusAI platform, API, and marketplace.",
+  title: "Terms of Service — Abhibhideveloper",
+  description: "Terms and conditions for using the Abhibhideveloper platform, APIs, software, and marketplace.",
+  alternates: { canonical: "https://abhibhideveloper.tech/terms" },
 }
 
 const SECTIONS = [

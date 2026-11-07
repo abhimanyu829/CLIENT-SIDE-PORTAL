@@ -4,8 +4,9 @@ import { BrandSectionList } from "@/components/content/BrandBlocks"
 import { COOKIE_ADDENDUM } from "@/lib/content/legal-blocks"
 
 export const metadata: Metadata = {
-  title: "Cookie Policy — NexusAI",
-  description: "Information about how NexusAI uses cookies and tracking technologies.",
+  title: "Cookie Policy — Abhibhideveloper",
+  description: "Information about how Abhibhideveloper uses cookies and tracking technologies.",
+  alternates: { canonical: "https://abhibhideveloper.tech/cookies" },
 }
 
 export default function CookiesPage() {

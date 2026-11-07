@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Contact Abhibhideveloper | Sales, Support & Partnerships",
   description:
     "Contact Abhibhideveloper for product and pricing questions, custom software and AI automation, enterprise requirements, technical support, billing issues, partnerships, press or privacy requests.",
-  alternates: { canonical: "/contact" },
+  alternates: { canonical: "https://abhibhideveloper.tech/contact" },
 }
 
 const ROUTES = [

@@ -110,17 +110,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       select: { name: true, description: true, thumbnailUrl: true, seoTitle: true, seoDescription: true },
     })
     if (!product) return { title: "Not Found" }
+    const title = product.seoTitle || `${product.name} — Abhibhideveloper Marketplace`
+    const description = product.seoDescription || product.description
     return {
-      title: product.seoTitle || `${product.name} — NexusAI Marketplace`,
-      description: product.seoDescription || product.description,
+      title,
+      description,
+      alternates: {
+        canonical: `https://abhibhideveloper.tech/marketplace/${slug}`,
+      },
       openGraph: {
-        title: product.seoTitle || product.name,
-        description: product.seoDescription || product.description,
-        images: product.thumbnailUrl ? [{ url: product.thumbnailUrl }] : [],
+        title,
+        description,
+        url: `https://abhibhideveloper.tech/marketplace/${slug}`,
+        images: product.thumbnailUrl
+          ? [{ url: product.thumbnailUrl }]
+          : [{ url: "https://abhibhideveloper.tech/og-default.png" }],
       },
     }
   } catch {
-    return { title: "NexusAI Marketplace" }
+    return { title: "Abhibhideveloper Marketplace" }
   }
 }
 
@@ -288,5 +296,35 @@ export default async function ProductDetailPage({ params }: Props) {
     })),
   }
 
-  return <ProductDetailClient product={serializePrisma(serialized)} />
+    const softwareApplicationSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": product.name,
+    "description": product.description,
+    "applicationCategory": product.category,
+    "operatingSystem": "All",
+    "url": `https://abhibhideveloper.tech/marketplace/${slug}`,
+    "offers": product.tiers.length > 0 ? {
+      "@type": "Offer",
+      "price": String(product.tiers[0].price),
+      "priceCurrency": product.tiers[0].currency || "USD",
+      "availability": "https://schema.org/InStock",
+      "url": `https://abhibhideveloper.tech/marketplace/${slug}`
+    } : undefined,
+    "aggregateRating": product.averageRating && product._count.reviews > 0 ? {
+      "@type": "AggregateRating",
+      "ratingValue": String(product.averageRating),
+      "reviewCount": String(product._count.reviews)
+    } : undefined
+  }
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationSchema) }}
+      />
+      <ProductDetailClient product={serializePrisma(serialized)} />
+    </>
+  )
 }

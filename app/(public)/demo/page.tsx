@@ -4,8 +4,9 @@ import { db } from "@/lib/db"
 import { randomUUID } from "crypto"
 
 export const metadata: Metadata = {
-  title: "Live Demos — NexusAI Platform",
-  description: "Interactive demonstrations of CRM, AI assistant, and analytics workflows using labelled sample data. No account required.",
+  title: "Interactive Live Demos — Abhibhideveloper Platform",
+  description: "Interactive demonstrations of CRM, AI assistant, and analytics workflows using labelled sample data. Explore Abhibhideveloper tools without an account.",
+  alternates: { canonical: "https://abhibhideveloper.tech/demo" },
 }
 
 const DEMOS = [

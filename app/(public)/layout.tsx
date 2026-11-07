@@ -6,9 +6,15 @@ import { ReactNode } from "react"
 import { db } from "@/lib/db"
 import { CampaignStatus } from "@prisma/client"
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-const APP_NAME = "ABHIBHIDEVELOPERS GROUP"
-const APP_DESCRIPTION = "The world's most advanced AI SaaS marketplace. Deploy AI agents, SaaS tools, APIs, and automation workflows in one click."
+const APP_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "https://abhibhideveloper.tech"
+).replace(/\/$/, "")
+
+const APP_NAME = "Abhibhideveloper"
+const LEGAL_NAME = "ABHIBHIDEVELOPERS GROUP"
+const APP_DESCRIPTION = "The enterprise AI SaaS marketplace and software solutions platform. Deploy autonomous AI agents, SaaS tools, APIs, and automation workflows."
 
 async function getActiveCampaign() {
   try {
@@ -30,6 +36,7 @@ const websiteJsonLd = {
       "@id": `${APP_URL}/#website`,
       "url": APP_URL,
       "name": APP_NAME,
+      "alternateName": LEGAL_NAME,
       "description": APP_DESCRIPTION,
       "potentialAction": {
         "@type": "SearchAction",
@@ -44,12 +51,31 @@ const websiteJsonLd = {
       "@type": "Organization",
       "@id": `${APP_URL}/#organization`,
       "name": APP_NAME,
+      "legalName": LEGAL_NAME,
       "url": APP_URL,
       "logo": {
         "@type": "ImageObject",
-        "url": `${APP_URL}/logo.png`
+        "url": `${APP_URL}/logo.png`,
+        "width": 512,
+        "height": 512
       },
-      "sameAs": []
+      "image": `${APP_URL}/og-default.png`,
+      "sameAs": [
+        "https://x.com/Abhibhidevelop",
+        "https://youtube.com/@abhibhideveloper?si=mTDCqn9uBcoiObu5",
+        "https://www.instagram.com/abhibhideveloper26?rpxt=enpmMzZiNHM0c3ph"
+      ],
+      "founder": {
+        "@type": "Person",
+        "name": "Abhimanyu Kumar"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+91-9142798767",
+        "contactType": "customer service",
+        "email": "support@abhibhideveloper.tech",
+        "availableLanguage": ["English", "Hindi"]
+      }
     }
   ]
 }
@@ -57,11 +83,11 @@ const websiteJsonLd = {
 export const metadata = {
   metadataBase: new URL(APP_URL),
   title: {
-    default: `${APP_NAME} — AI SaaS Marketplace`,
+    default: `${APP_NAME} — AI Solutions, Software & Web Development`,
     template: `%s | ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
-  keywords: ["AI agents", "SaaS marketplace", "AI tools", "automation", "developer tools", "enterprise AI"],
+  keywords: ["AI agents", "SaaS marketplace", "AI tools", "automation", "developer tools", "custom software", "web development", "enterprise AI"],
   authors: [{ name: APP_NAME }],
   creator: APP_NAME,
   openGraph: {
@@ -69,13 +95,13 @@ export const metadata = {
     locale: "en_US",
     url: APP_URL,
     siteName: APP_NAME,
-    title: `${APP_NAME} — AI SaaS Marketplace`,
+    title: `${APP_NAME} — Technology That Moves Your Ideas Forward`,
     description: APP_DESCRIPTION,
     images: [{ url: `${APP_URL}/og-default.png`, width: 1200, height: 630, alt: APP_NAME }],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${APP_NAME} — AI SaaS Marketplace`,
+    title: `${APP_NAME} — Technology That Moves Your Ideas Forward`,
     description: APP_DESCRIPTION,
     images: [`${APP_URL}/og-default.png`],
   },
@@ -84,7 +110,6 @@ export const metadata = {
     follow: true,
     googleBot: { index: true, follow: true, "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1 },
   },
-  alternates: { canonical: APP_URL },
 }
 
 export default async function PublicLayout({ children }: { children: ReactNode }) {
@@ -98,17 +123,17 @@ export default async function PublicLayout({ children }: { children: ReactNode }
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* JSON-LD structured data */}
+      {/* Search Engine Structured Data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
       />
+
+      <SmartCampaignBanner />
       <Navbar announcement={announcement} />
       <main className="flex-1">{children}</main>
       <Footer />
       <CookieConsentCard />
-      {/* Floating targeted campaign panel — renders on every public route */}
-      <SmartCampaignBanner />
     </div>
   )
 }

@@ -19,9 +19,10 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "GDPR Compliance & EU Privacy — ABHIBHIDEVELOPERS GROUP | NexusAI",
+  title: "GDPR Compliance & EU Privacy — Abhibhideveloper",
   description:
-    "NexusAI's comprehensive commitment to General Data Protection Regulation (GDPR) compliance, data subject rights, EU data residency, and subprocessor transparency.",
+    "Abhibhideveloper's comprehensive commitment to General Data Protection Regulation (GDPR) compliance, data subject rights, EU data residency, and subprocessor transparency.",
+  alternates: { canonical: "https://abhibhideveloper.tech/gdpr" },
 }
 
 const DATA_SUBJECT_RIGHTS = [

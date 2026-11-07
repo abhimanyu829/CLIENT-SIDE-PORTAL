@@ -40,10 +40,13 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params
   const meta = CATEGORY_META[category]
-  if (!meta) return { title: "Category — NexusAI" }
+  if (!meta) return { title: "Category — Abhibhideveloper" }
   return {
-    title: `${meta.title} — NexusAI Marketplace`,
-    description: meta.desc,
+    title: `${meta.title} — Abhibhideveloper Marketplace`,
+    description: `${meta.desc} Explore top-rated products and solutions on Abhibhideveloper.`,
+    alternates: {
+      canonical: `https://abhibhideveloper.tech/categories/${category}`,
+    },
   }
 }
 

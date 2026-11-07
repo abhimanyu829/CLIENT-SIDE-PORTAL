@@ -1,0 +1,26 @@
+{
+  "name": "Abhibhideveloper",
+  "legalName": "ABHIBHIDEVELOPERS GROUP",
+  "url": "https://abhibhideveloper.tech",
+  "description": "Enterprise AI SaaS marketplace, autonomous agent catalog, and custom digital software development.",
+  "founder": "Abhimanyu Kumar",
+  "contact": "luckypal5002@gmail.com",
+  "categories": [
+    "AI Agents",
+    "SaaS Tools",
+    "API & Developer Tools",
+    "Automation",
+    "Enterprise Solutions",
+    "Digital Products"
+  ],
+  "endpoints": {
+    "marketplace": "https://abhibhideveloper.tech/marketplace",
+    "aiAgents": "https://abhibhideveloper.tech/ai-agents",
+    "compare": "https://abhibhideveloper.tech/compare",
+    "pricing": "https://abhibhideveloper.tech/pricing",
+    "status": "https://abhibhideveloper.tech/status",
+    "sitemap": "https://abhibhideveloper.tech/sitemap.xml",
+    "llms": "https://abhibhideveloper.tech/llms.txt"
+  }
+}
+
