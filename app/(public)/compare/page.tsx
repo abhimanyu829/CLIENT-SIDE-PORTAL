@@ -8,13 +8,13 @@ export const revalidate = 60
 
 export const metadata: Metadata = {
   title: {
-    absolute: "Compare AI Products & Software Plans | Abhibhideveloper",
+    absolute: "Compare AI Tools & SaaS — Side-by-Side Features & Pricing | Abhibhideveloper",
   },
   description:
     "Compare published Abhibhideveloper products using real attributes — type, category, starting price, billing interval, and features — before purchasing.",
   alternates: { canonical: "https://abhibhideveloper.tech/compare" },
   openGraph: {
-    title: "Compare AI Products & Software Plans | Abhibhideveloper",
+    title: "Compare AI Tools & SaaS — Side-by-Side Features & Pricing | Abhibhideveloper",
     description: "Compare features and pricing for AI agents and software.",
     url: "https://abhibhideveloper.tech/compare",
   },

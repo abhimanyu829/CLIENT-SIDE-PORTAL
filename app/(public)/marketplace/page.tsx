@@ -19,7 +19,7 @@ export async function generateMetadata() {
   const count = await db.product.count({ where: { status: ProductStatus.AVAILABLE } }).catch(() => 0)
   return {
     title: {
-      absolute: "AI Tools & SaaS Marketplace | Abhibhideveloper",
+      absolute: "AI Tools & SaaS Marketplace — Explore 41+ Live Products | Abhibhideveloper",
     },
     description: `Browse ${count}+ premium AI agents, SaaS tools, automation workflows, APIs, and digital products on Abhibhideveloper. Filter, compare, and deploy instantly.`,
     alternates: {
