@@ -7,7 +7,9 @@ import { CompareTable, type CompareProduct } from "@/components/public/CompareTa
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: "Compare AI Products & Software Plans | Abhibhideveloper",
+  title: {
+    absolute: "Compare AI Products & Software Plans | Abhibhideveloper",
+  },
   description:
     "Compare published Abhibhideveloper products using real attributes — type, category, starting price, billing interval, and features — before purchasing.",
   alternates: { canonical: "https://abhibhideveloper.tech/compare" },

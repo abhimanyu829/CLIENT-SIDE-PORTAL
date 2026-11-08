@@ -18,7 +18,9 @@ export const revalidate = 60
 export async function generateMetadata() {
   const count = await db.product.count({ where: { status: ProductStatus.AVAILABLE } }).catch(() => 0)
   return {
-    title: "Abhibhideveloper | AI Solutions, Software & Web Development",
+    title: {
+      absolute: "Abhibhideveloper | AI Solutions, Software & Web Development",
+    },
     description: `Explore AI agents, workflow automation, website development, custom software, SaaS products and digital solutions with Abhibhideveloper. ${count} live products in the marketplace.`,
     alternates: {
       canonical: "https://abhibhideveloper.tech",
@@ -230,10 +232,11 @@ export default async function HomePage() {
           </MotionWrapper>
 
           <MotionWrapper delay={0.1}>
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter mb-8 leading-[1.05] text-foreground text-balance">
-              Converse Naturally.<br />
-              Beyond Boundaries.<br />
-              Infinite Scale.
+            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter mb-8 leading-[1.05] text-foreground text-balance">
+              AI Agents, SaaS Tools &amp; Automation Marketplace —{" "}
+              <span className="bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 bg-clip-text text-transparent">
+                Abhibhideveloper
+              </span>
             </h1>
           </MotionWrapper>
 

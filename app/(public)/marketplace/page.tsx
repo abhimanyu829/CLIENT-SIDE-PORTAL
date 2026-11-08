@@ -18,13 +18,15 @@ export const revalidate = 30
 export async function generateMetadata() {
   const count = await db.product.count({ where: { status: ProductStatus.AVAILABLE } }).catch(() => 0)
   return {
-    title: "AI Tools & SaaS Marketplace — Abhibhideveloper",
+    title: {
+      absolute: "AI Tools & SaaS Marketplace | Abhibhideveloper",
+    },
     description: `Browse ${count}+ premium AI agents, SaaS tools, automation workflows, APIs, and digital products on Abhibhideveloper. Filter, compare, and deploy instantly.`,
     alternates: {
       canonical: "https://abhibhideveloper.tech/marketplace",
     },
     openGraph: {
-      title: "AI Tools & SaaS Marketplace — Abhibhideveloper",
+      title: "AI Tools & SaaS Marketplace | Abhibhideveloper",
       description: `Browse and deploy ${count}+ AI products and developer solutions instantly.`,
       url: "https://abhibhideveloper.tech/marketplace",
       images: [
@@ -141,8 +143,11 @@ import { MarketplaceHero } from "@/components/marketplace/MarketplaceHero"
 
 export default async function MarketplacePage() {
   const session = await auth()
-  if (!session?.user?.id) redirect(`/login?callbackUrl=${encodeURIComponent("/marketplace")}`)
-  if (!(await hasAcceptedCurrentLegal(session.user.id).catch(() => false))) redirect(`/consent?returnTo=${encodeURIComponent("/marketplace")}`)
+  if (session?.user?.id) {
+    if (!(await hasAcceptedCurrentLegal(session.user.id).catch(() => false))) {
+      redirect(`/consent?returnTo=${encodeURIComponent("/marketplace")}`)
+    }
+  }
   const { featured, trending, flashSale, bestSellers, allProducts, campaign, totalCount } = await getMarketplaceData()
 
   const itemListSchema = {
@@ -215,6 +220,22 @@ export default async function MarketplacePage() {
           { question: "What is the refund policy?", answer: "We offer a 14-day money-back guarantee on all premium SaaS tools and AI agents if they don't meet your expectations." }
         ]}
       />
+
+      <noscript>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <h2 className="text-xl font-bold mb-4">Published Marketplace Applications</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {allProducts.map((p: any) => (
+              <article key={p.id} className="border border-border p-4 rounded-xl">
+                <a href={`/marketplace/${p.slug}`}>
+                  <h3 className="font-bold text-base">{p.name}</h3>
+                  <p className="text-sm text-muted-foreground">{p.tagline || p.description}</p>
+                </a>
+              </article>
+            ))}
+          </div>
+        </div>
+      </noscript>
 
       <CallToAction 
         title="Ready to upgrade your workflow?"

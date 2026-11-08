@@ -113,7 +113,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const title = product.seoTitle || `${product.name} — Abhibhideveloper Marketplace`
     const description = product.seoDescription || product.description
     return {
-      title,
+      title: {
+        absolute: title,
+      },
       description,
       alternates: {
         canonical: `https://abhibhideveloper.tech/marketplace/${slug}`,

@@ -84,7 +84,7 @@ export const metadata = {
   metadataBase: new URL(APP_URL),
   title: {
     default: `${APP_NAME} — AI Solutions, Software & Web Development`,
-    template: `%s | ${APP_NAME}`,
+    template: `%s`,
   },
   description: APP_DESCRIPTION,
   keywords: ["AI agents", "SaaS marketplace", "AI tools", "automation", "developer tools", "custom software", "web development", "enterprise AI"],

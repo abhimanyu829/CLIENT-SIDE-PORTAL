@@ -148,7 +148,7 @@ export function AuroraHero({
       <div className="aurora-hero-bg"></div>
 
       <div className="aurora-content">
-        <h1 className="h1-scalingSize" data-text={title}>{title}</h1>
+        <div className="h1-scalingSize" data-text={title}>{title}</div>
       </div>
 
       <svg

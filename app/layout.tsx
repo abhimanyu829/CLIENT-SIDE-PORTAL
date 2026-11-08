@@ -14,7 +14,7 @@ const SITE_URL =
 export const metadata: Metadata = {
   title: {
     default: "Abhibhideveloper — AI SaaS Marketplace & Software Solutions",
-    template: "%s | Abhibhideveloper",
+    template: "%s",
   },
   description:
     "Deploy autonomous AI agents, explore SaaS software, and scale your business with Abhibhideveloper.",

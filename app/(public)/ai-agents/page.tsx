@@ -101,8 +101,37 @@ function serialize(p: any) {
 export default async function AIAgentsPage() {
   const { featured, allAgents, newThisWeek, agentCount } = await getAgentData()
 
+  const itemListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Autonomous AI Agents Directory — Abhibhideveloper",
+    "description": "Production-ready autonomous AI agents for coding, research, automation, and enterprise operations.",
+    "numberOfItems": allAgents.length,
+    "itemListElement": allAgents.slice(0, 30).map((p: any, idx: number) => ({
+      "@type": "ListItem",
+      "position": idx + 1,
+      "item": {
+        "@type": "SoftwareApplication",
+        "name": p.name,
+        "description": p.tagline || p.description,
+        "url": `https://abhibhideveloper.tech/marketplace/${p.slug}`,
+        "applicationCategory": "AI Agents",
+        "offers": p.tiers?.[0] ? {
+          "@type": "Offer",
+          "price": String(p.tiers[0].price),
+          "priceCurrency": p.tiers[0].currency || "USD",
+          "availability": "https://schema.org/InStock",
+        } : undefined,
+      },
+    })),
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+      />
       <style>{`
         .glass{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08)}
         .text-gradient{background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
@@ -221,6 +250,22 @@ export default async function AIAgentsPage() {
       <div id="all-agents">
         <AIAgentsClient agents={allAgents.map(serialize)} />
       </div>
+
+      <noscript>
+        <section className="max-w-7xl mx-auto px-4 py-8">
+          <h2 className="text-2xl font-bold mb-4">All AI Agents Directory</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {allAgents.map((p: any) => (
+              <article key={p.id} className="border border-white/10 p-4 rounded-xl">
+                <a href={`/marketplace/${p.slug}`}>
+                  <h3 className="font-bold text-lg text-white">{p.name}</h3>
+                  <p className="text-sm text-zinc-400">{p.tagline || p.description}</p>
+                </a>
+              </article>
+            ))}
+          </div>
+        </section>
+      </noscript>
 
       {/* ── BUILD YOUR OWN AGENT CTA ─────────────────────────────────────────── */}
       <section className="py-24 px-4">

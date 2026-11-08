@@ -63,6 +63,56 @@ export default async function CategoryPage({ params }: Props) {
     take: 48,
   })
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://abhibhideveloper.tech"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Marketplace",
+        "item": "https://abhibhideveloper.tech/marketplace"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": meta.title,
+        "item": `https://abhibhideveloper.tech/categories/${category}`
+      }
+    ]
+  }
+
+  const categoryItemListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": `${meta.title} — Abhibhideveloper`,
+    "description": meta.desc,
+    "numberOfItems": products.length,
+    "itemListElement": products.map((p: any, idx: number) => ({
+      "@type": "ListItem",
+      "position": idx + 1,
+      "item": {
+        "@type": "SoftwareApplication",
+        "name": p.name,
+        "description": p.tagline || p.description,
+        "url": `https://abhibhideveloper.tech/marketplace/${p.slug}`,
+        "applicationCategory": meta.title,
+        "offers": p.tiers?.[0] ? {
+          "@type": "Offer",
+          "price": String(p.tiers[0].price),
+          "priceCurrency": p.tiers[0].currency || "USD",
+          "availability": "https://schema.org/InStock",
+        } : undefined,
+      }
+    }))
+  }
+
   function toCardProps(p: any) {
     const tier = p.tiers?.[0]
     return {
@@ -79,6 +129,14 @@ export default async function CategoryPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(categoryItemListSchema) }}
+      />
       <style>{`
         .glass{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08)}
         .text-gradient{background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
