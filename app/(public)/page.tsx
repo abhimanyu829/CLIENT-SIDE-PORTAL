@@ -679,7 +679,6 @@ export default async function HomePage() {
                 <p className="text-[11px] text-muted-foreground mt-0.5">Plans, limits & policies</p>
               </div>
             </div>
-          </div>
 
           {/* Dynamic Testimonials / Feedback */}
           <div className="space-y-8 mb-16">
