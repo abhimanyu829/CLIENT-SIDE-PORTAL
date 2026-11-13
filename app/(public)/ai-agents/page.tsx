@@ -127,12 +127,35 @@ export default async function AIAgentsPage() {
       },
     })),
   }
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://abhibhideveloper.tech",
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "AI Agents",
+        "item": "https://abhibhideveloper.tech/ai-agents",
+      },
+    ],
+  }
+
 
   return (
     <div className="min-h-screen bg-black text-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <style>{`
         .glass{background:rgba(255,255,255,.03);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08)}

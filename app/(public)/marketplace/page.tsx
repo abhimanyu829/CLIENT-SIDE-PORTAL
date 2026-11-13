@@ -150,11 +150,14 @@ export default async function MarketplacePage() {
   }
   const { featured, trending, flashSale, bestSellers, allProducts, campaign, totalCount } = await getMarketplaceData()
 
+  const displayItems = (featured && featured.length > 0) ? featured : allProducts.slice(0, 20)
   const itemListSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "name": "Abhibhideveloper Software & AI Marketplace",
-    "itemListElement": allProducts.slice(0, 20).map((p: any, idx: number) => ({
+    "name": "Featured Products — Abhibhideveloper AI Marketplace",
+    "description": "Featured production-grade AI agents, SaaS tools, and developer solutions.",
+    "numberOfItems": displayItems.length,
+    "itemListElement": displayItems.map((p: any, idx: number) => ({
       "@type": "ListItem",
       "position": idx + 1,
       "url": `https://abhibhideveloper.tech/marketplace/${p.slug}`,

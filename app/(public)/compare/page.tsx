@@ -48,9 +48,32 @@ export default async function ComparePage() {
       averageRating: p.averageRating,
     }
   })
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://abhibhideveloper.tech",
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Compare",
+        "item": "https://abhibhideveloper.tech/compare",
+      },
+    ],
+  }
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <section className="px-4 pt-16 pb-6">
         <div className="mx-auto max-w-5xl">
           <p className="text-xs font-mono font-semibold uppercase tracking-widest text-primary">Compare</p>
