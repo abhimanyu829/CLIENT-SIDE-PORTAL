@@ -164,7 +164,8 @@ const rowOneItems = [
   {
     name: "OpenAI",
     tag: "LLM Provider",
-    logo: "https://cdn.simpleicons.org/openai/10b981",
+    logo: "https://cdn.jsdelivr.net/npm/simple-icons@v12/icons/openai.svg",
+    invertInDark: true,
     bg: "bg-emerald-500/10 border-emerald-500/20",
   },
   {
@@ -195,7 +196,7 @@ const rowOneItems = [
   {
     name: "Pinecone",
     tag: "Vector Index",
-    logo: "https://cdn.simpleicons.org/pinecone/0d9488",
+    logo: "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/pinecone-icon.svg",
     bg: "bg-teal-500/10 border-teal-500/20",
   },
 ];
@@ -217,7 +218,7 @@ const rowTwoItems = [
   {
     name: "AWS S3",
     tag: "Cloud Storage",
-    logo: "https://cdn.simpleicons.org/amazons3/d97706",
+    logo: "https://raw.githubusercontent.com/gilbarbara/logos/main/logos/aws-s3.svg",
     bg: "bg-amber-500/10 border-amber-500/20",
   },
   {
