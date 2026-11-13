@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ShoppingBag, ArrowRight, Cpu, Sparkles, CreditCard, Zap, Network, Workflow, GitBranch, Cloud, Database, Mail, CheckSquare, Triangle } from "lucide-react"
+import { ShoppingBag, ArrowRight, Cpu, Sparkles, CreditCard, Zap, Network, Workflow, GitBranch, Cloud, Database, Mail, CheckSquare, Triangle, Package, Bot, Code2, Rocket } from "lucide-react"
 import { db } from "@/lib/db"
 import { ProductStatus, ProductType, SubStatus, CampaignStatus } from "@prisma/client"
 import { unstable_cache } from "next/cache"
@@ -177,13 +177,13 @@ export default async function HomePage() {
 
   // Only counts that have something to show: a row of "0" tiles reads as a broken page.
   const heroStats = [
-    { n: stats.products, label: "Live Products", icon: "📦" },
-    { n: stats.agents, label: "AI Agents", icon: "🤖" },
-    { n: stats.users, label: "Developers", icon: "🧑‍💻" },
-    { n: stats.subscriptions, label: "Active Deployments", icon: "🚀" },
+    { n: stats.products, label: "Live Products", icon: Package, color: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+    { n: stats.agents, label: "AI Agents", icon: Bot, color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
+    { n: stats.users, label: "Developers", icon: Code2, color: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
+    { n: stats.subscriptions, label: "Active Deployments", icon: Rocket, color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
   ]
     .filter((s) => s.n > 0)
-    .map((s) => ({ val: countLabel(s.n), label: s.label, icon: s.icon }))
+    .map((s) => ({ val: countLabel(s.n), label: s.label, icon: s.icon, color: s.color, bg: s.bg }))
 
   const COLLECTIONS = [
     { title: "Best AI Agents", href: "/ai-agents", icon: "🤖", count: stats.agents, color: "from-purple-600/20 to-blue-600/20", border: "border-purple-500/20" },
@@ -202,6 +202,7 @@ export default async function HomePage() {
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
         @keyframes slide-up{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
         @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+        @keyframes ticker-reverse{0%{transform:translateX(-50%)}100%{transform:translateX(0)}}
         .float{animation:float 7s ease-in-out infinite}
         .slide-up{animation:slide-up .8s ease-out forwards}
         .glass{background:rgba(25, 28, 33, 0.4);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.1);color:#fff}
@@ -210,6 +211,8 @@ export default async function HomePage() {
         .section-label{color:#ea580c;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
         .ticker-track{display:flex;animation:ticker 40s linear infinite;will-change:transform;width:max-content}
         .ticker-track:hover{animation-play-state:paused}
+        .ticker-track-reverse{display:flex;animation:ticker-reverse 40s linear infinite;will-change:transform;width:max-content}
+        .ticker-track-reverse:hover{animation-play-state:paused}
         .stat-pill{background:rgba(25, 28, 33, 0.05);border:1px solid rgba(25, 28, 33, 0.1);border-radius:9999px;padding:.25rem .875rem;display:inline-flex;align-items:center;gap:.5rem;font-size:.8125rem;color:inherit}
         .badge-new{background:#ea580c;font-size:.65rem;font-weight:800;padding:.125rem .5rem;border-radius:9999px;color:#fff;letter-spacing:.05em}
       `}</style>
@@ -291,10 +294,12 @@ export default async function HomePage() {
           {/* Live Stats */}
           {heroStats.length > 0 && (
           <div className={`grid ${heroStats.length >= 4 ? "grid-cols-2 md:grid-cols-4" : heroStats.length === 3 ? "grid-cols-3" : "grid-cols-2"} gap-3 sm:gap-4 max-w-3xl mx-auto slide-up`} style={{ animationDelay: ".4s" }}>
-            {heroStats.map(({ val, label, icon }) => (
-              <div key={label} className="bg-card text-card-foreground border border-border rounded-2xl px-4 py-5 text-center shadow-sm card-hover">
-                <div className="text-2xl mb-2" aria-hidden="true">{icon}</div>
-                <div className="text-2xl font-semibold tabular-nums tracking-tight">{val}</div>
+            {heroStats.map(({ val, label, icon: IconComponent, color, bg }) => (
+              <div key={label} className="bg-card text-card-foreground border border-border rounded-2xl px-4 py-5 text-center shadow-sm card-hover flex flex-col items-center justify-center">
+                <div className={`w-10 h-10 mb-2.5 rounded-xl border ${bg} flex items-center justify-center ${color}`} aria-hidden="true">
+                  <IconComponent className="w-5 h-5" />
+                </div>
+                <div className="text-2xl font-bold tabular-nums tracking-tight">{val}</div>
                 <div className="text-[11px] text-muted-foreground mt-1 font-mono uppercase tracking-wider">{label}</div>
               </div>
             ))}
@@ -546,9 +551,10 @@ export default async function HomePage() {
             </h2>
           </div>
 
-          {/* Technology stack wall — professional vector tech badges */}
-          <div className="mb-16 space-y-6">
-            <div className="flex flex-wrap items-center justify-center gap-3 max-w-5xl mx-auto">
+          {/* Technology stack wall — continuously moving band */}
+          <div className="mb-16 space-y-4 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] -webkit-[mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] py-2">
+            {/* Row 1 moving left */}
+            <div className="ticker-track flex items-center gap-3">
               {[
                 { name: "OpenAI", tag: "LLM Provider", icon: Cpu, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
                 { name: "Anthropic", tag: "Claude 3.5", icon: Sparkles, iconColor: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
@@ -556,23 +562,42 @@ export default async function HomePage() {
                 { name: "Vercel", tag: "Frontend Hosting", icon: Triangle, iconColor: "text-foreground fill-foreground", bg: "bg-foreground/5 border-foreground/15" },
                 { name: "Supabase", tag: "Database", icon: Zap, iconColor: "text-emerald-500 dark:text-emerald-400 fill-emerald-500/20", bg: "bg-emerald-500/10 border-emerald-500/20" },
                 { name: "Pinecone", tag: "Vector Index", icon: Network, iconColor: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10 border-teal-500/20" },
-                { name: "LangChain", tag: "Agent Framework", icon: Workflow, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-                { name: "GitHub", tag: "CI/CD Pipeline", icon: GitBranch, iconColor: "text-slate-800 dark:text-slate-200", bg: "bg-slate-500/10 border-slate-500/20" },
-                { name: "AWS S3", tag: "Cloud Storage", icon: Cloud, iconColor: "text-amber-600 dark:text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
-                { name: "Upstash", tag: "Redis Cache", icon: Database, iconColor: "text-red-500 dark:text-red-400", bg: "bg-red-500/10 border-red-500/20" },
-                { name: "Resend", tag: "Email Infra", icon: Mail, iconColor: "text-sky-600 dark:text-sky-400", bg: "bg-sky-500/10 border-sky-500/20" },
-                { name: "Linear", tag: "Issue Tracking", icon: CheckSquare, iconColor: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
-              ].map(item => {
+              ].concat(
+                [
+                  { name: "OpenAI", tag: "LLM Provider", icon: Cpu, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                  { name: "Anthropic", tag: "Claude 3.5", icon: Sparkles, iconColor: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+                  { name: "Stripe", tag: "Payments", icon: CreditCard, iconColor: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
+                  { name: "Vercel", tag: "Frontend Hosting", icon: Triangle, iconColor: "text-foreground fill-foreground", bg: "bg-foreground/5 border-foreground/15" },
+                  { name: "Supabase", tag: "Database", icon: Zap, iconColor: "text-emerald-500 dark:text-emerald-400 fill-emerald-500/20", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                  { name: "Pinecone", tag: "Vector Index", icon: Network, iconColor: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10 border-teal-500/20" },
+                ],
+                [
+                  { name: "OpenAI", tag: "LLM Provider", icon: Cpu, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                  { name: "Anthropic", tag: "Claude 3.5", icon: Sparkles, iconColor: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+                  { name: "Stripe", tag: "Payments", icon: CreditCard, iconColor: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
+                  { name: "Vercel", tag: "Frontend Hosting", icon: Triangle, iconColor: "text-foreground fill-foreground", bg: "bg-foreground/5 border-foreground/15" },
+                  { name: "Supabase", tag: "Database", icon: Zap, iconColor: "text-emerald-500 dark:text-emerald-400 fill-emerald-500/20", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                  { name: "Pinecone", tag: "Vector Index", icon: Network, iconColor: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10 border-teal-500/20" },
+                ],
+                [
+                  { name: "OpenAI", tag: "LLM Provider", icon: Cpu, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                  { name: "Anthropic", tag: "Claude 3.5", icon: Sparkles, iconColor: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+                  { name: "Stripe", tag: "Payments", icon: CreditCard, iconColor: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
+                  { name: "Vercel", tag: "Frontend Hosting", icon: Triangle, iconColor: "text-foreground fill-foreground", bg: "bg-foreground/5 border-foreground/15" },
+                  { name: "Supabase", tag: "Database", icon: Zap, iconColor: "text-emerald-500 dark:text-emerald-400 fill-emerald-500/20", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                  { name: "Pinecone", tag: "Vector Index", icon: Network, iconColor: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10 border-teal-500/20" },
+                ]
+              ).map((item, idx) => {
                 const IconComp = item.icon
                 return (
                   <div 
-                    key={item.name} 
-                    className="group bg-card/90 hover:bg-card border border-border/80 hover:border-primary/50 px-4 py-2.5 rounded-none shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-2.5 cursor-pointer backdrop-blur-md"
+                    key={`tech-r1-${idx}`} 
+                    className="group bg-card text-card-foreground border border-border/80 hover:border-primary/50 px-4 py-2.5 rounded-xl shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-2.5 cursor-pointer backdrop-blur-md shrink-0"
                   >
-                    <div className={`p-1.5 rounded-none border ${item.bg} flex items-center justify-center shrink-0`}>
+                    <div className={`p-1.5 rounded-lg border ${item.bg} flex items-center justify-center shrink-0`}>
                       <IconComp className={`h-3.5 w-3.5 ${item.iconColor}`} />
                     </div>
-                    <div className="text-left">
+                    <div className="text-left whitespace-nowrap">
                       <p className="text-xs font-bold text-foreground leading-none group-hover:text-primary transition-colors">{item.name}</p>
                       <p className="text-[10px] text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
                     </div>
@@ -580,6 +605,60 @@ export default async function HomePage() {
                 )
               })}
             </div>
+
+            {/* Row 2 moving right */}
+            <div className="ticker-track-reverse flex items-center gap-3">
+              {[
+                { name: "LangChain", tag: "Agent Framework", icon: Workflow, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                { name: "GitHub", tag: "CI/CD Pipeline", icon: GitBranch, iconColor: "text-slate-800 dark:text-slate-200", bg: "bg-slate-500/10 border-slate-500/20" },
+                { name: "AWS S3", tag: "Cloud Storage", icon: Cloud, iconColor: "text-amber-600 dark:text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+                { name: "Upstash", tag: "Redis Cache", icon: Database, iconColor: "text-red-500 dark:text-red-400", bg: "bg-red-500/10 border-red-500/20" },
+                { name: "Resend", tag: "Email Infra", icon: Mail, iconColor: "text-sky-600 dark:text-sky-400", bg: "bg-sky-500/10 border-sky-500/20" },
+                { name: "Linear", tag: "Issue Tracking", icon: CheckSquare, iconColor: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
+              ].concat(
+                [
+                  { name: "LangChain", tag: "Agent Framework", icon: Workflow, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                  { name: "GitHub", tag: "CI/CD Pipeline", icon: GitBranch, iconColor: "text-slate-800 dark:text-slate-200", bg: "bg-slate-500/10 border-slate-500/20" },
+                  { name: "AWS S3", tag: "Cloud Storage", icon: Cloud, iconColor: "text-amber-600 dark:text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+                  { name: "Upstash", tag: "Redis Cache", icon: Database, iconColor: "text-red-500 dark:text-red-400", bg: "bg-red-500/10 border-red-500/20" },
+                  { name: "Resend", tag: "Email Infra", icon: Mail, iconColor: "text-sky-600 dark:text-sky-400", bg: "bg-sky-500/10 border-sky-500/20" },
+                  { name: "Linear", tag: "Issue Tracking", icon: CheckSquare, iconColor: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
+                ],
+                [
+                  { name: "LangChain", tag: "Agent Framework", icon: Workflow, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                  { name: "GitHub", tag: "CI/CD Pipeline", icon: GitBranch, iconColor: "text-slate-800 dark:text-slate-200", bg: "bg-slate-500/10 border-slate-500/20" },
+                  { name: "AWS S3", tag: "Cloud Storage", icon: Cloud, iconColor: "text-amber-600 dark:text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+                  { name: "Upstash", tag: "Redis Cache", icon: Database, iconColor: "text-red-500 dark:text-red-400", bg: "bg-red-500/10 border-red-500/20" },
+                  { name: "Resend", tag: "Email Infra", icon: Mail, iconColor: "text-sky-600 dark:text-sky-400", bg: "bg-sky-500/10 border-sky-500/20" },
+                  { name: "Linear", tag: "Issue Tracking", icon: CheckSquare, iconColor: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
+                ],
+                [
+                  { name: "LangChain", tag: "Agent Framework", icon: Workflow, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+                  { name: "GitHub", tag: "CI/CD Pipeline", icon: GitBranch, iconColor: "text-slate-800 dark:text-slate-200", bg: "bg-slate-500/10 border-slate-500/20" },
+                  { name: "AWS S3", tag: "Cloud Storage", icon: Cloud, iconColor: "text-amber-600 dark:text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+                  { name: "Upstash", tag: "Redis Cache", icon: Database, iconColor: "text-red-500 dark:text-red-400", bg: "bg-red-500/10 border-red-500/20" },
+                  { name: "Resend", tag: "Email Infra", icon: Mail, iconColor: "text-sky-600 dark:text-sky-400", bg: "bg-sky-500/10 border-sky-500/20" },
+                  { name: "Linear", tag: "Issue Tracking", icon: CheckSquare, iconColor: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
+                ]
+              ).map((item, idx) => {
+                const IconComp = item.icon
+                return (
+                  <div 
+                    key={`tech-r2-${idx}`} 
+                    className="group bg-card text-card-foreground border border-border/80 hover:border-primary/50 px-4 py-2.5 rounded-xl shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-2.5 cursor-pointer backdrop-blur-md shrink-0"
+                  >
+                    <div className={`p-1.5 rounded-lg border ${item.bg} flex items-center justify-center shrink-0`}>
+                      <IconComp className={`h-3.5 w-3.5 ${item.iconColor}`} />
+                    </div>
+                    <div className="text-left whitespace-nowrap">
+                      <p className="text-xs font-bold text-foreground leading-none group-hover:text-primary transition-colors">{item.name}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
 
             {/* Quick Metrics Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto pt-4 border-t border-border/40">
