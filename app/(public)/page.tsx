@@ -292,9 +292,9 @@ export default async function HomePage() {
         .card-hover{transition:all .3s ease}
         .card-hover:hover{transform:translateY(-4px);border-color:rgba(234,88,12,0.4);box-shadow:0 20px 40px rgba(0,0,0,.05),0 0 20px rgba(234,88,12,.1)}
         .section-label{color:#ea580c;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
-        .ticker-track{display:flex;animation:ticker 40s linear infinite;will-change:transform;width:max-content}
+        .ticker-track{display:flex;animation:ticker 48s linear infinite;will-change:transform;width:max-content}
         .ticker-track:hover{animation-play-state:paused}
-        .ticker-track-reverse{display:flex;animation:ticker-reverse 40s linear infinite;will-change:transform;width:max-content}
+        .ticker-track-reverse{display:flex;animation:ticker-reverse 48s linear infinite;will-change:transform;width:max-content}
         .ticker-track-reverse:hover{animation-play-state:paused}
         .stat-pill{background:rgba(25, 28, 33, 0.05);border:1px solid rgba(25, 28, 33, 0.1);border-radius:9999px;padding:.25rem .875rem;display:inline-flex;align-items:center;gap:.5rem;font-size:.8125rem;color:inherit}
         .badge-new{background:#ea580c;font-size:.65rem;font-weight:800;padding:.125rem .5rem;border-radius:9999px;color:#fff;letter-spacing:.05em}
@@ -635,52 +635,52 @@ export default async function HomePage() {
           </div>
 
           {/* Technology stack wall — continuously moving band */}
-          <div className="mb-16 space-y-4 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] -webkit-[mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] py-2">
+          <div className="mb-20 space-y-5 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] -webkit-[mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] py-4">
             {/* Row 1 moving left */}
-            <div className="ticker-track flex items-center gap-3">
+            <div className="ticker-track flex items-center gap-4 sm:gap-5">
               {[...rowOneItems, ...rowOneItems, ...rowOneItems, ...rowOneItems].map((item, idx) => (
                 <div 
                   key={`tech-r1-${idx}`} 
-                  className="group bg-card text-card-foreground border border-border/80 hover:border-primary/50 px-4 py-2.5 rounded-xl shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-2.5 cursor-pointer backdrop-blur-md shrink-0"
+                  className="group bg-card/90 hover:bg-card text-card-foreground border border-border/80 hover:border-primary/50 px-5 py-3 sm:px-6 sm:py-3.5 rounded-2xl shadow-xs hover:shadow-md transition-all duration-300 hover:-translate-y-1 flex items-center gap-3.5 sm:gap-4 cursor-pointer backdrop-blur-md shrink-0"
                 >
-                  <div className={`p-1.5 rounded-lg border ${item.bg} flex items-center justify-center shrink-0`}>
+                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl border ${item.bg} flex items-center justify-center shrink-0 shadow-2xs transition-transform group-hover:scale-105 duration-200`}>
                     <img
                       src={item.logo}
                       alt={`${item.name} logo`}
-                      className={`h-3.5 w-3.5 object-contain ${item.invertInDark ? "dark:invert" : ""}`}
-                      width={14}
-                      height={14}
+                      className={`w-5 h-5 sm:w-6 sm:h-6 object-contain ${item.invertInDark ? "dark:invert" : ""}`}
+                      width={24}
+                      height={24}
                       loading="lazy"
                     />
                   </div>
                   <div className="text-left whitespace-nowrap">
-                    <p className="text-xs font-bold text-foreground leading-none group-hover:text-primary transition-colors">{item.name}</p>
-                    <p className="text-[10px] text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
+                    <p className="text-sm sm:text-base font-bold text-foreground leading-tight group-hover:text-primary transition-colors tracking-tight">{item.name}</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Row 2 moving right */}
-            <div className="ticker-track-reverse flex items-center gap-3">
+            <div className="ticker-track-reverse flex items-center gap-4 sm:gap-5">
               {[...rowTwoItems, ...rowTwoItems, ...rowTwoItems, ...rowTwoItems].map((item, idx) => (
                 <div 
                   key={`tech-r2-${idx}`} 
-                  className="group bg-card text-card-foreground border border-border/80 hover:border-primary/50 px-4 py-2.5 rounded-xl shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-2.5 cursor-pointer backdrop-blur-md shrink-0"
+                  className="group bg-card/90 hover:bg-card text-card-foreground border border-border/80 hover:border-primary/50 px-5 py-3 sm:px-6 sm:py-3.5 rounded-2xl shadow-xs hover:shadow-md transition-all duration-300 hover:-translate-y-1 flex items-center gap-3.5 sm:gap-4 cursor-pointer backdrop-blur-md shrink-0"
                 >
-                  <div className={`p-1.5 rounded-lg border ${item.bg} flex items-center justify-center shrink-0`}>
+                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl border ${item.bg} flex items-center justify-center shrink-0 shadow-2xs transition-transform group-hover:scale-105 duration-200`}>
                     <img
                       src={item.logo}
                       alt={`${item.name} logo`}
-                      className={`h-3.5 w-3.5 object-contain ${item.invertInDark ? "dark:invert" : ""}`}
-                      width={14}
-                      height={14}
+                      className={`w-5 h-5 sm:w-6 sm:h-6 object-contain ${item.invertInDark ? "dark:invert" : ""}`}
+                      width={24}
+                      height={24}
                       loading="lazy"
                     />
                   </div>
                   <div className="text-left whitespace-nowrap">
-                    <p className="text-xs font-bold text-foreground leading-none group-hover:text-primary transition-colors">{item.name}</p>
-                    <p className="text-[10px] text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
+                    <p className="text-sm sm:text-base font-bold text-foreground leading-tight group-hover:text-primary transition-colors tracking-tight">{item.name}</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
                   </div>
                 </div>
               ))}
