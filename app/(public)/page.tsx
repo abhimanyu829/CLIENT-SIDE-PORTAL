@@ -159,120 +159,87 @@ function toCardProps(p: any) {
   }
 }
 
-// ── Authentic Company Vector Icons ──────────────────────────────────────────
-function OpenAIIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.98 4.182a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.998-2.9 6.056 6.056 0 0 0-.748-7.073zm-9.022 12.608a4.476 4.476 0 0 1-2.876-1.04l.142-.081 4.778-2.758a.795.795 0 0 0 .393-.682v-6.737l2.02 1.169a.071.071 0 0 1 .038.052v5.582a4.504 4.504 0 0 1-4.494 4.495zm-9.66-4.125a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.333a.08.08 0 0 1-.033.061L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.677l5.814 3.354-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.896zm16.1 3.856-5.843-3.369 2.02-1.164a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.677a.79.79 0 0 0-.402-.686zm2.01-3.023-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.006 9.23V6.897a.066.066 0 0 1 .033-.061l4.85-2.796a4.5 4.5 0 0 1 6.642 3.66zm-13.002 4.239-2.02-1.164a.08.08 0 0 1-.038-.052V6.07a4.5 4.5 0 0 1 7.376-3.454l-.142.08-4.778 2.759a.795.795 0 0 0-.393.681v6.737zm1.097-1.966 2.6-1.5 2.596 1.5v3l-2.596 1.5-2.6-1.5z" />
-    </svg>
-  )
-}
+// ── Authentic Company Icons ────────────────────────────────────────────────
+const rowOneItems = [
+  {
+    name: "OpenAI",
+    tag: "LLM Provider",
+    logo: "https://cdn.simpleicons.org/openai/10b981",
+    bg: "bg-emerald-500/10 border-emerald-500/20",
+  },
+  {
+    name: "Anthropic",
+    tag: "Claude 3.5",
+    logo: "https://cdn.simpleicons.org/anthropic/d97706",
+    bg: "bg-amber-500/10 border-amber-500/20",
+  },
+  {
+    name: "Stripe",
+    tag: "Payments",
+    logo: "https://cdn.simpleicons.org/stripe/635bff",
+    bg: "bg-indigo-500/10 border-indigo-500/20",
+  },
+  {
+    name: "Vercel",
+    tag: "Frontend Hosting",
+    logo: "https://cdn.simpleicons.org/vercel",
+    invertInDark: true,
+    bg: "bg-foreground/5 border-foreground/15",
+  },
+  {
+    name: "Supabase",
+    tag: "Database",
+    logo: "https://cdn.simpleicons.org/supabase/3ecf8e",
+    bg: "bg-emerald-500/10 border-emerald-500/20",
+  },
+  {
+    name: "Pinecone",
+    tag: "Vector Index",
+    logo: "https://cdn.simpleicons.org/pinecone/0d9488",
+    bg: "bg-teal-500/10 border-teal-500/20",
+  },
+];
 
-function AnthropicIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M13.827 2.148l4.49 19.704h-3.696l-1.077-4.733H8.384l-1.08 4.733H3.682L8.17 2.148h5.657zm-1.83 11.968l-1.996-8.77h-.08l-1.996 8.77h4.072z" />
-    </svg>
-  )
-}
-
-function StripeIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.839 2.943 7.377 7.828 9.07 2.45.858 3.298 1.488 3.298 2.42 0 .977-.852 1.488-2.316 1.488-2.28 0-5.18-.99-7.05-2.091l-.887 5.617c1.782.91 4.793 1.547 7.973 1.547 2.613 0 4.764-.662 6.273-1.914 1.564-1.3 2.378-3.176 2.378-5.467 0-4.838-2.943-7.377-7.828-9.07z" />
-    </svg>
-  )
-}
-
-function VercelIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M24 22.525H0l12-21.05 12 21.05z" />
-    </svg>
-  )
-}
-
-function SupabaseIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M21.362 9.354H12V.396a.396.396 0 0 0-.716-.233L.412 13.916a.396.396 0 0 0 .316.634H12v8.958a.396.396 0 0 0 .716.233l10.872-13.753a.396.396 0 0 0-.226-.634z" />
-    </svg>
-  )
-}
-
-function PineconeIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2L3.5 6.9v10.2L12 22l8.5-4.9V6.9L12 2zm0 2.3l6.5 3.75-6.5 3.75-6.5-3.75L12 4.3zm-6.5 5.5l5.5 3.17v6.35l-5.5-3.17V9.8zm13 0v6.35l-5.5 3.17v-6.35l5.5-3.17z" />
-    </svg>
-  )
-}
-
-function LangChainIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12.023 16.892a2.808 2.808 0 0 1-2.808-2.808v-4.168a2.808 2.808 0 1 1 5.616 0v4.168a2.808 2.808 0 0 1-2.808 2.808zm-6.84-2.808a2.808 2.808 0 0 1 2.808-2.808h.505a4.01 4.01 0 0 0-.505 1.972v2.196a4.01 4.01 0 0 0 .505 1.972H7.99a2.808 2.808 0 0 1-2.808-2.808zm13.68 0a2.808 2.808 0 0 1-2.808 2.808h-.505a4.01 4.01 0 0 0 .505-1.972v-2.196a4.01 4.01 0 0 0-.505-1.972h.505a2.808 2.808 0 0 1 2.808 2.808z" />
-    </svg>
-  )
-}
-
-function GitHubIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-    </svg>
-  )
-}
-
-function AWSS3Icon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2L2 6.5v11L12 22l10-4.5v-11L12 2zm0 2.22l7.55 3.4-3.32 1.5-7.55-3.4L12 4.22zm-8 4.24l7 3.15v7.45l-7-3.15v-7.45zm9 10.6v-7.45l7-3.15v7.45l-7 3.15z" />
-    </svg>
-  )
-}
-
-function UpstashIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M0 3.197v17.606h24V3.197H0zm18.36 12.35a4.36 4.36 0 0 1-8.72 0V7.484h2.88v8.063a1.48 1.48 0 0 0 2.96 0V7.484h2.88v8.063z" />
-    </svg>
-  )
-}
-
-function ResendIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M2.4 2.4h19.2v19.2H2.4V2.4Zm14.4 4.8h-4.8v9.6h4.8v-4.8H12v-4.8h4.8Z" />
-    </svg>
-  )
-}
-
-function LinearIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M2.84 8.784 15.216 21.16a10.02 10.02 0 0 0 5.944-5.944L8.784 2.84a10.02 10.02 0 0 0-5.944 5.944Zm-.835 3.221a9.98 9.98 0 0 0 .835 3.211l8.775-8.775A9.98 9.98 0 0 0 8.395 5.66L2.005 12.005Zm10.34 9.99a9.98 9.98 0 0 0 3.211-.835l-6.345-6.345a9.98 9.98 0 0 0-.835 3.211l3.969 3.969ZM22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10Z" />
-    </svg>
-  )
-}
-
-const TECH_ROW_1 = [
-  { name: "OpenAI", tag: "LLM Provider", icon: OpenAIIcon, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { name: "Anthropic", tag: "Claude 3.5", icon: AnthropicIcon, iconColor: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
-  { name: "Stripe", tag: "Payments", icon: StripeIcon, iconColor: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
-  { name: "Vercel", tag: "Frontend Hosting", icon: VercelIcon, iconColor: "text-foreground", bg: "bg-foreground/5 border-foreground/15" },
-  { name: "Supabase", tag: "Database", icon: SupabaseIcon, iconColor: "text-emerald-500 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { name: "Pinecone", tag: "Vector Index", icon: PineconeIcon, iconColor: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10 border-teal-500/20" },
-]
-
-const TECH_ROW_2 = [
-  { name: "LangChain", tag: "Agent Framework", icon: LangChainIcon, iconColor: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { name: "GitHub", tag: "CI/CD Pipeline", icon: GitHubIcon, iconColor: "text-slate-800 dark:text-slate-200", bg: "bg-slate-500/10 border-slate-500/20" },
-  { name: "AWS S3", tag: "Cloud Storage", icon: AWSS3Icon, iconColor: "text-amber-600 dark:text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
-  { name: "Upstash", tag: "Redis Cache", icon: UpstashIcon, iconColor: "text-red-500 dark:text-red-400", bg: "bg-red-500/10 border-red-500/20" },
-  { name: "Resend", tag: "Email Infra", icon: ResendIcon, iconColor: "text-sky-600 dark:text-sky-400", bg: "bg-sky-500/10 border-sky-500/20" },
-  { name: "Linear", tag: "Issue Tracking", icon: LinearIcon, iconColor: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
-]
+const rowTwoItems = [
+  {
+    name: "LangChain",
+    tag: "Agent Framework",
+    logo: "https://cdn.simpleicons.org/langchain/10b981",
+    bg: "bg-emerald-500/10 border-emerald-500/20",
+  },
+  {
+    name: "GitHub",
+    tag: "CI/CD Pipeline",
+    logo: "https://cdn.simpleicons.org/github",
+    invertInDark: true,
+    bg: "bg-slate-500/10 border-slate-500/20",
+  },
+  {
+    name: "AWS S3",
+    tag: "Cloud Storage",
+    logo: "https://cdn.simpleicons.org/amazons3/d97706",
+    bg: "bg-amber-500/10 border-amber-500/20",
+  },
+  {
+    name: "Upstash",
+    tag: "Redis Cache",
+    logo: "https://cdn.simpleicons.org/upstash/00e9a3",
+    bg: "bg-emerald-500/10 border-emerald-500/20",
+  },
+  {
+    name: "Resend",
+    tag: "Email Infra",
+    logo: "https://cdn.simpleicons.org/resend",
+    invertInDark: true,
+    bg: "bg-sky-500/10 border-sky-500/20",
+  },
+  {
+    name: "Linear",
+    tag: "Issue Tracking",
+    logo: "https://cdn.simpleicons.org/linear/5e6ad2",
+    bg: "bg-purple-500/10 border-purple-500/20",
+  },
+];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default async function HomePage() {
@@ -670,44 +637,52 @@ export default async function HomePage() {
           <div className="mb-16 space-y-4 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] -webkit-[mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] py-2">
             {/* Row 1 moving left */}
             <div className="ticker-track flex items-center gap-3">
-              {[...TECH_ROW_1, ...TECH_ROW_1, ...TECH_ROW_1, ...TECH_ROW_1].map((item, idx) => {
-                const IconComp = item.icon
-                return (
-                  <div 
-                    key={`tech-r1-${idx}`} 
-                    className="group bg-card text-card-foreground border border-border/80 hover:border-primary/50 px-4 py-2.5 rounded-xl shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-2.5 cursor-pointer backdrop-blur-md shrink-0"
-                  >
-                    <div className={`p-1.5 rounded-lg border ${item.bg} flex items-center justify-center shrink-0`}>
-                      <IconComp className={`h-3.5 w-3.5 ${item.iconColor}`} />
-                    </div>
-                    <div className="text-left whitespace-nowrap">
-                      <p className="text-xs font-bold text-foreground leading-none group-hover:text-primary transition-colors">{item.name}</p>
-                      <p className="text-[10px] text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
-                    </div>
+              {[...rowOneItems, ...rowOneItems, ...rowOneItems, ...rowOneItems].map((item, idx) => (
+                <div 
+                  key={`tech-r1-${idx}`} 
+                  className="group bg-card text-card-foreground border border-border/80 hover:border-primary/50 px-4 py-2.5 rounded-xl shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-2.5 cursor-pointer backdrop-blur-md shrink-0"
+                >
+                  <div className={`p-1.5 rounded-lg border ${item.bg} flex items-center justify-center shrink-0`}>
+                    <img
+                      src={item.logo}
+                      alt={`${item.name} logo`}
+                      className={`h-3.5 w-3.5 object-contain ${item.invertInDark ? "dark:invert" : ""}`}
+                      width={14}
+                      height={14}
+                      loading="lazy"
+                    />
                   </div>
-                )
-              })}
+                  <div className="text-left whitespace-nowrap">
+                    <p className="text-xs font-bold text-foreground leading-none group-hover:text-primary transition-colors">{item.name}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Row 2 moving right */}
             <div className="ticker-track-reverse flex items-center gap-3">
-              {[...TECH_ROW_2, ...TECH_ROW_2, ...TECH_ROW_2, ...TECH_ROW_2].map((item, idx) => {
-                const IconComp = item.icon
-                return (
-                  <div 
-                    key={`tech-r2-${idx}`} 
-                    className="group bg-card text-card-foreground border border-border/80 hover:border-primary/50 px-4 py-2.5 rounded-xl shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-2.5 cursor-pointer backdrop-blur-md shrink-0"
-                  >
-                    <div className={`p-1.5 rounded-lg border ${item.bg} flex items-center justify-center shrink-0`}>
-                      <IconComp className={`h-3.5 w-3.5 ${item.iconColor}`} />
-                    </div>
-                    <div className="text-left whitespace-nowrap">
-                      <p className="text-xs font-bold text-foreground leading-none group-hover:text-primary transition-colors">{item.name}</p>
-                      <p className="text-[10px] text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
-                    </div>
+              {[...rowTwoItems, ...rowTwoItems, ...rowTwoItems, ...rowTwoItems].map((item, idx) => (
+                <div 
+                  key={`tech-r2-${idx}`} 
+                  className="group bg-card text-card-foreground border border-border/80 hover:border-primary/50 px-4 py-2.5 rounded-xl shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-2.5 cursor-pointer backdrop-blur-md shrink-0"
+                >
+                  <div className={`p-1.5 rounded-lg border ${item.bg} flex items-center justify-center shrink-0`}>
+                    <img
+                      src={item.logo}
+                      alt={`${item.name} logo`}
+                      className={`h-3.5 w-3.5 object-contain ${item.invertInDark ? "dark:invert" : ""}`}
+                      width={14}
+                      height={14}
+                      loading="lazy"
+                    />
                   </div>
-                )
-              })}
+                  <div className="text-left whitespace-nowrap">
+                    <p className="text-xs font-bold text-foreground leading-none group-hover:text-primary transition-colors">{item.name}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono mt-1 leading-none">{item.tag}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
