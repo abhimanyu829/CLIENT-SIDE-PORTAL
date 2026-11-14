@@ -688,7 +688,7 @@ export default async function HomePage() {
           </div>
 
             {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto pt-4 border-t border-border/40">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto pt-6 mb-16 sm:mb-20 border-t border-border/40">
               <div className="text-center p-3 rounded-none bg-card/60 border border-border/40 shadow-xs">
                 <p className="text-xl font-bold text-foreground">{countLabel(stats.products)}</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">Published products</p>
@@ -708,7 +708,7 @@ export default async function HomePage() {
             </div>
 
           {/* Dynamic Testimonials / Feedback */}
-          <div className="space-y-8 mb-16">
+          <div className="mb-20 sm:mb-24">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px]">
               {testimonials.length > 0 ? (
                 testimonials.map(t => (
@@ -743,7 +743,7 @@ export default async function HomePage() {
               )}
             </div>
 
-            <div className="text-center">
+            <div className="text-center mt-12 sm:mt-16">
               <Link
                 href="/feedback"
                 className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-3 rounded-xl transition-all shadow-sm"
