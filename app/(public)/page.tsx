@@ -11,6 +11,7 @@ import { MotionWrapper } from "@/components/ui/MotionWrapper"
 import { AuroraHero } from "@/components/ui/aurora-hero"
 import { BrandSectionList, HomeBrandShowcase } from "@/components/content/BrandBlocks"
 import { HOME_BRAND } from "@/lib/content/brand-blocks"
+import RotatingTestimonials from "@/components/marketing/RotatingTestimonials"
 
 export const revalidate = 60
 
@@ -117,12 +118,18 @@ const getActiveCampaign = unstable_cache(async () => {
 
 const getTestimonials = unstable_cache(async () => {
   return db.productReview.findMany({
-    where: { rating: 5, status: "APPROVED" as any },
-    include: { user: { select: { name: true, avatarUrl: true } }, product: { select: { name: true } } },
-    orderBy: { helpfulCount: "desc" },
-    take: 3,
+    where: { rating: { gte: 4 }, status: "APPROVED" as any },
+    select: {
+      id: true,
+      body: true,
+      rating: true,
+      user: { select: { name: true, avatarUrl: true } },
+      product: { select: { name: true } },
+    },
+    orderBy: [{ helpfulCount: "desc" }, { createdAt: "desc" }],
+    take: 24,
   })
-}, ["testimonials"], { revalidate: 3600, tags: ["products"] })
+}, ["testimonials"], { revalidate: 60, tags: ["products", "reviews"] })
 
 /** "1,234+" for real counts; small counts are shown exactly (never "0+"). */
 function countLabel(n: number): string {
@@ -709,39 +716,7 @@ export default async function HomePage() {
 
           {/* Dynamic Testimonials / Feedback */}
           <div className="mb-20 sm:mb-24">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px]">
-              {testimonials.length > 0 ? (
-                testimonials.map(t => (
-                  <div key={t.id} className="bg-card text-card-foreground rounded-xl p-[24px] border border-border card-hover shadow-sm flex flex-col justify-between">
-                    <div>
-                      <div className="flex gap-1 mb-4">
-                        {[1,2,3,4,5].map(s => <span key={s} className="text-amber-400 text-[12px]">★</span>)}
-                      </div>
-                      <p className="text-muted-foreground mb-6 leading-relaxed text-[16px]">&ldquo;{t.body}&rdquo;</p>
-                    </div>
-                    <div className="flex items-center gap-3 border-t border-border/50 pt-4 mt-auto">
-                      {t.user.avatarUrl ? (
-                        <img src={t.user.avatarUrl} alt={t.user.name || ""} className="w-10 h-10 rounded-full object-cover border border-border" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-sm font-bold text-primary-foreground">
-                          {(t.user.name || "?").charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div>
-                        <p className="font-medium text-[16px]">{t.user.name || "Verified Customer"}</p>
-                        <p className="text-muted-foreground text-[12px] font-mono">Verified Customer · {t.product?.name || "Service"}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="md:col-span-3 bg-card border border-border rounded-2xl p-8 sm:p-10 text-center space-y-3 shadow-sm">
-                  <div className="flex justify-center gap-1 text-amber-400 text-lg" aria-hidden="true">★★★★★</div>
-                  <p className="text-lg font-bold text-foreground">Verified Customer & Admin Feedback</p>
-                  <p className="text-sm text-muted-foreground max-w-xl mx-auto">Explore transparent ratings and star feedback submitted directly by service users and platform administrators.</p>
-                </div>
-              )}
-            </div>
+            <RotatingTestimonials testimonials={testimonials} />
 
             <div className="text-center mt-12 sm:mt-16">
               <Link
