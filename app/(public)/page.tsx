@@ -9,8 +9,7 @@ import ProductCard from "@/components/marketplace/ProductCard"
 import { CtaVideoBackground } from "@/components/effects/CtaVideoBackground"
 import { MotionWrapper } from "@/components/ui/MotionWrapper"
 import { AuroraHero } from "@/components/ui/aurora-hero"
-import { BrandSectionList, HomeBrandShowcase } from "@/components/content/BrandBlocks"
-import { HOME_BRAND } from "@/lib/content/brand-blocks"
+import { HomeBrandShowcase } from "@/components/content/HomeBrandShowcase"
 import RotatingTestimonials from "@/components/marketing/RotatingTestimonials"
 
 export const revalidate = 60
@@ -62,10 +61,43 @@ const getPlatformStats = unstable_cache(async () => {
   }
 }, ["platform-stats"], { revalidate: 300, tags: ["products", "platform-stats"] })
 
+const PRODUCT_CARD_SELECT = {
+  id: true,
+  slug: true,
+  name: true,
+  tagline: true,
+  type: true,
+  category: true,
+  thumbnailUrl: true,
+  iconUrl: true,
+  isPremium: true,
+  isFeatured: true,
+  isTrending: true,
+  isBestSeller: true,
+  badgeText: true,
+  averageRating: true,
+  reviewCount: true,
+  viewCount: true,
+  tags: true,
+  demoUrl: true,
+  tiers: {
+    select: {
+      price: true,
+      discountPrice: true,
+      flashSalePrice: true,
+      flashSaleEndsAt: true,
+      currency: true,
+      interval: true,
+    },
+    orderBy: { price: "asc" as const },
+    take: 1,
+  },
+}
+
 const getFeaturedProducts = unstable_cache(async () => {
   return db.product.findMany({
     where: { status: ProductStatus.AVAILABLE, isFeatured: true },
-    include: { tiers: { orderBy: { price: "asc" }, take: 1 } },
+    select: PRODUCT_CARD_SELECT,
     orderBy: { viewCount: "desc" },
     take: 6,
   })
@@ -74,7 +106,7 @@ const getFeaturedProducts = unstable_cache(async () => {
 const getTrendingProducts = unstable_cache(async () => {
   return db.product.findMany({
     where: { status: ProductStatus.AVAILABLE, isTrending: true },
-    include: { tiers: { orderBy: { price: "asc" }, take: 1 } },
+    select: PRODUCT_CARD_SELECT,
     orderBy: { viewCount: "desc" },
     take: 8,
   })
@@ -83,7 +115,7 @@ const getTrendingProducts = unstable_cache(async () => {
 const getTopSellers = unstable_cache(async () => {
   return db.product.findMany({
     where: { status: ProductStatus.AVAILABLE, isBestSeller: true },
-    include: { tiers: { orderBy: { price: "asc" }, take: 1 } },
+    select: PRODUCT_CARD_SELECT,
     orderBy: [{ reviewCount: "desc" }, { averageRating: "desc" }],
     take: 6,
   })
@@ -92,7 +124,7 @@ const getTopSellers = unstable_cache(async () => {
 const getNewLaunches = unstable_cache(async () => {
   return db.product.findMany({
     where: { status: ProductStatus.AVAILABLE },
-    include: { tiers: { orderBy: { price: "asc" }, take: 1 } },
+    select: PRODUCT_CARD_SELECT,
     orderBy: { createdAt: "desc" },
     take: 4,
   })
@@ -101,7 +133,7 @@ const getNewLaunches = unstable_cache(async () => {
 const getTopAgents = unstable_cache(async () => {
   return db.product.findMany({
     where: { status: ProductStatus.AVAILABLE, type: ProductType.AI_AGENT },
-    include: { tiers: { orderBy: { price: "asc" }, take: 1 } },
+    select: PRODUCT_CARD_SELECT,
     orderBy: { viewCount: "desc" },
     take: 4,
   })
@@ -645,7 +677,7 @@ export default async function HomePage() {
           <div className="mb-20 space-y-5 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] -webkit-[mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] py-4">
             {/* Row 1 moving left */}
             <div className="ticker-track flex items-center gap-4 sm:gap-5">
-              {[...rowOneItems, ...rowOneItems, ...rowOneItems, ...rowOneItems].map((item, idx) => (
+              {[...rowOneItems, ...rowOneItems].map((item, idx) => (
                 <div 
                   key={`tech-r1-${idx}`} 
                   className="group bg-card/90 hover:bg-card text-card-foreground border border-border/80 hover:border-primary/50 px-5 py-3 sm:px-6 sm:py-3.5 rounded-2xl shadow-xs hover:shadow-md transition-all duration-300 hover:-translate-y-1 flex items-center gap-3.5 sm:gap-4 cursor-pointer backdrop-blur-md shrink-0"
@@ -670,7 +702,7 @@ export default async function HomePage() {
 
             {/* Row 2 moving right */}
             <div className="ticker-track-reverse flex items-center gap-4 sm:gap-5">
-              {[...rowTwoItems, ...rowTwoItems, ...rowTwoItems, ...rowTwoItems].map((item, idx) => (
+              {[...rowTwoItems, ...rowTwoItems].map((item, idx) => (
                 <div 
                   key={`tech-r2-${idx}`} 
                   className="group bg-card/90 hover:bg-card text-card-foreground border border-border/80 hover:border-primary/50 px-5 py-3 sm:px-6 sm:py-3.5 rounded-2xl shadow-xs hover:shadow-md transition-all duration-300 hover:-translate-y-1 flex items-center gap-3.5 sm:gap-4 cursor-pointer backdrop-blur-md shrink-0"

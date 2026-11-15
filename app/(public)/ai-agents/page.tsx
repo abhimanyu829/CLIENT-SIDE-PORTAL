@@ -14,7 +14,7 @@ export const revalidate = 30
 
 export const metadata = {
   title: {
-    absolute: "AI Agents Directory — Autonomous Agents for Coding, Marketing & Support | Abhibhideveloper",
+    absolute: "AI Agents Directory — Coding, Marketing & Support | Abhibhideveloper",
   },
   description: "Browse and deploy production-ready autonomous AI agents. Coding, research, writing, automation, and enterprise intelligent agents by Abhibhideveloper.",
   alternates: {

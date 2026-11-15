@@ -8,7 +8,7 @@ export const revalidate = 60
 
 export const metadata: Metadata = {
   title: {
-    absolute: "Compare AI Tools & SaaS — Side-by-Side Features & Pricing | Abhibhideveloper",
+    absolute: "Compare AI Tools — Features & Pricing Side-by-Side | Abhibhideveloper",
   },
   description:
     "Compare published Abhibhideveloper products using real attributes — type, category, starting price, billing interval, and features — before purchasing.",

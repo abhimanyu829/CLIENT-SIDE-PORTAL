@@ -19,7 +19,7 @@ export async function generateMetadata() {
   const count = await db.product.count({ where: { status: ProductStatus.AVAILABLE } }).catch(() => 0)
   return {
     title: {
-      absolute: "AI Tools & SaaS Marketplace — Explore 41+ Live Products | Abhibhideveloper",
+      absolute: "AI Tools & SaaS Marketplace — 41+ Live Products | Abhibhideveloper",
     },
     description: `Browse ${count}+ premium AI agents, SaaS tools, automation workflows, APIs, and digital products on Abhibhideveloper. Filter, compare, and deploy instantly.`,
     alternates: {
@@ -165,6 +165,25 @@ export default async function MarketplacePage() {
     })),
   }
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://abhibhideveloper.tech",
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Marketplace",
+        "item": "https://abhibhideveloper.tech/marketplace",
+      },
+    ],
+  }
+
   const campaignData = campaign ? {
     id: campaign.id,
     bannerText: campaign.bannerText,
@@ -181,6 +200,10 @@ export default async function MarketplacePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <MarketplaceHero 
         titleText="THE ENTERPRISE AI MARKETPLACE"
