@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from "next/server"
 import { resend } from "@/lib/resend"
 import { env } from "@/lib/env"
 import { db } from "@/lib/db"
+import {
+  enqueueOutboundVoiceCall,
+  checkVoiceCallEligibility,
+  recordVoiceCallDispatched,
+  normalizePhoneNumber,
+} from "@/lib/services/outbound-voice-dispatcher"
+import { auth } from "@/lib/auth"
 
-const NOTIFICATION_EMAILS = ["luckypal5002@gmail.com", "abhimanyuk50281@gmail.com"]
+const NOTIFICATION_EMAILS = [
+  "luckypal5002@gmail.com",
+  "support@abhibhideveloper.tech",
+  "abhimanyuk50281@gmail.com",
+]
 
 export async function POST(req: NextRequest) {
   try {
@@ -158,9 +169,46 @@ export async function POST(req: NextRequest) {
       console.error("[ENQUIRY-DB-ERROR] Failed to save lead record:", dbErr)
     }
 
+    // 3. Security Layer: Voice call quota check (1 call per 24 hours per authenticated email & registered phone)
+    let callEnqueued = false
+    let callEligibilityMessage = ""
+
+    try {
+      // Determine the primary account email: prefer logged-in Clerk session, fallback to submitted email
+      const session = await auth().catch(() => null)
+      const primaryEmail = session?.user?.email || email
+
+      const eligibility = checkVoiceCallEligibility(primaryEmail, cleanPhone)
+
+      if (eligibility.eligible) {
+        // Enqueue delayed AI Voice Agent call (1.25 to 1.5 min delay with concurrency management)
+        await enqueueOutboundVoiceCall({
+          name,
+          phone: cleanPhone,
+          email: primaryEmail,
+          serviceName: cleanService,
+          budget: cleanBudget,
+          requirements: cleanRequirements,
+          businessName,
+        })
+
+        // Lock quota for 24h for this email and bind this phone number
+        recordVoiceCallDispatched(primaryEmail, cleanPhone)
+        callEnqueued = true
+        callEligibilityMessage = "AI Voice consultation scheduled in ~1.5 minutes."
+      } else {
+        callEligibilityMessage = eligibility.reason || "Daily voice call quota already utilized. Email inquiry dispatched."
+        console.warn(`[ENQUIRY-VOICE-QUOTA-BLOCKED] ${primaryEmail}: ${callEligibilityMessage}`)
+      }
+    } catch (voiceErr) {
+      console.error("[ENQUIRY-VOICE-DISPATCH-ERROR] Failed to process voice call quota/enqueue:", voiceErr)
+    }
+
     return NextResponse.json({
       success: true,
       message: "Enquiry submitted successfully and notification dispatched.",
+      callEnqueued,
+      callEligibilityMessage,
       emailDelivery: emailResults,
     })
   } catch (error: any) {

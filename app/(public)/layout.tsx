@@ -2,6 +2,7 @@ import Navbar from "@/components/layout/Navbar"
 import Footer from "@/components/layout/Footer"
 import SmartCampaignBanner from "@/components/marketplace/SmartCampaignBanner"
 import { CookieConsentCard } from "@/components/consent/CookieConsentCard"
+import WhatsAppFloatingWidget from "@/components/ui/WhatsAppFloatingWidget"
 import { ReactNode } from "react"
 import { db } from "@/lib/db"
 import { CampaignStatus } from "@prisma/client"
@@ -134,6 +135,7 @@ export default async function PublicLayout({ children }: { children: ReactNode }
       <main className="flex-1">{children}</main>
       <Footer />
       <CookieConsentCard />
+      <WhatsAppFloatingWidget />
     </div>
   )
 }

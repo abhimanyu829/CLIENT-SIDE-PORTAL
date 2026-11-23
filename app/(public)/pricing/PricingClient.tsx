@@ -596,45 +596,88 @@ export default function PricingClient() {
 
       {/* ── SECTION B: HERO ─────────────────────────────────── */}
       <section className="relative pt-24 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-zinc-50/80 via-white to-white border-b border-zinc-100 overflow-hidden">
-        <div className="max-w-5xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold px-4 py-1.5 rounded-full mb-6 shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-rose-600" />
-            Transparent Pricing · No Hidden Fees · Tailored for Growth
-          </div>
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="grid lg:grid-cols-12 gap-12 items-center">
+            {/* Left Column: Heading, Subtitle & CTAs */}
+            <div className="lg:col-span-8 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold px-4 py-1.5 rounded-full mb-6 shadow-xs">
+                <Sparkles className="w-3.5 h-3.5 text-rose-600" />
+                Transparent Pricing · No Hidden Fees · Tailored for Growth
+              </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-zinc-950 mb-6 leading-tight">
-            Transform Your Business with{" "}
-            <span className="bg-gradient-to-r from-rose-600 via-pink-600 to-violet-600 bg-clip-text text-transparent">
-              Modern Software, AI &amp; Automation
-            </span>
-          </h1>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-zinc-950 mb-6 leading-tight">
+                Transform Your Business with{" "}
+                <span className="bg-gradient-to-r from-rose-600 via-pink-600 to-violet-600 bg-clip-text text-transparent">
+                  Modern Software, AI &amp; Automation
+                </span>
+              </h1>
 
-          <p className="max-w-2xl mx-auto text-zinc-600 text-lg sm:text-xl leading-relaxed mb-8">
-            Ready-to-use SaaS solutions, custom development, AI agents and cloud deployment — all in one place with clear, upfront pricing.
-          </p>
+              <p className="max-w-2xl text-zinc-600 text-lg sm:text-xl leading-relaxed mb-8 mx-auto lg:mx-0">
+                Ready-to-use SaaS solutions, custom development, AI agents and cloud deployment — all in one place with clear, upfront pricing.
+              </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
-            <button
-              onClick={() => {
-                const el = document.getElementById("pricing-catalog")
-                el?.scrollIntoView({ behavior: "smooth" })
-              }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold px-8 py-4 rounded-xl text-base shadow-lg shadow-rose-500/20 hover:shadow-rose-500/35 transition-all hover:-translate-y-0.5 cursor-pointer"
-            >
-              Explore Pricing
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => scrollToEnquiry()}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-800 font-semibold px-8 py-4 rounded-xl text-base shadow-xs transition-all cursor-pointer"
-            >
-              <Calendar className="w-4 h-4 text-rose-600" />
-              Book a Free Consultation
-            </button>
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-8">
+                <button
+                  onClick={() => {
+                    const el = document.getElementById("pricing-catalog")
+                    el?.scrollIntoView({ behavior: "smooth" })
+                  }}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold px-8 py-4 rounded-xl text-base shadow-lg shadow-rose-500/20 hover:shadow-rose-500/35 transition-all hover:-translate-y-0.5 cursor-pointer"
+                >
+                  Explore Pricing
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => scrollToEnquiry()}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-800 font-semibold px-8 py-4 rounded-xl text-base shadow-xs transition-all cursor-pointer"
+                >
+                  <Calendar className="w-4 h-4 text-rose-600" />
+                  Book a Free Consultation
+                </button>
+              </div>
+            </div>
+
+            {/* Right Column / Sidebar: Voice AI Assistant Showcase Card */}
+            <div className="lg:col-span-4 flex justify-center lg:justify-end">
+              <div className="relative group w-full max-w-sm">
+                <div className="absolute -inset-1 bg-gradient-to-r from-rose-500 to-pink-600 rounded-3xl blur-xl opacity-25 group-hover:opacity-40 transition duration-1000" />
+                <div className="relative bg-gradient-to-b from-zinc-900 to-zinc-950 p-6 rounded-3xl border border-zinc-800 text-white shadow-2xl flex flex-col items-center text-center">
+                  <div className="relative mb-4">
+                    <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-rose-500/40 shadow-xl shadow-rose-500/20 bg-zinc-900">
+                      <img
+                        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTY_g1x6GQ34Rae_ZgTOUj3anzFeJFL9dlwmDd-RZmJ84XoItRvChB8XAQ&s=10"
+                        alt="Voice AI Assistant"
+                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                    <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-zinc-900" />
+                    </span>
+                  </div>
+
+                  <span className="inline-block px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[11px] font-black tracking-wider uppercase mb-2">
+                    SUPPORT WITH VOICE AI ASSISTANT
+                  </span>
+                  <h4 className="text-base font-bold text-white mb-1">Live AI Calling Consultation</h4>
+                  <p className="text-xs text-zinc-400 leading-relaxed mb-4">
+                    Need instant answers? Our bilingual Voice AI Assistant (Kavita) calls your mobile within 1.5 minutes to discuss solutions &amp; pricing.
+                  </p>
+
+                  <button
+                    onClick={() => scrollToEnquiry()}
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold text-xs rounded-xl shadow-md shadow-rose-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    Request AI Consultation Call
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 4 Benefit Highlights */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto text-left mt-14">
             {[
               { title: "Increase Enquiries", desc: "Turn online visitors into paying leads", icon: Zap },
               { title: "Automate Operations", desc: "Save hours on repetitive manual work", icon: Cpu },
@@ -1003,13 +1046,46 @@ export default function PricingClient() {
 
       {/* ── SECTION J: CONSULTATION & ENQUIRY FORM ────────────── */}
       <section id="consultation-form" className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-50 border-t border-zinc-200/80 scroll-mt-20">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
+          {/* Enhanced Header with Voice AI Badge */}
           <div className="text-center mb-10">
-            <span className="text-rose-600 text-xs font-bold uppercase tracking-widest">Let's Discuss Your Project</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-50 border border-rose-200/80 text-rose-700 text-xs font-bold uppercase tracking-wider mb-3 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+              Supported with Voice AI Assistant
+            </div>
             <h2 className="text-3xl sm:text-4xl font-black text-zinc-950 mt-1">Book a Free Consultation or Request a Quote</h2>
-            <p className="text-zinc-600 text-sm mt-2">
-              Fill out your requirements below. Our technical team will get back to you within 2 hours with a clear, itemized proposal.
+            <p className="text-zinc-600 text-sm mt-2 max-w-xl mx-auto">
+              Fill out your requirements below. Our technical team and Voice AI Assistant will follow up with an itemized proposal and free consultation call.
             </p>
+          </div>
+
+          {/* Voice AI Assistant Featured Banner */}
+          <div className="mb-8 p-5 sm:p-6 bg-gradient-to-r from-rose-950 via-zinc-900 to-zinc-950 rounded-3xl border border-rose-500/20 text-white shadow-xl shadow-rose-950/10 flex flex-col sm:flex-row items-center gap-5 sm:gap-6 relative overflow-hidden">
+            <div className="absolute -right-8 -top-8 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="relative shrink-0">
+              <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden border-2 border-rose-500/40 shadow-lg shadow-rose-500/20 bg-zinc-900">
+                <img
+                  src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTY_g1x6GQ34Rae_ZgTOUj3anzFeJFL9dlwmDd-RZmJ84XoItRvChB8XAQ&s=10"
+                  alt="Voice AI Assistant Support"
+                  className="w-full h-full object-cover object-center"
+                />
+              </div>
+              <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-zinc-900" />
+              </span>
+            </div>
+
+            <div className="flex-1 text-center sm:text-left space-y-1.5">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-rose-400">SUPPORT WITH VOICE AI ASSISTANT</span>
+                <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 text-[10px] font-bold border border-rose-500/30">Auto Call in ~1.5 Mins</span>
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-white">Instant Consultation Call Powered by AI</h3>
+              <p className="text-xs text-zinc-300 leading-relaxed max-w-xl">
+                Submit your enquiry below and our intelligent Voice AI Assistant (Kavita) will initiate a personalized 1-on-1 consultation call to your mobile number within 1.5 minutes to understand your requirements in Hindi, Hinglish, or English.
+              </p>
+            </div>
           </div>
 
           <div className="bg-white p-8 sm:p-10 rounded-3xl border border-zinc-200 shadow-sm">

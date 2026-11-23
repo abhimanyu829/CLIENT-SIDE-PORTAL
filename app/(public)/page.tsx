@@ -11,6 +11,7 @@ import { MotionWrapper } from "@/components/ui/MotionWrapper"
 import { AuroraHero } from "@/components/ui/aurora-hero"
 import { HomeBrandShowcase } from "@/components/content/HomeBrandShowcase"
 import RotatingTestimonials from "@/components/marketing/RotatingTestimonials"
+import VoiceEnquiryModalButton from "@/components/ui/VoiceEnquiryModalButton"
 
 export const revalidate = 60
 
@@ -395,6 +396,22 @@ export default async function HomePage() {
                 <span>Start free</span>
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
               </Link>
+
+              {/* Direct WhatsApp Bot Service Link */}
+              <a
+                href="https://wa.me/17117198356?text=Hi%20Abhibhideveloper!%20I%20have%20an%20enquiry%20about%20your%20software%20and%20AI%20solutions."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2.5 overflow-hidden rounded-2xl bg-emerald-600 px-7 py-4 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-emerald-600/20 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.03] hover:bg-emerald-500 hover:shadow-xl hover:shadow-emerald-500/30 active:translate-y-0 active:scale-[0.98] cursor-pointer"
+              >
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.694.072-2.18-.544-1.898-.787-3.119-2.735-3.214-2.861-.095-.126-.763-1.016-.763-1.938 0-.923.484-1.378.655-1.569.172-.191.374-.239.5-.239.125 0 .25.002.359.007.114.005.267-.043.418.321.156.376.533 1.303.579 1.398.047.095.078.207.016.332-.063.125-.094.204-.188.313-.094.11-.198.245-.282.329-.095.094-.194.197-.083.388.111.19.493.813 1.059 1.317.728.648 1.341.85 1.532.944.19.096.303.08.416-.051.114-.131.487-.567.616-.761.13-.194.258-.162.433-.098.174.064 1.109.523 1.299.618.19.095.316.142.363.222.047.08.047.464-.097.869z" />
+                </svg>
+                <span>WhatsApp AI Bot</span>
+              </a>
+
+              {/* Login-Protected Call Enquiry Button */}
+              <VoiceEnquiryModalButton />
             </div>
             <p className="-mt-8 mb-12 text-sm text-neutral-600">
               Already have an account?{" "}
